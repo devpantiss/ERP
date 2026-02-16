@@ -6,14 +6,10 @@ import AboutPage from "./pages/AboutPage";
 
 // Layout
 import MobilizerLayout from "./components/Layout/MobilizerLayout";
-// import MobilizerDashboard from "./pages/Mobilizer/MobilizerDashboard";
-// import EnrollmentList from "./pages/Mobilizer/EnrollmentList";
-// import CommunityInput from "./pages/Mobilizer/CommunityInput";
-// import CommunityHistory from "./pages/Mobilizer/CommunityHistory";
 import StudentEnrollment from "./pages/Mobilizer/StudentRnrollment";
 import MobilizerAttendance from "./pages/Mobilizer/MobilizerAttendance";
 import MobilizerProfile from "./pages/Mobilizer/MobilizerProfile";
-import MobilizerDashboard from "./pages/mobilizer/MobilizerDashboard";
+import MobilizerDashboard from "./pages/Mobilizer/MobilizerDashboard";
 import CommunityHistory from "./pages/mobilizer/CommunityHistory";
 import CandidateEnrollmentStepper from "./components/Mobilizer/CandidateEnrollmentStepper";
 import CommunityDriveStepper from "./components/Mobilizer/CommunityDriveStepper";
