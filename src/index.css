@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+
+
+.hero-slide {
+  height: calc(70vh); /* adjust based on header height; 5rem ~ 80px */
+  min-height: 480px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* background image covering */
+.hero-slide .bg-img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+/* blue diagonal overlay on left half */
+.hero-slide .diagonal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  /* create a left-side diagonal panel using clip-path */
+  background: rgba(11, 66, 120, 0.92); /* deep blue with slight transparency */
+  clip-path: polygon(0 0, 58% 0, 44% 100%, 0% 100%);
+  display: flex;
+  align-items: center;
+}
+
+/* content inner box to limit width and padding */
+.hero-slide .overlay-content {
+  max-width: 640px;
+  padding-left: 3rem;
+  padding-right: 2rem;
+  color: white;
+}
+
+/* subtitle / paragraph spacing */
+.hero-slide h2 {
+  font-weight: 800;
+  font-size: 2.25rem; /* ~text-4xl */
+  line-height: 1.05;
+}
+@media (min-width: 768px) {
+  .hero-slide h2 { font-size: 3rem; } /* ~text-5xl on larger screens */
+}
+
+/* CTA button */
+.hero-cta {
+  display: inline-block;
+  background: #f36b0a; /* orange */
+  color: white;
+  padding: 0.75rem 1.25rem;
+  margin-top: 1.25rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+  transform: skewX(-12deg);
+}
+
+/* fix slick arrows and dots layering */
+.slick-arrow {
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.35);
+  color: white;
+}
+.slick-dots {
+  bottom: 18px;
+  z-index: 20;
+}
+.slick-dots li button:before {
+  color: rgba(255,255,255,0.9);
+}
