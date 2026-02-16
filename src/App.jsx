@@ -10,7 +10,7 @@ import StudentEnrollment from "./pages/Mobilizer/StudentRnrollment";
 import MobilizerAttendance from "./pages/Mobilizer/MobilizerAttendance";
 import MobilizerProfile from "./pages/Mobilizer/MobilizerProfile";
 import MobilizerDashboard from "./pages/Mobilizer/MobilizerDashboard";
-import CommunityHistory from "./pages/mobilizer/CommunityHistory";
+import CommunityHistory from "./pages/Mobilizer/CommunityHistory";
 import CandidateEnrollmentStepper from "./components/Mobilizer/CandidateEnrollmentStepper";
 import CommunityDriveStepper from "./components/Mobilizer/CommunityDriveStepper";
 import TrainerLayout from "./components/Layout/TrainerLayout";
