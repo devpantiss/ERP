@@ -7,18 +7,20 @@ import { useNavigate } from "react-router-dom";
 
 const STORAGE_KEY = "trainer-attendance-v4";
 
+/* ✅ UPDATED SESSIONS */
+
 const SESSIONS = [
   {
     key: "s1",
     label: "09:00–11:00",
     start: "09:00",
-    title: "Soft Skills Session",
+    title: "Theory Classes",
   },
   {
     key: "s2",
     label: "11:30–13:30",
     start: "11:30",
-    title: "Theory Session",
+    title: "Theory Classes",
   },
   {
     key: "s3",
@@ -47,13 +49,6 @@ const calculateHours = (inTime, outTime) => {
   const outMin = parseTimeToMinutes(outTime);
   if (!inMin || !outMin) return 0;
   return ((outMin - inMin) / 60).toFixed(2);
-};
-
-const getStatus = (inTime, start) => {
-  if (!inTime) return null;
-  const [sh, sm] = start.split(":").map(Number);
-  const threshold = sh * 60 + sm + LATE_BUFFER;
-  return parseTimeToMinutes(inTime) <= threshold ? "On-time" : "Late";
 };
 
 const reverseGeocode = async (lat, lng) => {
@@ -130,6 +125,7 @@ export default function TrainerAttendance() {
 
   const handlePunch = () => {
     setLoading(true);
+
     const today = todayKey();
     const todayRecord = attendance[today] || { sessions: {} };
     const sessionData = todayRecord.sessions[activePunch.key] || {};
@@ -173,7 +169,7 @@ export default function TrainerAttendance() {
         setActivePunch(null);
         setLoading(false);
 
-        /* ===== TOAST + REDIRECT ONLY FOR PUNCH IN ===== */
+        /* ✅ TOAST + REDIRECT */
 
         if (activePunch.type === "in") {
           const sessionKey = activePunch.key;
@@ -181,7 +177,7 @@ export default function TrainerAttendance() {
           toast.success("Punch-In Time Recorded", {
             autoClose: 2000,
             onClose: () => {
-              if (sessionKey === "s2") {
+              if (sessionKey === "s1" || sessionKey === "s2") {
                 navigate("/trainer/study-modules");
               }
 
@@ -338,12 +334,13 @@ function AttendanceTable({ attendance, setPreviewImage, setMapData }) {
   return (
     <div className="bg-[#111827] rounded-xl border border-slate-700 overflow-x-auto">
       <table className="w-full text-xs">
+
         <thead className="bg-[#0b1220] text-slate-400">
           <tr>
             <th className="p-4 text-left">Date</th>
             {SESSIONS.map((s) => (
               <th key={s.key} className="p-4 text-left">
-                {s.label}
+                {s.title}
               </th>
             ))}
             <th className="p-4 text-left">Total</th>

@@ -8,6 +8,7 @@ import {
   FlaskConical,
   BookOpen,
   FileText,
+  BarChart3,
   UserRoundPen,
   ChevronLeft,
   ChevronRight,
@@ -17,13 +18,14 @@ import {
 
 const MENU = [
   { label: "Dashboard", path: "/trainer/dashboard", icon: LayoutDashboard },
-  { label: "Attendance", path: "/trainer/attendance", icon: UserCheck },
   { label: "Exposure Visits", path: "/trainer/exposure-visits", icon: MapPin },
   { label: "Internal Assessment", path: "/trainer/internal-assessment", icon: ClipboardCheck },
-  { label: "Labs", path: "/trainer/labs", icon: FlaskConical },
-  { label: "Study Modules", path: "/trainer/study-modules", icon: BookOpen },
+  // { label: "Labs", path: "/trainer/labs", icon: FlaskConical },
+  // { label: "Study Modules", path: "/trainer/study-modules", icon: BookOpen },
   // { label: "Daily Updates", path: "/trainer/daily-updates", icon: FileText },
+  { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
   { label: "Profile", path: "/trainer/profile", icon: UserRoundPen },
+  { label: "Attendance", path: "/trainer/attendance", icon: UserCheck },
 ];
 
 /* ================= COMPONENT ================= */

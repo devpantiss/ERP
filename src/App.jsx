@@ -24,6 +24,8 @@ import TrainerInternalAssessments from "./pages/Trainer/TrainerInternalAssessmen
 import TrainerStudyModules from "./pages/Trainer/TrainerStudyModules";
 import TrainerProfile from "./pages/Trainer/TrainerProfile";
 import TrainerLab from "./pages/Trainer/TrainerLab";
+import TrainersModuleHistory from "./pages/Trainer/TrainersModuleHistory";
+import ExposureVisitEnterprisePro from "./pages/Trainer/ExposureVisitsStepper";
 
 
 function App() {
@@ -57,10 +59,12 @@ function App() {
           <Route path="dashboard" element={<TrainerDashboard />} />
           <Route path="attendance" element={<TrainerAttendance />} />
           <Route path="exposure-visits" element={<TrainerExposureVisits />} />
+          <Route path="exposure-visits/new" element={<ExposureVisitEnterprisePro />} />
           <Route path="internal-assessment" element={<TrainerInternalAssessments />} />
           <Route path="study-modules" element={<TrainerStudyModules />} />
           <Route path="profile" element={<TrainerProfile />} />
           <Route path="labs" element={<TrainerLab />} />
+          <Route path="module-progress" element={<TrainersModuleHistory />} />
           </Route>
       </Routes>
       <ToastContainer position="top-right" autoClose={2000} />
