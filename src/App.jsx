@@ -26,6 +26,12 @@ import TrainerProfile from "./pages/Trainer/TrainerProfile";
 import TrainerLab from "./pages/Trainer/TrainerLab";
 import TrainersModuleHistory from "./pages/Trainer/TrainersModuleHistory";
 import ExposureVisitEnterprisePro from "./pages/Trainer/ExposureVisitsStepper";
+import PlacementLayout from "./components/Layout/PlacementLayout";
+import PlacementDashboard from "./pages/Placement/PlacementDashboard";
+import PlacementCompanyList from "./pages/Placement/PlacementCompanyList";
+import PlacementCompanyDatabaseStepper from "./pages/Placement/PlacementCompanyDatabaseStepper";
+import PlacementDrivesDetails from "./pages/Placement/PlacementDriveDetails";
+import PlacementDriveStepper from "./pages/Placement/PlacementDriveStepper";
 
 
 function App() {
@@ -65,7 +71,20 @@ function App() {
           <Route path="profile" element={<TrainerProfile />} />
           <Route path="labs" element={<TrainerLab />} />
           <Route path="module-progress" element={<TrainersModuleHistory />} />
-          </Route>
+        </Route>
+
+        {/* Placement Layout Routes */}
+        <Route path="/placement-officer" element={<PlacementLayout />}>
+          <Route index element={<PlacementDashboard />} />
+
+
+          <Route path="dashboard" element={<PlacementDashboard />} />
+          <Route path="company-database" element={<PlacementCompanyList />} />
+          <Route path="company-database/new" element={<PlacementCompanyDatabaseStepper />} />
+          <Route path="placement-drives" element={<PlacementDrivesDetails />} />
+          <Route path="placement-drives/new" element={<PlacementDriveStepper />} />
+
+        </Route>
       </Routes>
       <ToastContainer position="top-right" autoClose={2000} />
     </Router>

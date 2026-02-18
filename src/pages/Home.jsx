@@ -25,6 +25,8 @@ const DUMMY_PASSWORD = "1234";
 
 /* ===================== ROLE COLORS ===================== */
 
+/* ===================== ROLE COLORS ===================== */
+
 const ROLE_COLORS = {
   Mobilizer: {
     primary: "#facc15",
@@ -34,11 +36,16 @@ const ROLE_COLORS = {
     primary: "#34d399",
     orb: "bg-emerald-400/20",
   },
+  "Placement Officer": {
+    primary: "#22d3ee", // cyan
+    orb: "bg-cyan-400/20",
+  },
   default: {
     primary: "#ef4444",
     orb: "bg-red-500/20",
   },
 };
+
 
 /* ===================== MAIN ===================== */
 

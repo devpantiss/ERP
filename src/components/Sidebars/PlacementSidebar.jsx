@@ -2,13 +2,9 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
   LayoutDashboard,
-  UserCheck,
-  MapPin,
-  ClipboardCheck,
-  FlaskConical,
-  BookOpen,
-  FileText,
-  BarChart3,
+  Building2,
+  CalendarCheck,
+  Users,
   UserRoundPen,
   ChevronLeft,
   ChevronRight,
@@ -17,20 +13,16 @@ import {
 /* ================= MENU CONFIG ================= */
 
 const MENU = [
-  { label: "Dashboard", path: "/trainer/dashboard", icon: LayoutDashboard },
-  { label: "Exposure Visits", path: "/trainer/exposure-visits", icon: MapPin },
-  { label: "Internal Assessment", path: "/trainer/internal-assessment", icon: ClipboardCheck },
-  // { label: "Labs", path: "/trainer/labs", icon: FlaskConical },
-  // { label: "Study Modules", path: "/trainer/study-modules", icon: BookOpen },
-  // { label: "Daily Updates", path: "/trainer/daily-updates", icon: FileText },
-  { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
-  { label: "Profile", path: "/trainer/profile", icon: UserRoundPen },
-  { label: "Attendance", path: "/trainer/attendance", icon: UserCheck },
+  { label: "Dashboard", path: "/placement-officer/dashboard", icon: LayoutDashboard },
+  { label: "Company Database", path: "/placement-officer/company-database", icon: Building2 },
+  { label: "Placement Drives", path: "/placement-officer/placement-drives", icon: CalendarCheck },
+  { label: "Job Openings Dashboard", path: "#", icon: Users },
+  { label: "Profile", path: "/placement-officer/profile", icon: UserRoundPen },
 ];
 
 /* ================= COMPONENT ================= */
 
-const TrainerSidebar = () => {
+const PlacementSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -45,8 +37,8 @@ const TrainerSidebar = () => {
       <div className="flex items-center justify-between px-4 h-16 border-b border-slate-700">
 
         {!collapsed && (
-          <span className="text-lg font-semibold tracking-tight text-emerald-400">
-            Teach Hub
+          <span className="text-lg font-semibold tracking-tight text-cyan-400">
+            PlaCom Hub
           </span>
         )}
 
@@ -70,7 +62,7 @@ const TrainerSidebar = () => {
               text-sm font-medium transition-all duration-200
               ${
                 isActive
-                  ? "bg-emerald-500/10 text-emerald-400"
+                  ? "bg-cyan-500/10 text-cyan-400"
                   : "text-slate-400 hover:bg-slate-800 hover:text-white"
               }`
             }
@@ -79,7 +71,7 @@ const TrainerSidebar = () => {
               <>
                 {/* Active Indicator */}
                 {isActive && (
-                  <span className="absolute left-0 top-0 h-full w-1 bg-emerald-400 rounded-r-md" />
+                  <span className="absolute left-0 top-0 h-full w-1 bg-cyan-400 rounded-r-md" />
                 )}
 
                 <Icon size={18} className="shrink-0" />
@@ -98,7 +90,7 @@ const TrainerSidebar = () => {
         {!collapsed && (
           <div className="space-y-1">
             <p className="font-medium text-slate-400">Kovon Platform</p>
-            <p>Trainer Console v1.0</p>
+            <p>Placement Console v1.0</p>
           </div>
         )}
 
@@ -107,4 +99,4 @@ const TrainerSidebar = () => {
   );
 };
 
-export default TrainerSidebar;
+export default PlacementSidebar;
