@@ -4,7 +4,10 @@ import {
   ClipboardCheck,
   FolderKanban,
   Map,
+  Building2,
+  MapPin,
 } from "lucide-react";
+import Marquee from "react-fast-marquee";
 import {
   PieChart,
   Pie,
@@ -12,6 +15,31 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+
+/* ===================== PROJECT DATA ===================== */
+
+const PROJECT_CARDS = [
+  {
+    project: "PMKVY 4.0",
+    center: "Pantiss Skill Resort, Angul",
+    status: "Active",
+  },
+  {
+    project: "CSR – Tata Steel",
+    center: "Jajpur Training Center",
+    status: "Ongoing",
+  },
+  {
+    project: "DDUGKY",
+    center: "Kalahandi Center",
+    status: "Active",
+  },
+  {
+    project: "State Skill Mission",
+    center: "Jharsuguda Campus",
+    status: "Ongoing",
+  },
+];
 
 /* ===================== COUNT UP HOOK ===================== */
 
@@ -76,6 +104,18 @@ export default function TrainerPerformanceSection({
   return (
     <section className="relative w-full rounded-2xl p-8
       bg-[#111827] border border-slate-700 overflow-hidden">
+
+      {/* ================= PROJECT MARQUEE ================= */}
+
+      <div className="mb-6">
+
+        <Marquee speed={40} pauseOnHover gradient={false}>
+          {PROJECT_CARDS.map((item, i) => (
+            <ProjectCard key={i} data={item} />
+          ))}
+        </Marquee>
+
+      </div>
 
       {/* SUBTLE GRID */}
       <div
@@ -151,6 +191,36 @@ export default function TrainerPerformanceSection({
         </div>
       </div>
     </section>
+  );
+}
+
+/* ===================== PROJECT CARD ===================== */
+
+function ProjectCard({ data }) {
+  return (
+    <div className="mx-3 min-w-[280px] bg-[#0f172a] border border-slate-700 rounded-xl p-4 flex flex-col gap-2 hover:border-emerald-500/40 transition">
+
+      <div className="flex items-center justify-between">
+
+        <div className="flex items-center gap-2 text-emerald-400">
+          <Building2 size={16} />
+          <span className="text-sm font-medium">
+            {data.project}
+          </span>
+        </div>
+
+        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
+          {data.status}
+        </span>
+
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-slate-400">
+        <MapPin size={14} />
+        {data.center}
+      </div>
+
+    </div>
   );
 }
 
