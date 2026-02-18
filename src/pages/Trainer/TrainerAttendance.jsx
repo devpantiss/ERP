@@ -1,14 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Webcam from "react-webcam";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 /* ================= CONFIG ================= */
 
 const STORAGE_KEY = "trainer-attendance-v4";
 
 const SESSIONS = [
-  { key: "s1", label: "09:00–11:00", start: "09:00" },
-  { key: "s2", label: "11:30–13:30", start: "11:30" },
-  { key: "s3", label: "14:30–16:30", start: "14:30" },
+  {
+    key: "s1",
+    label: "09:00–11:00",
+    start: "09:00",
+    title: "Soft Skills Session",
+  },
+  {
+    key: "s2",
+    label: "11:30–13:30",
+    start: "11:30",
+    title: "Theory Session",
+  },
+  {
+    key: "s3",
+    label: "14:30–16:30",
+    start: "14:30",
+    title: "Practical / Lab Session",
+  },
 ];
 
 const LATE_BUFFER = 10;
@@ -60,6 +77,7 @@ const reverseGeocode = async (lat, lng) => {
 
 export default function TrainerAttendance() {
   const webcamRef = useRef(null);
+  const navigate = useNavigate();
 
   const [attendance, setAttendance] = useState({});
   const [activePunch, setActivePunch] = useState(null);
@@ -130,6 +148,8 @@ export default function TrainerAttendance() {
           pos.coords.longitude
         );
 
+        const time = new Date().toLocaleTimeString();
+
         const updated = {
           ...attendance,
           [today]: {
@@ -138,7 +158,7 @@ export default function TrainerAttendance() {
               [activePunch.key]: {
                 ...sessionData,
                 [activePunch.type === "in" ? "punchIn" : "punchOut"]: {
-                  time: new Date().toLocaleTimeString(),
+                  time,
                   image,
                   lat: pos.coords.latitude,
                   lng: pos.coords.longitude,
@@ -152,6 +172,25 @@ export default function TrainerAttendance() {
         persist(updated);
         setActivePunch(null);
         setLoading(false);
+
+        /* ===== TOAST + REDIRECT ONLY FOR PUNCH IN ===== */
+
+        if (activePunch.type === "in") {
+          const sessionKey = activePunch.key;
+
+          toast.success("Punch-In Time Recorded", {
+            autoClose: 2000,
+            onClose: () => {
+              if (sessionKey === "s2") {
+                navigate("/trainer/study-modules");
+              }
+
+              if (sessionKey === "s3") {
+                navigate("/trainer/labs");
+              }
+            },
+          });
+        }
       },
       () => {
         setError("Location permission denied.");
@@ -195,7 +234,7 @@ export default function TrainerAttendance() {
           Trainer Attendance
         </h1>
 
-        {/* SUMMARY CARDS */}
+        {/* SUMMARY */}
         <div className="grid md:grid-cols-3 gap-6">
           <Stat label="Working Days" value={metrics.workingDays} />
           <Stat label="Sessions Completed" value={metrics.sessionsDone} />
@@ -212,8 +251,17 @@ export default function TrainerAttendance() {
         <div className="grid md:grid-cols-3 gap-6">
           {SESSIONS.map((s, i) => (
             <div key={s.key} className="bg-[#111827] rounded-xl p-5 border border-slate-700">
-              <p className="text-sm text-slate-400 mb-4">{s.label}</p>
+
+              <p className="text-xs text-emerald-400 mb-1 font-medium">
+                {s.title}
+              </p>
+
+              <p className="text-sm text-slate-400 mb-4">
+                {s.label}
+              </p>
+
               <div className="flex gap-3">
+
                 <button
                   onClick={() =>
                     validateSession(i, "in") &&
@@ -233,123 +281,19 @@ export default function TrainerAttendance() {
                 >
                   Punch Out
                 </button>
+
               </div>
             </div>
           ))}
         </div>
 
         {/* TABLE */}
-        <div className="bg-[#111827] rounded-xl border border-slate-700 overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead className="bg-[#0b1220] text-slate-400">
-              <tr>
-                <th className="p-4 text-left">Date</th>
-                {SESSIONS.map((s) => (
-                  <th key={s.key} className="p-4 text-left">
-                    {s.label}
-                  </th>
-                ))}
-                <th className="p-4 text-left">Total</th>
-              </tr>
-            </thead>
+        <AttendanceTable
+          attendance={attendance}
+          setPreviewImage={setPreviewImage}
+          setMapData={setMapData}
+        />
 
-            <tbody>
-              {Object.entries(attendance).reverse().map(([date, day]) => {
-                let dayTotal = 0;
-
-                return (
-                  <tr key={date} className="border-t border-slate-700 align-top">
-                    <td className="p-4 font-medium text-sm">{date}</td>
-
-                    {SESSIONS.map((s) => {
-                      const d = day.sessions?.[s.key];
-                      const hrs =
-                        d?.punchIn && d?.punchOut
-                          ? calculateHours(d.punchIn.time, d.punchOut.time)
-                          : 0;
-
-                      dayTotal += parseFloat(hrs || 0);
-                      const status =
-                        d?.punchIn ? getStatus(d.punchIn.time, s.start) : null;
-
-                      return (
-                        <td className="p-4">
-                          <div className="bg-[#0b1220] p-3 rounded-lg border border-slate-700 space-y-3">
-
-                            <div className="flex justify-between">
-                              <span>In</span>
-                              <span>{d?.punchIn?.time || "—"}</span>
-                            </div>
-
-                            <div className="flex justify-between">
-                              <span>Out</span>
-                              <span>{d?.punchOut?.time || "—"}</span>
-                            </div>
-
-                            <div className="flex justify-between items-center">
-                              <span className="font-semibold">
-                                {hrs ? `${hrs}h` : "—"}
-                              </span>
-
-                              {status && (
-                                <span
-                                  className={`px-2 py-0.5 rounded-full text-[10px]
-                                  ${
-                                    status === "On-time"
-                                      ? "bg-emerald-500/10 text-emerald-400"
-                                      : "bg-red-500/10 text-red-400"
-                                  }`}
-                                >
-                                  {status}
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex gap-2 items-center">
-                              {d?.punchIn?.image && (
-                                <img
-                                  src={d.punchIn.image}
-                                  className="w-8 h-8 rounded cursor-pointer border border-slate-600"
-                                  onClick={() => setPreviewImage(d.punchIn.image)}
-                                />
-                              )}
-
-                              {d?.punchOut?.image && (
-                                <img
-                                  src={d.punchOut.image}
-                                  className="w-8 h-8 rounded cursor-pointer border border-slate-600"
-                                  onClick={() => setPreviewImage(d.punchOut.image)}
-                                />
-                              )}
-
-                              {d?.punchIn?.lat && (
-                                <button
-                                  className="text-emerald-400 text-[10px] underline"
-                                  onClick={() =>
-                                    setMapData({
-                                      lat: d.punchIn.lat,
-                                      lng: d.punchIn.lng,
-                                    })
-                                  }
-                                >
-                                  Map
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                      );
-                    })}
-
-                    <td className="p-4 font-semibold text-emerald-400 text-sm">
-                      {dayTotal.toFixed(2)}h
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       {/* CAMERA MODAL */}
@@ -385,6 +329,107 @@ export default function TrainerAttendance() {
         </Modal>
       )}
     </section>
+  );
+}
+
+/* ================= TABLE ================= */
+
+function AttendanceTable({ attendance, setPreviewImage, setMapData }) {
+  return (
+    <div className="bg-[#111827] rounded-xl border border-slate-700 overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead className="bg-[#0b1220] text-slate-400">
+          <tr>
+            <th className="p-4 text-left">Date</th>
+            {SESSIONS.map((s) => (
+              <th key={s.key} className="p-4 text-left">
+                {s.label}
+              </th>
+            ))}
+            <th className="p-4 text-left">Total</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {Object.entries(attendance).reverse().map(([date, day]) => {
+            let dayTotal = 0;
+
+            return (
+              <tr key={date} className="border-t border-slate-700 align-top">
+
+                <td className="p-4 font-medium text-sm">{date}</td>
+
+                {SESSIONS.map((s) => {
+                  const d = day.sessions?.[s.key];
+
+                  const hrs =
+                    d?.punchIn && d?.punchOut
+                      ? calculateHours(d.punchIn.time, d.punchOut.time)
+                      : 0;
+
+                  dayTotal += parseFloat(hrs || 0);
+
+                  return (
+                    <td className="p-4">
+                      <div className="bg-[#0b1220] p-3 rounded-lg border border-slate-700 space-y-2">
+
+                        <div className="flex justify-between">
+                          <span>In</span>
+                          <span>{d?.punchIn?.time || "—"}</span>
+                        </div>
+
+                        <div className="flex justify-between">
+                          <span>Out</span>
+                          <span>{d?.punchOut?.time || "—"}</span>
+                        </div>
+
+                        <div className="flex gap-2 items-center">
+                          {d?.punchIn?.image && (
+                            <img
+                              src={d.punchIn.image}
+                              className="w-8 h-8 rounded cursor-pointer border border-slate-600"
+                              onClick={() => setPreviewImage(d.punchIn.image)}
+                            />
+                          )}
+
+                          {d?.punchOut?.image && (
+                            <img
+                              src={d.punchOut.image}
+                              className="w-8 h-8 rounded cursor-pointer border border-slate-600"
+                              onClick={() => setPreviewImage(d.punchOut.image)}
+                            />
+                          )}
+
+                          {d?.punchIn?.lat && (
+                            <button
+                              className="text-emerald-400 text-[10px] underline"
+                              onClick={() =>
+                                setMapData({
+                                  lat: d.punchIn.lat,
+                                  lng: d.punchIn.lng,
+                                })
+                              }
+                            >
+                              Map
+                            </button>
+                          )}
+                        </div>
+
+                      </div>
+                    </td>
+                  );
+                })}
+
+                <td className="p-4 font-semibold text-emerald-400 text-sm">
+                  {dayTotal.toFixed(2)}h
+                </td>
+
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

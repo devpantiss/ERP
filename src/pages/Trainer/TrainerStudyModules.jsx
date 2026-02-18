@@ -9,34 +9,29 @@ import {
 
 /* ===================== CONFIG ===================== */
 
-const MODULE_VIDEO_URL = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+const MODULE_VIDEO_URL =
+  "https://www.youtube.com/embed/dQw4w9WgXcQ";
+
 const ACTIVITY_IMAGE = "/activity.png";
 
-const DEPARTMENTS = {
-  "Mines, Steel & Aluminium": [
-    "Underground Mining Technician",
-    "Blast Furnace Operator",
-  ],
-  "Furniture Fitting": [
-    "Carpentry Technician",
-    "Modular Furniture Installer",
-  ],
-  "Power & Green Energy": [
-    "Solar PV Installer",
-    "Wind Turbine Technician",
-  ],
-  "Shipping & Logistics": [
-    "Warehouse Executive",
-    "Port Operations Assistant",
-  ],
-  "Construction Tech & Infra Equipments": [
-    "Heavy Equipment Operator",
-    "Bar Bending Technician",
-  ],
-  "Green Jobs": [
-    "EV Service Technician",
-    "Waste Management Executive",
-  ],
+/* ===================== DATA ===================== */
+
+const DATA = {
+  "Mines, Steel & Aluminium": {
+    "Center A": {
+      "Underground Mining Technician": [
+        "Batch A",
+        "Batch B",
+      ],
+      "Blast Furnace Operator": ["Batch C"],
+    },
+  },
+
+  "Power & Green Energy": {
+    "Center B": {
+      "Solar PV Installer": ["Batch D"],
+    },
+  },
 };
 
 const generateModules = () =>
@@ -48,66 +43,98 @@ const generateModules = () =>
 /* ===================== MAIN COMPONENT ===================== */
 
 export default function TrainerStudyModules() {
-  const [selectedDept, setSelectedDept] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [selectedModule, setSelectedModule] = useState(null);
+  const [dept, setDept] = useState(null);
+  const [center, setCenter] = useState(null);
+  const [role, setRole] = useState(null);
+  const [batch, setBatch] = useState(null);
+  const [module, setModule] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
 
   const modules = generateModules();
 
-  /* STEP NAVIGATION */
+  /* NAVIGATION RESET */
 
-  const goToDept = () => {
-    setSelectedDept(null);
-    setSelectedCourse(null);
-    setSelectedModule(null);
+  const goDept = () => {
+    setDept(null);
+    setCenter(null);
+    setRole(null);
+    setBatch(null);
+    setModule(null);
   };
 
-  const goToCourse = () => {
-    setSelectedCourse(null);
-    setSelectedModule(null);
+  const goCenter = () => {
+    setCenter(null);
+    setRole(null);
+    setBatch(null);
+    setModule(null);
   };
 
-  const goToModule = () => {
-    setSelectedModule(null);
+  const goRole = () => {
+    setRole(null);
+    setBatch(null);
+    setModule(null);
+  };
+
+  const goBatch = () => {
+    setBatch(null);
+    setModule(null);
+  };
+
+  const goModule = () => {
+    setModule(null);
   };
 
   return (
     <div className="flex h-screen bg-[#020617] text-slate-200">
 
-      {/* ===================== SIDEBAR ===================== */}
+      {/* ================= SIDEBAR ================= */}
 
       <aside className="w-72 border-r border-slate-800 bg-[#020617]/80 backdrop-blur-xl p-6">
 
         <div className="flex items-center gap-3 mb-8">
           <Layers className="text-emerald-400" />
-          <h1 className="font-semibold text-lg">Trainer LMS</h1>
+          <h1 className="font-semibold text-lg">
+            Trainer LMS
+          </h1>
         </div>
 
         <div className="space-y-4 text-sm">
 
           <SidebarItem
-            label={selectedDept || "Select Department"}
-            active={!selectedDept}
-            onClick={goToDept}
-            clickable
+            label={dept || "Select Department"}
+            active={!dept}
+            onClick={goDept}
           />
 
-          {selectedDept && (
+          {dept && (
             <SidebarItem
-              label={selectedCourse || "Select Course"}
-              active={!selectedCourse}
-              onClick={goToCourse}
-              clickable
+              label={center || "Select Center"}
+              active={!center}
+              onClick={goCenter}
             />
           )}
 
-          {selectedCourse && (
+          {center && (
             <SidebarItem
-              label={selectedModule?.title || "Select Module"}
-              active={!selectedModule}
-              onClick={goToModule}
-              clickable
+              label={role || "Select Job Role"}
+              active={!role}
+              onClick={goRole}
+            />
+          )}
+
+          {role && (
+            <SidebarItem
+              label={batch || "Select Batch"}
+              active={!batch}
+              onClick={goBatch}
+            />
+          )}
+
+          {batch && (
+            <SidebarItem
+              label={module?.title || "Select Module"}
+              active={!module}
+              onClick={goModule}
             />
           )}
 
@@ -115,44 +142,63 @@ export default function TrainerStudyModules() {
 
       </aside>
 
-      {/* ===================== MAIN CONTENT ===================== */}
+      {/* ================= MAIN ================= */}
 
       <main className="flex-1 overflow-y-auto p-8">
 
-        {!selectedDept && (
+        {!dept && (
           <SelectionGrid
             title="Select Department"
-            options={Object.keys(DEPARTMENTS)}
-            onSelect={setSelectedDept}
+            options={Object.keys(DATA)}
+            onSelect={setDept}
           />
         )}
 
-        {selectedDept && !selectedCourse && (
+        {dept && !center && (
           <SelectionGrid
-            title={`Courses — ${selectedDept}`}
-            options={DEPARTMENTS[selectedDept]}
-            onSelect={setSelectedCourse}
+            title="Select Center"
+            options={Object.keys(DATA[dept])}
+            onSelect={setCenter}
           />
         )}
 
-        {selectedCourse && !selectedModule && (
+        {center && !role && (
           <SelectionGrid
-            title={`Modules — ${selectedCourse}`}
+            title="Select Job Role"
+            options={Object.keys(DATA[dept][center])}
+            onSelect={setRole}
+          />
+        )}
+
+        {role && !batch && (
+          <SelectionGrid
+            title="Select Batch"
+            options={DATA[dept][center][role]}
+            onSelect={setBatch}
+          />
+        )}
+
+        {batch && !module && (
+          <SelectionGrid
+            title={`Modules — ${batch}`}
             options={modules.map((m) => m.title)}
             grid
             onSelect={(title) =>
-              setSelectedModule(
-                modules.find((m) => m.title === title)
+              setModule(
+                modules.find(
+                  (m) => m.title === title
+                )
               )
             }
           />
         )}
 
-        {selectedModule && (
+        {module && (
           <ModuleContent
-            module={selectedModule}
-            dept={selectedDept}
-            course={selectedCourse}
+            module={module}
+            dept={dept}
+            role={role}
+            batch={batch}
             onComplete={() => setShowUpload(true)}
           />
         )}
@@ -160,27 +206,25 @@ export default function TrainerStudyModules() {
       </main>
 
       {showUpload && (
-        <UploadModal onClose={() => setShowUpload(false)} />
+        <UploadModal
+          onClose={() => setShowUpload(false)}
+        />
       )}
 
     </div>
   );
 }
 
-/* ===================== SIDEBAR ITEM ===================== */
+/* ================= SIDEBAR ITEM ================= */
 
-function SidebarItem({ label, active, onClick, clickable }) {
+function SidebarItem({ label, active, onClick }) {
   return (
     <div
-      onClick={clickable ? onClick : undefined}
-      className={`flex items-center justify-between p-3 rounded-lg border transition ${
+      onClick={onClick}
+      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
         active
           ? "border-emerald-400 bg-emerald-400/10"
-          : "border-slate-800"
-      } ${
-        clickable
-          ? "cursor-pointer hover:border-emerald-400 hover:bg-slate-900"
-          : ""
+          : "border-slate-800 hover:border-emerald-400 hover:bg-slate-900"
       }`}
     >
       <span>{label}</span>
@@ -189,9 +233,14 @@ function SidebarItem({ label, active, onClick, clickable }) {
   );
 }
 
-/* ===================== SELECTION GRID ===================== */
+/* ================= SELECTION GRID ================= */
 
-function SelectionGrid({ title, options, onSelect, grid }) {
+function SelectionGrid({
+  title,
+  options,
+  onSelect,
+  grid,
+}) {
   return (
     <section className="max-w-6xl mx-auto">
 
@@ -213,29 +262,33 @@ function SelectionGrid({ title, options, onSelect, grid }) {
             className="p-5 rounded-xl bg-[#020617]/60 border border-slate-800 hover:border-emerald-400 hover:bg-slate-900 transition text-left backdrop-blur-xl"
           >
             <div className="flex items-center gap-3">
-              <BookOpen size={18} className="text-emerald-400" />
-              <span className="font-medium">{item}</span>
+              <BookOpen
+                size={18}
+                className="text-emerald-400"
+              />
+              <span className="font-medium">
+                {item}
+              </span>
             </div>
           </button>
         ))}
       </div>
-
     </section>
   );
 }
 
-/* ===================== MODULE CONTENT ===================== */
+/* ================= MODULE CONTENT ================= */
 
 function ModuleContent({
   module,
   dept,
-  course,
+  role,
+  batch,
   onComplete,
 }) {
   return (
     <section className="max-w-6xl mx-auto space-y-6">
 
-      {/* HEADER */}
       <div className="flex justify-between items-center">
 
         <div>
@@ -243,7 +296,7 @@ function ModuleContent({
             {module.title}
           </h2>
           <p className="text-sm text-slate-400">
-            {dept} → {course}
+            {dept} → {role} → {batch}
           </p>
         </div>
 
@@ -257,7 +310,6 @@ function ModuleContent({
 
       </div>
 
-      {/* MODULE VIDEO */}
       <Card title="Module Video">
         <iframe
           className="w-full h-[380px] rounded-lg"
@@ -266,7 +318,6 @@ function ModuleContent({
         />
       </Card>
 
-      {/* ACTIVITY IMAGE */}
       <Card title="Activity Demonstration">
         <img
           src={ACTIVITY_IMAGE}
@@ -275,16 +326,20 @@ function ModuleContent({
         />
       </Card>
 
-      {/* QUIZ */}
       <Card title="Quiz">
         <ul className="space-y-2 text-sm text-slate-300">
-          <li>1. What safety precautions must be followed?</li>
-          <li>2. Define the main operational procedure.</li>
+          <li>
+            1. What safety precautions must be
+            followed?
+          </li>
+          <li>
+            2. Define the main operational
+            procedure.
+          </li>
           <li>3. Explain the tools used.</li>
         </ul>
       </Card>
 
-      {/* PROJECT VIDEO */}
       <Card title="Project Video">
         <iframe
           className="w-full h-[380px] rounded-lg"
@@ -297,7 +352,7 @@ function ModuleContent({
   );
 }
 
-/* ===================== CARD ===================== */
+/* ================= CARD ================= */
 
 function Card({ title, children }) {
   return (
@@ -310,12 +365,15 @@ function Card({ title, children }) {
   );
 }
 
-/* ===================== UPLOAD MODAL ===================== */
+/* ================= UPLOAD MODAL ================= */
 
 function UploadModal({ onClose }) {
-  const [classImage, setClassImage] = useState(null);
-  const [activityImage, setActivityImage] = useState(null);
-  const [projectImage, setProjectImage] = useState(null);
+  const [classImage, setClassImage] =
+    useState(null);
+  const [activityImage, setActivityImage] =
+    useState(null);
+  const [projectImage, setProjectImage] =
+    useState(null);
 
   const isValid =
     classImage && activityImage && projectImage;
@@ -330,14 +388,26 @@ function UploadModal({ onClose }) {
         </h3>
 
         <p className="text-sm text-slate-400 mb-6">
-          Upload training proof to complete module
+          Upload training proof to complete
+          module
         </p>
 
         <div className="grid md:grid-cols-3 gap-4">
 
-          <UploadCard label="Class Image" setFile={setClassImage} />
-          <UploadCard label="Activity Image" setFile={setActivityImage} />
-          <UploadCard label="Project Image" setFile={setProjectImage} />
+          <UploadCard
+            label="Class Image"
+            setFile={setClassImage}
+          />
+
+          <UploadCard
+            label="Activity Image"
+            setFile={setActivityImage}
+          />
+
+          <UploadCard
+            label="Project Image"
+            setFile={setProjectImage}
+          />
 
         </div>
 
@@ -364,15 +434,15 @@ function UploadModal({ onClose }) {
         </div>
 
       </div>
-
     </div>
   );
 }
 
-/* ===================== UPLOAD CARD ===================== */
+/* ================= UPLOAD CARD ================= */
 
 function UploadCard({ label, setFile }) {
-  const [preview, setPreview] = useState(null);
+  const [preview, setPreview] =
+    useState(null);
 
   const handleChange = (file) => {
     setFile(file);
@@ -392,7 +462,9 @@ function UploadCard({ label, setFile }) {
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={(e) => handleChange(e.target.files[0])}
+          onChange={(e) =>
+            handleChange(e.target.files[0])
+          }
         />
 
         <div className="h-36 rounded-xl border border-dashed border-slate-700 bg-[#020617]/60 flex items-center justify-center overflow-hidden group-hover:border-emerald-400 transition">

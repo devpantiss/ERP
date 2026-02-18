@@ -1,198 +1,456 @@
 import { useState } from "react";
 import {
-  FlaskConical,
-  Upload,
-  Eye,
-  Image,
-  Camera,
+  Layers,
+  ChevronRight,
+  CheckCircle2,
+  BookOpen,
+  Wrench,
 } from "lucide-react";
 
-/* ===================== CONFIG ===================== */
+/* ================= CONFIG ================= */
 
-const LAB_TYPES = [
-  "Electrical Lab",
-  "Welding Lab",
-  "Solar Lab",
-];
+const MODULE_VIDEO_URL =
+  "https://www.youtube.com/embed/dQw4w9WgXcQ";
 
-const MODULES = [
-  "Module 1",
-  "Module 2",
-  "Module 3",
-];
+/* Departments Data */
 
-const BATCHES = [
-  "Batch A",
-  "Batch B",
-  "Batch C",
-];
+const DATA = {
+  "Mines, Steel & Aluminium": {
+    "Center A": {
+      "Underground Mining Technician": [
+        "Batch A",
+        "Batch B",
+      ],
+    },
+  },
 
-/* ===================== MAIN ===================== */
+  "Power & Green Energy": {
+    "Center B": {
+      "Solar PV Installer": ["Batch C"],
+    },
+  },
+};
 
-export default function TrainerLabERP() {
-  const [sessions, setSessions] = useState([]);
-  const [selectedSession, setSelectedSession] = useState(null);
+/* Generate Modules */
 
-  const [form, setForm] = useState({
-    lab: "",
-    module: "",
-    batch: "",
-    students: "",
-    equipment: "",
-    outcome: "",
-    labImages: [],
-    activityImages: [],
-    selfie: [],
-  });
+const generateModules = () =>
+  Array.from({ length: 12 }, (_, i) => ({
+    id: i + 1,
+    title: `Module ${i + 1}`,
+  }));
 
-  const handleChange = (key, value) =>
-    setForm({ ...form, [key]: value });
+/* ================= MAIN COMPONENT ================= */
 
-  const handleImages = (key, files) => {
-    const previews = Array.from(files).map((f) =>
-      URL.createObjectURL(f)
-    );
+export default function TrainerLabsModules() {
+  const [dept, setDept] = useState(null);
+  const [center, setCenter] = useState(null);
+  const [role, setRole] = useState(null);
+  const [batch, setBatch] = useState(null);
+  const [selectedModule, setSelectedModule] =
+    useState(null);
 
-    setForm({
-      ...form,
-      [key]: previews,
+  /* Completed Modules State */
+
+  const [completedData, setCompletedData] =
+    useState({
+      "Batch A": [1, 2, 3, 4],
+      "Batch B": [1, 2],
     });
+
+  const modules = generateModules();
+
+  /* Navigation Reset */
+
+  const goDept = () => {
+    setDept(null);
+    setCenter(null);
+    setRole(null);
+    setBatch(null);
+    setSelectedModule(null);
   };
 
-  const handleSubmit = () => {
-    const newSession = {
-      ...form,
-      id: Date.now(),
-    };
+  const goCenter = () => {
+    setCenter(null);
+    setRole(null);
+    setBatch(null);
+    setSelectedModule(null);
+  };
 
-    setSessions([newSession, ...sessions]);
+  const goRole = () => {
+    setRole(null);
+    setBatch(null);
+    setSelectedModule(null);
+  };
+
+  const goBatch = () => {
+    setBatch(null);
+    setSelectedModule(null);
+  };
+
+  const goModules = () => {
+    setSelectedModule(null);
   };
 
   return (
-    <div className="p-8 bg-[#020617] min-h-screen text-slate-200 space-y-6">
+    <div className="flex h-screen bg-[#020617] text-slate-200">
 
-      <h1 className="text-2xl font-semibold">
-        Lab Activity ERP
-      </h1>
+      {/* ================= SIDEBAR ================= */}
 
-      <Form
-        form={form}
-        handleChange={handleChange}
-        handleImages={handleImages}
-        onSubmit={handleSubmit}
-      />
+      <aside className="w-72 border-r border-slate-800 bg-[#020617]/80 backdrop-blur-xl p-6">
 
-      <Table sessions={sessions} onView={setSelectedSession} />
+        <div className="flex items-center gap-3 mb-8">
+          <Layers className="text-emerald-400" />
+          <h1 className="font-semibold text-lg">
+            Trainer Labs
+          </h1>
+        </div>
 
-      {selectedSession && (
-        <Modal
-          session={selectedSession}
-          onClose={() => setSelectedSession(null)}
+        <div className="space-y-4 text-sm">
+
+          <SidebarItem
+            label={dept || "Department"}
+            active={!dept}
+            onClick={goDept}
+          />
+
+          {dept && (
+            <SidebarItem
+              label={center || "Center"}
+              active={!center}
+              onClick={goCenter}
+            />
+          )}
+
+          {center && (
+            <SidebarItem
+              label={role || "Job Role"}
+              active={!role}
+              onClick={goRole}
+            />
+          )}
+
+          {role && (
+            <SidebarItem
+              label={batch || "Batch"}
+              active={!batch}
+              onClick={goBatch}
+            />
+          )}
+
+          {batch && (
+            <SidebarItem
+              label={
+                selectedModule?.title || "Modules"
+              }
+              active={!selectedModule}
+              onClick={goModules}
+            />
+          )}
+
+        </div>
+
+      </aside>
+
+      {/* ================= MAIN ================= */}
+
+      <main className="flex-1 overflow-y-auto p-8">
+
+        {!dept && (
+          <SelectionGrid
+            title="Select Department"
+            options={Object.keys(DATA)}
+            onSelect={setDept}
+          />
+        )}
+
+        {dept && !center && (
+          <SelectionGrid
+            title="Select Center"
+            options={Object.keys(DATA[dept])}
+            onSelect={setCenter}
+          />
+        )}
+
+        {center && !role && (
+          <SelectionGrid
+            title="Select Job Role"
+            options={Object.keys(DATA[dept][center])}
+            onSelect={setRole}
+          />
+        )}
+
+        {role && !batch && (
+          <SelectionGrid
+            title="Select Batch"
+            options={DATA[dept][center][role]}
+            onSelect={setBatch}
+          />
+        )}
+
+        {batch && !selectedModule && (
+          <ModulesGrid
+            batch={batch}
+            modules={modules}
+            completedData={completedData}
+            onSelect={setSelectedModule}
+          />
+        )}
+
+        {selectedModule && (
+          <ModuleDetails
+            module={selectedModule}
+            batch={batch}
+            completedData={completedData}
+            setCompletedData={setCompletedData}
+          />
+        )}
+
+      </main>
+
+    </div>
+  );
+}
+
+/* ================= MODULE GRID ================= */
+
+function ModulesGrid({
+  batch,
+  modules,
+  completedData,
+  onSelect,
+}) {
+  const completed = completedData[batch] || [];
+
+  return (
+    <section className="max-w-6xl mx-auto">
+
+      <h2 className="text-2xl font-semibold mb-6">
+        Modules — {batch}
+      </h2>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+
+        {modules.map((m) => {
+          const done = completed.includes(m.id);
+
+          return (
+            <div
+              key={m.id}
+              onClick={() => onSelect(m)}
+              className={`
+                p-4 rounded-xl border text-center
+                cursor-pointer transition
+                ${
+                  done
+                    ? "border-emerald-400 bg-emerald-400/10"
+                    : "border-slate-800 hover:border-emerald-400 hover:bg-slate-900"
+                }
+              `}
+            >
+              {done ? (
+                <CheckCircle2 className="mx-auto text-emerald-400 mb-2" />
+              ) : (
+                <BookOpen className="mx-auto text-slate-400 mb-2" />
+              )}
+
+              <span className="text-xs">
+                {m.title}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ================= MODULE DETAILS ================= */
+
+function ModuleDetails({
+  module,
+  batch,
+  completedData,
+  setCompletedData,
+}) {
+  const [showUpload, setShowUpload] = useState(false);
+
+  const completed =
+    completedData[batch]?.includes(module.id);
+
+  const markCompleted = () => {
+    setCompletedData((prev) => {
+      const prevBatch = prev[batch] || [];
+
+      return {
+        ...prev,
+        [batch]: [...new Set([...prevBatch, module.id])],
+      };
+    });
+
+    setShowUpload(false);
+  };
+
+  return (
+    <section className="max-w-6xl mx-auto space-y-6">
+
+      <div className="flex justify-between items-center">
+
+        <div>
+          <h2 className="text-2xl font-semibold">
+            {module.title}
+          </h2>
+          <p className="text-sm text-slate-400">
+            Batch — {batch}
+          </p>
+        </div>
+
+        {completed && (
+          <div className="flex items-center gap-2 text-emerald-400">
+            <CheckCircle2 />
+            Completed
+          </div>
+        )}
+
+      </div>
+
+      {/* VIDEO */}
+
+      <Card title="Lab Demonstration Video">
+        <iframe
+          className="w-full h-[380px] rounded-lg"
+          src={MODULE_VIDEO_URL}
+          allowFullScreen
         />
+      </Card>
+
+      {/* TOOLS */}
+
+      <Card title="Tools & Equipment">
+        <ul className="space-y-2 text-sm">
+          <li className="flex gap-2">
+            <Wrench size={16} /> Safety Helmet
+          </li>
+          <li className="flex gap-2">
+            <Wrench size={16} /> Gloves
+          </li>
+          <li className="flex gap-2">
+            <Wrench size={16} /> Measuring Tools
+          </li>
+        </ul>
+      </Card>
+
+      {/* INSTRUCTIONS */}
+
+      <Card title="Practical Instructions">
+        <ul className="space-y-2 text-sm">
+          <li>Step 1 — Prepare workspace</li>
+          <li>Step 2 — Arrange tools</li>
+          <li>Step 3 — Perform activity</li>
+        </ul>
+      </Card>
+
+      {!completed && (
+        <button
+          onClick={() => setShowUpload(true)}
+          className="flex items-center gap-2 px-5 py-2 rounded-lg bg-emerald-500 text-black font-medium hover:bg-emerald-400 transition"
+        >
+          <CheckCircle2 size={18} />
+          Mark Completed
+        </button>
       )}
 
-    </div>
+      {showUpload && (
+        <UploadModal
+          onClose={() => setShowUpload(false)}
+          onSubmit={markCompleted}
+        />
+      )}
+    </section>
   );
 }
 
-/* ===================== FORM ===================== */
+/* ================= UPLOAD MODAL ================= */
 
-function Form({ form, handleChange, handleImages, onSubmit }) {
+function UploadModal({ onClose, onSubmit }) {
+  const [classImage, setClassImage] = useState(null);
+  const [activityImage, setActivityImage] =
+    useState(null);
+  const [projectImage, setProjectImage] =
+    useState(null);
+
+  const isValid =
+    classImage && activityImage && projectImage;
+
   return (
-    <div className="bg-[#020617]/60 border border-slate-800 rounded-xl p-6 space-y-6">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50">
 
-      <h3 className="text-lg font-semibold">
-        Conduct Lab Session
-      </h3>
+      <div className="bg-[#020617] border border-slate-800 rounded-2xl p-6 w-full max-w-2xl">
 
-      {/* DROPDOWNS */}
-      <div className="grid md:grid-cols-3 gap-4">
+        <h3 className="text-xl font-semibold mb-1">
+          Upload Completion Evidence
+        </h3>
 
-        <Select
-          label="Lab Type"
-          options={LAB_TYPES}
-          value={form.lab}
-          onChange={(v) => handleChange("lab", v)}
-        />
+        <p className="text-sm text-slate-400 mb-6">
+          Upload proof to complete module
+        </p>
 
-        <Select
-          label="Module"
-          options={MODULES}
-          value={form.module}
-          onChange={(v) => handleChange("module", v)}
-        />
+        <div className="grid md:grid-cols-3 gap-4">
 
-        <Select
-          label="Batch"
-          options={BATCHES}
-          value={form.batch}
-          onChange={(v) => handleChange("batch", v)}
-        />
+          <UploadCard
+            label="Class Image"
+            setFile={setClassImage}
+          />
 
-      </div>
+          <UploadCard
+            label="Activity Image"
+            setFile={setActivityImage}
+          />
 
-      <div className="grid md:grid-cols-2 gap-4">
+          <UploadCard
+            label="Project Image"
+            setFile={setProjectImage}
+          />
 
-        <Input
-          label="Students Present"
-          value={form.students}
-          onChange={(v) => handleChange("students", v)}
-        />
+        </div>
 
-        <Input
-          label="Equipment Used"
-          value={form.equipment}
-          onChange={(v) => handleChange("equipment", v)}
-        />
+        <div className="flex justify-end gap-3 mt-6">
 
-      </div>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-slate-700 rounded-md"
+          >
+            Cancel
+          </button>
 
-      <Input
-        label="Learning Outcome"
-        value={form.outcome}
-        onChange={(v) => handleChange("outcome", v)}
-      />
+          <button
+            disabled={!isValid}
+            onClick={onSubmit}
+            className={`px-5 py-2 rounded-md font-medium ${
+              isValid
+                ? "bg-emerald-500 text-black"
+                : "bg-slate-700 text-slate-400 cursor-not-allowed"
+            }`}
+          >
+            Submit
+          </button>
 
-      {/* IMAGE UPLOADS */}
-      <div className="grid md:grid-cols-3 gap-4">
-
-        <UploadCard
-          label="Lab Photos"
-          icon={<Image />}
-          images={form.labImages}
-          onUpload={(files) => handleImages("labImages", files)}
-        />
-
-        <UploadCard
-          label="Activity Photos"
-          icon={<Image />}
-          images={form.activityImages}
-          onUpload={(files) => handleImages("activityImages", files)}
-        />
-
-        <UploadCard
-          label="Trainer Selfie"
-          icon={<Camera />}
-          images={form.selfie}
-          onUpload={(files) => handleImages("selfie", files)}
-        />
+        </div>
 
       </div>
-
-      <button
-        onClick={onSubmit}
-        className="px-6 py-2 bg-emerald-500 text-black rounded-md font-medium"
-      >
-        Submit Session
-      </button>
-
     </div>
   );
 }
 
-/* ===================== UPLOAD CARD ===================== */
+/* ================= UPLOAD CARD ================= */
 
-function UploadCard({ label, icon, images, onUpload }) {
+function UploadCard({ label, setFile }) {
+  const [preview, setPreview] = useState(null);
+
+  const handleChange = (file) => {
+    setFile(file);
+    setPreview(URL.createObjectURL(file));
+  };
+
   return (
     <div>
 
@@ -204,34 +462,26 @@ function UploadCard({ label, icon, images, onUpload }) {
 
         <input
           type="file"
-          multiple
+          accept="image/*"
           className="hidden"
-          onChange={(e) => onUpload(e.target.files)}
+          onChange={(e) =>
+            handleChange(e.target.files[0])
+          }
         />
 
-        <div className="h-36 rounded-xl border border-dashed border-slate-700 bg-[#020617]/60 flex items-center justify-center overflow-hidden group-hover:border-emerald-400 transition">
+        <div className="h-36 rounded-xl border border-dashed border-slate-700 flex items-center justify-center overflow-hidden group-hover:border-emerald-400 transition">
 
-          {images.length === 0 && (
-            <div className="flex flex-col items-center gap-2 text-slate-400 group-hover:text-emerald-400">
-
-              {icon}
-              <span className="text-xs">
-                Click to Upload
-              </span>
-
-            </div>
+          {!preview && (
+            <span className="text-xs text-slate-400">
+              Click to Upload
+            </span>
           )}
 
-          {images.length > 0 && (
-            <div className="grid grid-cols-2 gap-1 w-full h-full p-1">
-              {images.slice(0, 4).map((img, i) => (
-                <img
-                  key={i}
-                  src={img}
-                  className="w-full h-full object-cover rounded"
-                />
-              ))}
-            </div>
+          {preview && (
+            <img
+              src={preview}
+              className="w-full h-full object-cover"
+            />
           )}
 
         </div>
@@ -242,153 +492,59 @@ function UploadCard({ label, icon, images, onUpload }) {
   );
 }
 
-/* ===================== TABLE ===================== */
+/* ================= COMMON ================= */
 
-function Table({ sessions, onView }) {
+function SidebarItem({ label, active, onClick }) {
   return (
-    <div className="bg-[#020617]/60 border border-slate-800 rounded-xl p-6">
-
-      <h3 className="text-lg font-semibold mb-4">
-        Session History
-      </h3>
-
-      <table className="w-full text-sm">
-
-        <thead className="text-slate-400 border-b border-slate-700">
-          <tr>
-            <th>Lab</th>
-            <th>Module</th>
-            <th>Batch</th>
-            <th>Images</th>
-            <th></th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {sessions.map((s) => (
-            <tr key={s.id} className="border-b border-slate-800">
-
-              <td>{s.lab}</td>
-              <td>{s.module}</td>
-              <td>{s.batch}</td>
-
-              <td>
-                <div className="flex gap-1">
-
-                  {[...s.labImages, ...s.activityImages, ...s.selfie]
-                    .slice(0, 3)
-                    .map((img, i) => (
-                      <img
-                        key={i}
-                        src={img}
-                        className="w-10 h-10 rounded object-cover border border-slate-700"
-                      />
-                    ))}
-
-                </div>
-              </td>
-
-              <td>
-                <button
-                  onClick={() => onView(s)}
-                  className="text-emerald-400"
-                >
-                  <Eye size={16} />
-                </button>
-              </td>
-
-            </tr>
-          ))}
-        </tbody>
-
-      </table>
-
+    <div
+      onClick={onClick}
+      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition ${
+        active
+          ? "border-emerald-400 bg-emerald-400/10"
+          : "border-slate-800 hover:border-emerald-400 hover:bg-slate-900"
+      }`}
+    >
+      <span>{label}</span>
+      <ChevronRight size={16} />
     </div>
   );
 }
 
-/* ===================== MODAL ===================== */
-
-function Modal({ session, onClose }) {
-  const allImages = [
-    ...session.labImages,
-    ...session.activityImages,
-    ...session.selfie,
-  ];
-
+function SelectionGrid({ title, options, onSelect }) {
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <section className="max-w-6xl mx-auto">
 
-      <div className="bg-[#020617] border border-slate-800 rounded-xl p-6 w-full max-w-2xl">
+      <h2 className="text-2xl font-semibold mb-6">
+        {title}
+      </h2>
 
-        <h3 className="text-lg font-semibold mb-4">
-          Session Preview
-        </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-        <div className="grid grid-cols-3 gap-2">
-
-          {allImages.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              className="w-full h-32 object-cover rounded"
-            />
-          ))}
-
-        </div>
-
-        <button
-          onClick={onClose}
-          className="mt-4 px-4 py-2 bg-slate-700 rounded-md"
-        >
-          Close
-        </button>
+        {options.map((item) => (
+          <button
+            key={item}
+            onClick={() => onSelect(item)}
+            className="p-5 rounded-xl border border-slate-800 hover:border-emerald-400 hover:bg-slate-900 transition text-left"
+          >
+            <div className="flex items-center gap-3">
+              <BookOpen size={18} className="text-emerald-400" />
+              <span>{item}</span>
+            </div>
+          </button>
+        ))}
 
       </div>
-
-    </div>
+    </section>
   );
 }
 
-/* ===================== INPUT ===================== */
-
-function Input({ label, value, onChange }) {
+function Card({ title, children }) {
   return (
-    <div>
-
-      <label className="text-xs text-slate-400">
-        {label}
-      </label>
-
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full mt-1 px-3 py-2 rounded-md bg-[#020617] border border-slate-700"
-      />
-
-    </div>
-  );
-}
-
-function Select({ label, options, value, onChange }) {
-  return (
-    <div>
-
-      <label className="text-xs text-slate-400">
-        {label}
-      </label>
-
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full mt-1 px-3 py-2 rounded-md bg-[#020617] border border-slate-700"
-      >
-        <option value="">Select</option>
-        {options.map((o) => (
-          <option key={o}>{o}</option>
-        ))}
-      </select>
-
+    <div className="bg-[#020617]/60 border border-slate-800 backdrop-blur-xl rounded-xl p-6">
+      <h3 className="text-sm font-medium text-emerald-400 mb-4">
+        {title}
+      </h3>
+      {children}
     </div>
   );
 }
