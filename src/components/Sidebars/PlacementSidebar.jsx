@@ -16,7 +16,7 @@ const MENU = [
   { label: "Dashboard", path: "/placement-officer/dashboard", icon: LayoutDashboard },
   { label: "Company Database", path: "/placement-officer/company-database", icon: Building2 },
   { label: "Placement Drives", path: "/placement-officer/placement-drives", icon: CalendarCheck },
-  { label: "Job Openings Dashboard", path: "#", icon: Users },
+  { label: "Placement-List", path: "/placement-officer/placements-list", icon: Users },
   { label: "Profile", path: "/placement-officer/profile", icon: UserRoundPen },
 ];
 

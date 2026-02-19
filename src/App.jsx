@@ -32,6 +32,8 @@ import PlacementCompanyList from "./pages/Placement/PlacementCompanyList";
 import PlacementCompanyDatabaseStepper from "./pages/Placement/PlacementCompanyDatabaseStepper";
 import PlacementDrivesDetails from "./pages/Placement/PlacementDriveDetails";
 import PlacementDriveStepper from "./pages/Placement/PlacementDriveStepper";
+import PlacementStudentsList from "./pages/Placement/PlacementsStudentsList";
+import PlacementStudentDetailsStepper from "./pages/Placement/PlacementStudentDetailsStepper";
 
 
 function App() {
@@ -83,6 +85,8 @@ function App() {
           <Route path="company-database/new" element={<PlacementCompanyDatabaseStepper />} />
           <Route path="placement-drives" element={<PlacementDrivesDetails />} />
           <Route path="placement-drives/new" element={<PlacementDriveStepper />} />
+          <Route path="placements-list" element={<PlacementStudentsList />} />
+          <Route path="placements-list/new" element={<PlacementStudentDetailsStepper />} />
 
         </Route>
       </Routes>

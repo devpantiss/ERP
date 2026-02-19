@@ -12,8 +12,6 @@ const SEGMENTS = [
   "Furniture & Fittings",
 ];
 
-/* ================= LOCATION TYPES ================= */
-
 const LOCATION_TYPES = ["Odisha", "India", "International"];
 
 /* ================= DUMMY DATA ================= */
@@ -29,56 +27,6 @@ const COMPANY_NAMES = [
   "NTPC Limited",
   "Ashok Leyland",
   "Mahindra Logistics",
-  "Blue Dart Express",
-  "DHL Supply Chain",
-  "Aditya Birla Group",
-  "Hindalco Industries",
-  "Coal India Ltd",
-  "ONGC",
-  "Indian Oil Corporation",
-  "Siemens Energy",
-  "ABB India",
-  "Schneider Electric",
-  "BHEL",
-  "Volvo Construction",
-  "Caterpillar India",
-  "UltraTech Cement",
-  "ACC Cement",
-  "Bosch India",
-  "Honeywell Automation",
-  "Godrej & Boyce",
-  "Greenko Energy",
-  "Suzlon Energy",
-  "ReNew Power",
-  "Thermax Ltd",
-  "Kirloskar Brothers",
-  "Wipro Infrastructure",
-  "Infosys Limited",
-  "Tech Mahindra",
-  "Capgemini India",
-  "HCL Technologies",
-  "Amazon India",
-  "Flipkart Logistics",
-  "Delhivery",
-  "GMR Infrastructure",
-  "GVK Power",
-  "JSPL Logistics",
-  "DP World India",
-  "Adani Ports",
-  "Container Corporation",
-  "Tata Projects",
-  "KEC International",
-  "Gammon India",
-  "Simplex Infra",
-  "JMC Projects",
-  "Afcons Infrastructure",
-  "Punj Lloyd",
-  "Havells India",
-  "Crompton Greaves",
-  "Finolex Cables",
-  "Polycab India",
-  "KEI Industries",
-  "Orient Electric",
 ];
 
 function generateCompanies() {
@@ -87,16 +35,12 @@ function generateCompanies() {
     companyName: name,
     segment: SEGMENTS[i % SEGMENTS.length],
     locationType: LOCATION_TYPES[i % LOCATION_TYPES.length],
-    location:
-      LOCATION_TYPES[i % LOCATION_TYPES.length] === "Odisha"
-        ? ["Khordha", "Cuttack", "Angul", "Sundargarh"][i % 4]
-        : LOCATION_TYPES[i % LOCATION_TYPES.length] === "India"
-        ? ["Jharkhand", "Gujarat", "Maharashtra", "Tamil Nadu"][i % 4]
-        : ["UAE", "Qatar", "Germany", "Singapore"][i % 4],
+    location: "Khordha",
     website: "https://example.com",
-    spoc: ["Rajesh Mishra", "Priya Sahu", "Amit Das", "Sonal Behera"][i % 4],
-    contact: "9" + Math.floor(100000000 + Math.random() * 900000000),
+    spoc: "Rajesh Mishra",
+    contact: "9876543210",
     loi: null,
+    loiExpiry: null,
     mou: null,
   }));
 }
@@ -104,9 +48,13 @@ function generateCompanies() {
 /* ================= COMPONENT ================= */
 
 export default function CompanyDatabase() {
+
   const navigate = useNavigate();
+  const fileRefs = useRef({});
 
   const [companies, setCompanies] = useState(generateCompanies());
+
+  /* ================= FILTERS ================= */
 
   const [filters, setFilters] = useState({
     segment: "",
@@ -114,16 +62,35 @@ export default function CompanyDatabase() {
     search: "",
   });
 
-  const fileRefs = useRef({});
-
   /* ================= PAGINATION ================= */
 
   const [page, setPage] = useState(1);
   const PER_PAGE = 20;
 
-  useEffect(() => {
-    setPage(1);
-  }, [filters]);
+  useEffect(() => setPage(1), [filters]);
+
+  /* ================= LOI STATES ================= */
+
+  const [loiModal, setLoiModal] = useState({
+    open: false,
+    companyId: null,
+  });
+
+  const [viewLoi, setViewLoi] = useState(null);
+
+  const [loiForm, setLoiForm] = useState({
+    companyName: "",
+    address: "",
+    pan: "",
+    tan: "",
+    spoc: "",
+    designation: "",
+    email: "",
+    phone: "",
+    validFrom: "",
+    validTill: "",
+    signatory: "",
+  });
 
   /* ================= FILTERED DATA ================= */
 
@@ -133,9 +100,7 @@ export default function CompanyDatabase() {
         (!filters.segment || c.segment === filters.segment) &&
         (!filters.locationType || c.locationType === filters.locationType) &&
         (!filters.search ||
-          c.companyName
-            .toLowerCase()
-            .includes(filters.search.toLowerCase()))
+          c.companyName.toLowerCase().includes(filters.search.toLowerCase()))
     );
   }, [companies, filters]);
 
@@ -152,32 +117,81 @@ export default function CompanyDatabase() {
     total: companies.length,
     odisha: companies.filter((c) => c.locationType === "Odisha").length,
     india: companies.filter((c) => c.locationType === "India").length,
-    international: companies.filter((c) => c.locationType === "International")
-      .length,
+    international: companies.filter((c) => c.locationType === "International").length,
   };
 
-  /* ================= FILE UPLOAD ================= */
+  /* ================= MOU UPLOAD ================= */
 
-  const handleFileChange = (e, id, type) => {
+  const handleFileChange = (e, id) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const url = URL.createObjectURL(file);
 
     setCompanies((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, [type]: url } : c
-      )
+      prev.map((c) => (c.id === id ? { ...c, mou: url } : c))
     );
   };
+
+  /* ================= LOI FUNCTIONS ================= */
+
+  function openGenerateModal(company) {
+    setLoiForm({
+      companyName: company.companyName,
+      address: "",
+      pan: "",
+      tan: "",
+      spoc: "",
+      designation: "",
+      email: "",
+      phone: "",
+      validFrom: "",
+      validTill: "",
+      signatory: "",
+    });
+
+    setLoiModal({
+      open: true,
+      companyId: company.id,
+    });
+  }
+
+  function generateLOI() {
+
+    const refNo = "LOI/" + Math.floor(1000 + Math.random() * 9000);
+
+    const loiData = {
+      ...loiForm,
+      refNo,
+      issueDate: new Date().toLocaleDateString(),
+    };
+
+    setCompanies((prev) =>
+      prev.map((c) =>
+        c.id === loiModal.companyId
+          ? {
+              ...c,
+              loi: loiData,
+              loiExpiry: loiForm.validTill,
+            }
+          : c
+      )
+    );
+
+    setLoiModal({ open: false, companyId: null });
+  }
+
+  function getStatus(expiry) {
+    if (!expiry) return "-";
+    return new Date(expiry) >= new Date() ? "Active" : "Expired";
+  }
 
   /* ================= UI ================= */
 
   return (
     <section className="mt-8 rounded-2xl p-8 bg-[#111827] border border-cyan-500">
 
-      {/* ================= HEADER ================= */}
-
+      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-slate-100">
           Company Database
@@ -193,20 +207,15 @@ export default function CompanyDatabase() {
         </button>
       </div>
 
-      {/* ================= SUMMARY CARDS ================= */}
-
+      {/* SUMMARY */}
       <div className="grid grid-cols-4 gap-6 mb-6">
         <SummaryCard label="Total Companies" value={summary.total} />
         <SummaryCard label="Odisha" value={summary.odisha} />
         <SummaryCard label="India" value={summary.india} />
-        <SummaryCard
-          label="International"
-          value={summary.international}
-        />
+        <SummaryCard label="International" value={summary.international} />
       </div>
 
-      {/* ================= FILTERS ================= */}
-
+      {/* FILTERS */}
       <div className="grid grid-cols-3 gap-4 mb-6">
 
         <select
@@ -245,8 +254,7 @@ export default function CompanyDatabase() {
         />
       </div>
 
-      {/* ================= TABLE ================= */}
-
+      {/* TABLE */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
 
@@ -259,6 +267,7 @@ export default function CompanyDatabase() {
               <th className="p-3 text-left">SPOC</th>
               <th className="p-3 text-left">Contact</th>
               <th className="p-3 text-left">LOI</th>
+              <th className="p-3 text-left">LOI Status</th>
               <th className="p-3 text-left">MOU</th>
             </tr>
           </thead>
@@ -290,44 +299,46 @@ export default function CompanyDatabase() {
 
                 {/* LOI */}
                 <td className="p-3">
-                  <input
-                    type="file"
-                    className="hidden"
-                    ref={(el) => (fileRefs.current[`loi-${c.id}`] = el)}
-                    onChange={(e) =>
-                      handleFileChange(e, c.id, "loi")
-                    }
-                  />
 
                   {c.loi ? (
-                    <a
-                      href={c.loi}
-                      target="_blank"
+                    <button
+                      onClick={() => setViewLoi(c.loi)}
                       className="text-emerald-400 text-xs underline"
                     >
-                      View
-                    </a>
+                      View LOI
+                    </button>
                   ) : (
                     <button
-                      onClick={() =>
-                        fileRefs.current[`loi-${c.id}`]?.click()
-                      }
+                      onClick={() => openGenerateModal(c)}
                       className="text-xs bg-slate-800 px-2 py-1 rounded"
                     >
-                      Upload
+                      Generate
                     </button>
                   )}
+
+                </td>
+
+                {/* LOI STATUS */}
+                <td className="p-3">
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                      getStatus(c.loiExpiry) === "Active"
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-red-500/20 text-red-400"
+                    }`}
+                  >
+                    {getStatus(c.loiExpiry)}
+                  </span>
                 </td>
 
                 {/* MOU */}
                 <td className="p-3">
+
                   <input
                     type="file"
                     className="hidden"
-                    ref={(el) => (fileRefs.current[`mou-${c.id}`] = el)}
-                    onChange={(e) =>
-                      handleFileChange(e, c.id, "mou")
-                    }
+                    ref={(el) => (fileRefs.current[c.id] = el)}
+                    onChange={(e) => handleFileChange(e, c.id)}
                   />
 
                   {c.mou ? (
@@ -340,14 +351,13 @@ export default function CompanyDatabase() {
                     </a>
                   ) : (
                     <button
-                      onClick={() =>
-                        fileRefs.current[`mou-${c.id}`]?.click()
-                      }
+                      onClick={() => fileRefs.current[c.id]?.click()}
                       className="text-xs bg-slate-800 px-2 py-1 rounded"
                     >
                       Upload
                     </button>
                   )}
+
                 </td>
 
               </tr>
@@ -356,56 +366,176 @@ export default function CompanyDatabase() {
         </table>
       </div>
 
-      {/* ================= PAGINATION ================= */}
+      {/* ================= GENERATE LOI MODAL ================= */}
 
-      <div className="flex items-center justify-between mt-4">
+      {loiModal.open && (
+        <Modal title="Generate Letter of Intent">
 
-        <p className="text-xs text-slate-400">
-          Showing {(page - 1) * PER_PAGE + 1} –
-          {Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
-        </p>
+          <div className="grid grid-cols-2 gap-3">
 
-        <div className="flex items-center gap-2">
+            <Input label="Company Name" value={loiForm.companyName}
+              onChange={(v) => setLoiForm({ ...loiForm, companyName: v })} />
 
-          <button
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 text-xs border border-slate-600 rounded"
-          >
-            Prev
-          </button>
+            <Input label="PAN Number" value={loiForm.pan}
+              onChange={(v) => setLoiForm({ ...loiForm, pan: v })} />
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-            (p) => (
-              <button
-                key={p}
-                onClick={() => setPage(p)}
-                className={`px-3 py-1 text-xs rounded ${
-                  page === p
-                    ? "bg-cyan-400 text-black"
-                    : "bg-slate-800"
-                }`}
-              >
-                {p}
-              </button>
-            )
-          )}
+            <Input label="TAN Number" value={loiForm.tan}
+              onChange={(v) => setLoiForm({ ...loiForm, tan: v })} />
 
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 text-xs border border-slate-600 rounded"
-          >
-            Next
-          </button>
+            <Input label="SPOC Name" value={loiForm.spoc}
+              onChange={(v) => setLoiForm({ ...loiForm, spoc: v })} />
 
-        </div>
-      </div>
+            <Input label="Designation" value={loiForm.designation}
+              onChange={(v) => setLoiForm({ ...loiForm, designation: v })} />
+
+            <Input label="Email" value={loiForm.email}
+              onChange={(v) => setLoiForm({ ...loiForm, email: v })} />
+
+            <Input label="Phone" value={loiForm.phone}
+              onChange={(v) => setLoiForm({ ...loiForm, phone: v })} />
+
+            <Input label="Authorized Signatory" value={loiForm.signatory}
+              onChange={(v) => setLoiForm({ ...loiForm, signatory: v })} />
+
+            <Input type="date" label="Valid From"
+              value={loiForm.validFrom}
+              onChange={(v) => setLoiForm({ ...loiForm, validFrom: v })} />
+
+            <Input type="date" label="Valid Till"
+              value={loiForm.validTill}
+              onChange={(v) => setLoiForm({ ...loiForm, validTill: v })} />
+
+          </div>
+
+          <Textarea
+            label="Registered Address"
+            value={loiForm.address}
+            onChange={(v) => setLoiForm({ ...loiForm, address: v })}
+          />
+
+          <div className="flex justify-end gap-3 mt-4">
+            <button
+              onClick={() => setLoiModal({ open: false })}
+              className="btn-secondary"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={generateLOI}
+              className="btn-primary"
+            >
+              Generate LOI
+            </button>
+          </div>
+
+        </Modal>
+      )}
+
+      {/* ================= VIEW LOI ================= */}
+
+      {viewLoi && (
+        <Modal title="Letter of Intent">
+
+          <div className="bg-white text-black p-6 rounded space-y-4">
+
+            <h2 className="text-center font-bold text-lg">
+              LETTER OF INTENT
+            </h2>
+
+            <p>Ref No: {viewLoi.refNo}</p>
+            <p>Date: {viewLoi.issueDate}</p>
+
+            <p>
+              To,<br />
+              {viewLoi.companyName}<br />
+              {viewLoi.address}
+            </p>
+
+            <p className="font-semibold">
+              Subject: Collaboration for Skill Development & Placement
+            </p>
+
+            <p>
+              This letter confirms our intent to collaborate with
+              {viewLoi.companyName} for providing employment
+              opportunities to trained candidates under our
+              skill development programs.
+            </p>
+
+            <p>
+              Valid From: {viewLoi.validFrom} <br />
+              Valid Till: {viewLoi.validTill}
+            </p>
+
+            <p>
+              SPOC: {viewLoi.spoc} ({viewLoi.designation})
+            </p>
+
+            <div className="mt-6">
+              Authorized Signatory<br />
+              {viewLoi.signatory}
+            </div>
+
+          </div>
+
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() => setViewLoi(null)}
+              className="btn-secondary"
+            >
+              Close
+            </button>
+          </div>
+
+        </Modal>
+      )}
+
     </section>
   );
 }
 
-/* ================= SMALL COMPONENT ================= */
+/* ================= UI COMPONENTS ================= */
+
+function Modal({ title, children }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+      <div className="bg-[#0f172a] border border-slate-700 rounded-xl p-6 w-full max-w-2xl">
+        <h3 className="text-lg font-semibold text-slate-100 mb-4">
+          {title}
+        </h3>
+        <div className="space-y-3">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function Input({ label, value, onChange, type = "text" }) {
+  return (
+    <div className="flex flex-col">
+      <label className="text-xs text-slate-400 mb-1">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-[#111827] border border-slate-600 px-3 py-2 rounded text-slate-200"
+      />
+    </div>
+  );
+}
+
+function Textarea({ label, value, onChange }) {
+  return (
+    <div className="flex flex-col mt-3">
+      <label className="text-xs text-slate-400 mb-1">{label}</label>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-[#111827] border border-slate-600 px-3 py-2 rounded text-slate-200"
+      />
+    </div>
+  );
+}
 
 function SummaryCard({ label, value }) {
   return (
