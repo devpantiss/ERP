@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import Section1 from "../../components/PlacementPage/Section1";
-import Section2 from "../../components/PlacementPage/Section2";
-import Section3 from "../../components/PlacementPage/Section3";
-import Section4 from "../../components/PlacementPage/Section4";
+import Section1 from "../../components/PlacementPage/PlacementDashboard/Section1";
+import Section2 from "../../components/PlacementPage/PlacementDashboard/Section2";
+import Section3 from "../../components/PlacementPage/PlacementDashboard/Section3";
+import Section4 from "../../components/PlacementPage/PlacementDashboard/Section4";
 
 const projects = [
   "Shaksham Sundargarh",
