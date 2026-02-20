@@ -1,27 +1,53 @@
 import { useState } from "react";
 import Step1EventDetails from "./Dashboard/CommunitySteps/Step1";
 import Step2Location from "./Dashboard/CommunitySteps/Step2";
-import Step4Review from "./Dashboard/CommunitySteps/Step3";
-import Step3Media from "./Dashboard/CommunitySteps/Step3";
+import Step4Review from "./Dashboard/CommunitySteps/Step4";
 
-const STEPS = ["Event Details", "Location", "Media Upload", "Review & Submit"];
+const STEPS = ["Event Details", "Location", "Review & Submit"];
 
-export default function CommunityEventStepper() {
+export default function CommunityEventStepper({ onSubmit }) {
   const [step, setStep] = useState(0);
   const [canProceed, setCanProceed] = useState(false);
 
   const [formData, setFormData] = useState({
     eventName: "",
     project: "",
+    block: "",
     gpName: "",
     eventDate: "",
-    location: null,
-    photo: "",
-    videoLink: "",
+    participants: "",
+    location: "", // TEXT PLACE NAME ONLY
   });
 
   const update = (key, value) =>
     setFormData((prev) => ({ ...prev, [key]: value }));
+
+  /* ===================== SUBMIT ===================== */
+
+  const handleSubmit = () => {
+    const payload = {
+      id: Date.now(),
+      name: formData.eventName,
+      project: formData.project,
+      block: formData.block,
+      gp: formData.gpName,
+      date: formData.eventDate,
+      participants: Number(formData.participants),
+      location: formData.location,
+
+      // Table workflow fields
+      status: "Pending",
+      image: null,
+      video: null,
+      lat: null,
+      lng: null,
+      timestamp: null,
+    };
+
+    console.log("Final Submission:", payload);
+
+    if (onSubmit) onSubmit(payload);
+  };
 
   return (
     <section className="min-h-screen bg-[#020617] text-slate-200">
@@ -32,7 +58,7 @@ export default function CommunityEventStepper() {
             Community Awareness Programme Entry
           </h1>
 
-          {/* PROGRESS BAR */}
+          {/* PROGRESS */}
           <div className="mt-6 flex items-center gap-4">
             {STEPS.map((label, index) => (
               <div key={index} className="flex items-center gap-4">
@@ -67,6 +93,7 @@ export default function CommunityEventStepper() {
       {/* BODY */}
       <div className="max-w-6xl mx-auto px-8 py-10">
         <div className="bg-[#0b0f14] border border-yellow-400/20 rounded-2xl p-8">
+
           {step === 0 && (
             <Step1EventDetails
               value={formData}
@@ -84,17 +111,15 @@ export default function CommunityEventStepper() {
           )}
 
           {step === 2 && (
-            <Step3Media
+            <Step4Review
               value={formData}
-              update={update}
-              onValidChange={setCanProceed} // ✅ ADD THIS
+              onValidChange={() => setCanProceed(true)}
             />
           )}
 
-          {step === 3 && <Step4Review value={formData} />}
         </div>
 
-        {/* FOOTER NAVIGATION */}
+        {/* FOOTER */}
         <div className="flex justify-between mt-8">
           <button
             disabled={step === 0}
@@ -105,7 +130,7 @@ export default function CommunityEventStepper() {
             Back
           </button>
 
-          {step < 3 ? (
+          {step < STEPS.length - 1 ? (
             <button
               disabled={!canProceed}
               onClick={() => {
@@ -119,7 +144,7 @@ export default function CommunityEventStepper() {
             </button>
           ) : (
             <button
-              onClick={() => console.log("Final Submission:", formData)}
+              onClick={handleSubmit}
               className="px-8 py-2 bg-yellow-400 text-black
               rounded-md font-semibold hover:bg-yellow-300"
             >

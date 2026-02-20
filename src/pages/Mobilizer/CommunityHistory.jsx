@@ -1,333 +1,390 @@
-import { useMemo, useState, useRef, useEffect } from "react";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+
 /* ===================== CONSTANT DATA ===================== */
 
 const PROJECTS = ["Skill India", "Green Jobs", "Rural Employment"];
-const GPS_LIST = [
-  "Binjharpur GP",
-  "Jajpur Road GP",
-  "Dharmasala GP",
-  "Sukinda GP",
-];
+const GPS_LIST = ["Binjharpur GP", "Jajpur Road GP", "Dharmasala GP", "Sukinda GP"];
+const BLOCKS = ["Jajpur", "Dharmasala", "Sukinda", "Danagadi"];
+
+/* ===================== GEO HELPERS ===================== */
+
+const getGeoLocation = () =>
+  new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        }),
+      reject
+    );
+  });
+
+const watermarkImage = (file, textLines) =>
+  new Promise((resolve) => {
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(0, canvas.height - 90, canvas.width, 90);
+
+      ctx.fillStyle = "white";
+      ctx.font = "18px sans-serif";
+
+      textLines.forEach((line, i) => {
+        ctx.fillText(line, 20, canvas.height - 60 + i * 22);
+      });
+
+      canvas.toBlob((blob) => {
+        resolve(URL.createObjectURL(blob));
+      }, "image/jpeg");
+    };
+  });
 
 /* ===================== DUMMY EVENTS ===================== */
 
-const EVENTS = Array.from({ length: 50 }, (_, i) => ({
-  id: i + 1,
-  eventName: `Community Awareness Programme ${i + 1}`,
-  location: `20.${280 + i}, 85.${840 + i}`,
-  gpName: GPS_LIST[i % GPS_LIST.length],
-  project: PROJECTS[i % PROJECTS.length],
-  photo: `https://picsum.photos/seed/jajpur-event-${i}/600/400`,
-  videoLink: "https://drive.google.com/file/d/xyz/view",
-  eventDate: `2024-02-${String((i % 28) + 1).padStart(2, "0")}`,
-}));
+const createEvents = () => {
+  return Array.from({ length: 18 }, (_, i) => {
+    const completed = i % 3 === 0 || i % 5 === 0;
 
-/* ===================== HELPERS ===================== */
-
-const getFilterSummary = ({ project, gp, date }) =>
-  (
-    [
-      project && `Project: ${project}`,
-      gp && `GP: ${gp}`,
-      date && `Date: ${date}`,
-    ].filter(Boolean).join(" | ")
-  ) || "No filters applied";
-
-/* ===================== EXPORTS ===================== */
-
-function exportToExcel(data, filters) {
-  const worksheet = XLSX.utils.json_to_sheet([
-    { Report: "Community Event History" },
-    { Filters: getFilterSummary(filters) },
-    {},
-    ...data.map((e) => ({
-      Event_Name: e.eventName,
-      Project: e.project,
-      GP_Name: e.gpName,
-      Location_GPS: e.location,
-      Event_Date: e.eventDate,
-      Photo_URL: e.photo,
-      Video_URL: e.videoLink,
-    })),
-  ]);
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Events");
-
-  const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-  saveAs(new Blob([buffer]), "community_events.xlsx");
-}
-
-function exportToPDF(data, filters) {
-  const doc = new jsPDF("landscape");
-
-  doc.setFontSize(14);
-  doc.text("Community Event History", 14, 14);
-
-  doc.setFontSize(9);
-  doc.text(getFilterSummary(filters), 14, 22);
-
-  autoTable(doc, {
-    startY: 28,
-    head: [[
-      "Event Name",
-      "Project",
-      "GP",
-      "GPS Location",
-      "Date",
-      "Photo URL",
-      "Video URL",
-    ]],
-    body: data.map((e) => [
-      e.eventName,
-      e.project,
-      e.gpName,
-      e.location,
-      e.eventDate,
-      e.photo,
-      e.videoLink,
-    ]),
-    styles: { fontSize: 8 },
-    headStyles: {
-      fillColor: [250, 204, 21], // yellow-400
-      textColor: [0, 0, 0],
-    },
+    return {
+      id: i + 1,
+      name: `Community Awareness ${i + 1}`,
+      project: PROJECTS[i % PROJECTS.length],
+      block: BLOCKS[i % BLOCKS.length],
+      gp: GPS_LIST[i % GPS_LIST.length],
+      participants: Math.floor(Math.random() * 50) + 20,
+      location: `Community Hall ${i + 1}`, // TEXT PLACE NAME
+      lat: null,
+      lng: null,
+      timestamp: null,
+      date: `2024-${String((i % 12) + 1).padStart(2, "0")}-${String(
+        (i % 28) + 1
+      ).padStart(2, "0")}`,
+      status: completed ? "Completed" : "Pending",
+      image: null,
+      video: null,
+    };
   });
-
-  doc.save("community_events.pdf");
-}
+};
 
 /* ===================== COMPONENT ===================== */
 
 export default function CommunityHistory() {
-  const [projectFilter, setProjectFilter] = useState("");
-  const [gpFilter, setGpFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-  const [page, setPage] = useState(1);
-  const [preview, setPreview] = useState(null);
-  const [openDownload, setOpenDownload] = useState(false);
+  const [events, setEvents] = useState(createEvents());
 
-  const dropdownRef = useRef(null);
-  const PAGE_SIZE = 25;
+  const [previewImage, setPreviewImage] = useState(null);
+  const [previewVideo, setPreviewVideo] = useState(null);
+  const [previewMeta, setPreviewMeta] = useState(null);
 
-  useEffect(() => {
-    const handler = (e) =>
-      dropdownRef.current &&
-      !dropdownRef.current.contains(e.target) &&
-      setOpenDownload(false);
+  /* ===================== ACTIONS ===================== */
 
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const filteredData = useMemo(() => {
-    return EVENTS.filter(
-      (e) =>
-        (!projectFilter || e.project === projectFilter) &&
-        (!gpFilter || e.gpName === gpFilter) &&
-        (!dateFilter || e.eventDate === dateFilter)
+  const markCompleted = (id) => {
+    setEvents((prev) =>
+      prev.map((e) =>
+        e.id === id ? { ...e, status: "Completed" } : e
+      )
     );
-  }, [projectFilter, gpFilter, dateFilter]);
+  };
 
-  const paginatedData = filteredData.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
+  const uploadImage = async (id, file) => {
+    try {
+      const geo = await getGeoLocation();
+      const timestamp = new Date().toLocaleString();
+
+      const event = events.find((e) => e.id === id);
+
+      const watermarked = await watermarkImage(file, [
+        `📍 ${event.location}`,
+        `Lat: ${geo.lat.toFixed(5)}  Lng: ${geo.lng.toFixed(5)}`,
+        timestamp,
+      ]);
+
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                image: watermarked,
+                lat: geo.lat,
+                lng: geo.lng,
+                timestamp,
+              }
+            : e
+        )
+      );
+    } catch {
+      alert("GPS permission required");
+    }
+  };
+
+  const uploadVideo = async (id, file) => {
+    try {
+      const geo = await getGeoLocation();
+      const timestamp = new Date().toLocaleString();
+
+      const url = URL.createObjectURL(file);
+
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.id === id
+            ? {
+                ...e,
+                video: url,
+                lat: geo.lat,
+                lng: geo.lng,
+                timestamp,
+              }
+            : e
+        )
+      );
+    } catch {
+      alert("GPS permission required");
+    }
+  };
+
+  /* ===================== SUMMARY ===================== */
+
+  const totalParticipants = events.reduce(
+    (sum, e) => sum + e.participants,
+    0
   );
 
-  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
-
-  const filters = {
-    project: projectFilter,
-    gp: gpFilter,
-    date: dateFilter,
-  };
+  const completedCount = events.filter(
+    (e) => e.status === "Completed"
+  ).length;
 
   return (
     <>
-      <section className="rounded-2xl border border-yellow-400/30 bg-[#0b0f14] p-6">
+      <section className="rounded-2xl border border-yellow-400/20 bg-[#0b0f14] p-6 shadow-xl">
 
-        {/* ================= FILTER BAR ================= */}
-        <div className="flex flex-wrap items-center gap-3 mb-4">
+        {/* HEADER */}
+        <div className="flex items-center mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-white">
+              Community Events
+            </h2>
+            <p className="text-sm text-slate-400">
+              Monitor mobilizer activities & uploads
+            </p>
+          </div>
 
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-md bg-[#020617]
-            border border-yellow-400/30 text-slate-200"
-          >
-            <option value="">Select Project</option>
-            {PROJECTS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-
-          <select
-            value={gpFilter}
-            onChange={(e) => setGpFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-md bg-[#020617]
-            border border-yellow-400/30 text-slate-200"
-          >
-            <option value="">Select GP</option>
-            {GPS_LIST.map((gp) => (
-              <option key={gp} value={gp}>{gp}</option>
-            ))}
-          </select>
-
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="px-3 py-2 text-sm rounded-md bg-[#020617]
-            border border-yellow-400/30 text-slate-200"
-          />
-
-          {/* ================= ACTIONS ================= */}
-          <div className="ml-auto flex gap-3 items-center">
-
-            {/* DOWNLOAD */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setOpenDownload((v) => !v)}
-                className="px-4 py-2 text-sm rounded-md
-                border border-yellow-400 text-yellow-400
-                hover:bg-yellow-400/10 transition"
-              >
-                Download
-              </button>
-
-              <div
-                className={`absolute right-0 mt-2 w-44 bg-[#020617]
-                border border-yellow-400/30 rounded-md shadow-lg
-                transition-all duration-200 origin-top
-                ${
-                  openDownload
-                    ? "opacity-100 scale-100"
-                    : "opacity-0 scale-95 pointer-events-none"
-                }`}
-              >
-                <button
-                  onClick={() => {
-                    exportToExcel(filteredData, filters);
-                    setOpenDownload(false);
-                  }}
-                  className="w-full px-4 py-2 text-sm text-left hover:bg-yellow-400/10"
-                >
-                  📊 Download Excel
-                </button>
-
-                <button
-                  onClick={() => {
-                    exportToPDF(filteredData, filters);
-                    setOpenDownload(false);
-                  }}
-                  className="w-full px-4 py-2 text-sm text-left hover:bg-yellow-400/10"
-                >
-                  📄 Download PDF
-                </button>
-              </div>
-            </div>
-
-            {/* CREATE */}
+          <div className="ml-auto">
             <Link
               to="/mobilizer/create-community-drive"
-              className="px-4 py-2 text-sm rounded-md
-              bg-yellow-400 text-black font-semibold hover:bg-yellow-300"
+              className="px-4 py-2 text-sm rounded-lg
+              bg-yellow-400 text-black font-semibold hover:bg-yellow-300 transition"
             >
-              Create Event
+              + Create Event
             </Link>
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
-        <div className="overflow-x-auto rounded-lg border border-yellow-400/20">
-          <table className="w-full text-sm text-slate-200 min-w-[1100px]">
-            <thead className="bg-[#020617] border-b border-yellow-400/30">
-              <tr>
-                {[
-                  "Sl#",
-                  "Event Name",
-                  "Location (GPS)",
-                  "GP Name",
-                  "Photo",
-                  "Video Link",
-                  "Project",
-                  "Event Date",
-                ].map((h) => (
-                  <th key={h} className="px-3 py-2 text-left">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+        {/* SUMMARY */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <Card title="Total Events" value={events.length} />
+          <Card title="Completed" value={completedCount} />
+          <Card title="Participants" value={totalParticipants} />
+        </div>
 
-            <tbody>
-              {paginatedData.map((e, i) => (
-                <tr
-                  key={e.id}
-                  className="border-t border-yellow-400/10 hover:bg-yellow-400/5"
-                >
-                  <td className="px-3 py-2">
-                    {(page - 1) * PAGE_SIZE + i + 1}
-                  </td>
-                  <td className="px-3 py-2 font-medium">{e.eventName}</td>
-                  <td className="px-3 py-2">{e.location}</td>
-                  <td className="px-3 py-2">{e.gpName}</td>
-                  <td className="px-3 py-2">
-                    <img
-                      src={e.photo}
-                      alt={e.eventName}
-                      onClick={() => setPreview(e)}
-                      className="w-12 h-8 object-cover rounded border border-yellow-400/40 cursor-pointer"
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <a
-                      href={e.videoLink}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-yellow-400 hover:underline"
-                    >
-                      View Video
-                    </a>
-                  </td>
-                  <td className="px-3 py-2">{e.project}</td>
-                  <td className="px-3 py-2">{e.eventDate}</td>
+        {/* TABLE */}
+        <div className="overflow-hidden rounded-xl border border-yellow-400/20">
+          <div className="overflow-x-auto">
+
+            <table className="w-full text-sm">
+
+              <thead className="bg-[#020617]/80 backdrop-blur sticky top-0 z-10 border-b border-yellow-400/20">
+                <tr className="text-slate-300 text-xs uppercase tracking-wider">
+
+                  {[
+                    "Name",
+                    "Project",
+                    "Block",
+                    "GP",
+                    "Date",
+                    "Participants",
+                    "Location",
+                    "Status",
+                    "Image",
+                    "Video",
+                  ].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left font-medium">
+                      {h}
+                    </th>
+                  ))}
+
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+
+              <tbody>
+
+                {events.map((e) => (
+                  <tr
+                    key={e.id}
+                    className="border-t border-yellow-400/10 hover:bg-yellow-400/5 transition-colors"
+                  >
+
+                    <td className="px-4 py-3 font-medium text-white">{e.name}</td>
+                    <td className="px-4 py-3 text-slate-300">{e.project}</td>
+                    <td className="px-4 py-3 text-slate-300">{e.block}</td>
+                    <td className="px-4 py-3 text-slate-300">{e.gp}</td>
+                    <td className="px-4 py-3 text-slate-300">{e.date}</td>
+                    <td className="px-4 py-3 text-slate-300">{e.participants}</td>
+
+                    {/* LOCATION TEXT */}
+                    <td className="px-4 py-3 text-slate-400 text-xs">
+                      {e.location}
+                    </td>
+
+                    {/* STATUS */}
+                    <td className="px-4 py-3">
+                      {e.status === "Pending" ? (
+                        <button
+                          onClick={() => markCompleted(e.id)}
+                          className="px-3 py-1 text-xs rounded-full
+                          bg-yellow-400/10 text-yellow-400 border border-yellow-400/30
+                          hover:bg-yellow-400 hover:text-black transition"
+                        >
+                          Mark Completed
+                        </button>
+                      ) : (
+                        <span className="px-3 py-1 text-xs rounded-full
+                        bg-green-500/10 text-green-400 border border-green-400/30">
+                          Completed
+                        </span>
+                      )}
+                    </td>
+
+                    {/* IMAGE */}
+                    <td className="px-4 py-3">
+                      {e.image ? (
+                        <img
+                          src={e.image}
+                          onClick={() => {
+                            setPreviewImage(e.image);
+                            setPreviewMeta(e);
+                          }}
+                          className="w-14 h-10 object-cover rounded-md cursor-pointer border border-yellow-400/30"
+                        />
+                      ) : (
+                        <UploadButton
+                          disabled={e.status !== "Completed"}
+                          onFile={(file) => uploadImage(e.id, file)}
+                          label="Upload"
+                        />
+                      )}
+                    </td>
+
+                    {/* VIDEO */}
+                    <td className="px-4 py-3">
+                      {e.video ? (
+                        <div
+                          onClick={() => {
+                            setPreviewVideo(e.video);
+                            setPreviewMeta(e);
+                          }}
+                          className="w-14 h-10 rounded-md cursor-pointer bg-black flex items-center justify-center border border-yellow-400/30"
+                        >
+                          ▶
+                        </div>
+                      ) : (
+                        <UploadButton
+                          disabled={e.status !== "Completed"}
+                          onFile={(file) => uploadVideo(e.id, file)}
+                          label="Upload"
+                        />
+                      )}
+                    </td>
+
+                  </tr>
+                ))}
+
+              </tbody>
+
+            </table>
+          </div>
         </div>
       </section>
 
-      {/* ================= IMAGE MODAL ================= */}
-      {preview && (
-        <div
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center"
-          onClick={() => setPreview(null)}
-        >
-          <div
-            className="bg-[#020617] rounded-xl p-4 max-w-md w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img src={preview.photo} className="w-full rounded-lg mb-3" />
-            <p className="text-sm font-medium text-slate-200">
-              {preview.eventName}
-            </p>
+      {/* IMAGE MODAL */}
+      {previewImage && (
+        <Modal onClose={() => setPreviewImage(null)}>
+          <img src={previewImage} className="max-w-xl rounded-lg" />
+        </Modal>
+      )}
 
-            <button
-              onClick={() => setPreview(null)}
-              className="mt-4 text-sm text-yellow-400 hover:underline"
-            >
-              Close
-            </button>
+      {/* VIDEO MODAL WITH WATERMARK OVERLAY */}
+      {previewVideo && (
+        <Modal onClose={() => setPreviewVideo(null)}>
+          <div className="relative">
+            <video src={previewVideo} controls autoPlay className="max-w-2xl rounded-lg" />
+
+            {previewMeta && (
+              <div className="absolute bottom-3 left-3 text-xs bg-black/60 px-3 py-2 rounded">
+                <div>📍 {previewMeta.location}</div>
+                <div>
+                  Lat: {previewMeta.lat?.toFixed(5)} | Lng: {previewMeta.lng?.toFixed(5)}
+                </div>
+                <div>{previewMeta.timestamp}</div>
+              </div>
+            )}
           </div>
-        </div>
+        </Modal>
       )}
     </>
+  );
+}
+
+/* ===================== COMPONENTS ===================== */
+
+function Card({ title, value }) {
+  return (
+    <div className="bg-[#020617] border border-yellow-400/20 rounded-xl p-4">
+      <p className="text-xs text-slate-400">{title}</p>
+      <p className="text-2xl font-semibold text-yellow-400 mt-1">{value}</p>
+    </div>
+  );
+}
+
+function UploadButton({ disabled, onFile, label }) {
+  return (
+    <label
+      className={`px-3 py-1 text-xs rounded-md border cursor-pointer
+      ${
+        disabled
+          ? "opacity-40 cursor-not-allowed border-slate-600 text-slate-500"
+          : "border-yellow-400/30 text-yellow-400 hover:bg-yellow-400/10"
+      }`}
+    >
+      {label}
+      <input
+        type="file"
+        className="hidden"
+        disabled={disabled}
+        onChange={(e) => onFile(e.target.files[0])}
+      />
+    </label>
+  );
+}
+
+function Modal({ children, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div onClick={(e) => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
   );
 }
