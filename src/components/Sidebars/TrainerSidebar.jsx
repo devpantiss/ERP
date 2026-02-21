@@ -20,7 +20,7 @@ const MENU = [
   { label: "Exposure Visits", path: "/trainer/exposure-visits", icon: MapPin },
   { label: "Internal Assessment", path: "/trainer/internal-assessment", icon: ClipboardCheck },
   { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
-  { label: "Live Feed", path: "/trainer/live-feed", icon: Camera },
+  { label: "Live Feed", path: "/trainer/live-feed-host", icon: Camera },
   { label: "Profile", path: "/trainer/profile", icon: UserRoundPen },
   { label: "Attendance", path: "/trainer/attendance", icon: UserCheck },
 ];

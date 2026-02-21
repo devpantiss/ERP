@@ -2,22 +2,63 @@ import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import Peer from "peerjs";
 
-export default function TrainerLiveFeedViewer() {
+export default function TrainerLiveViewer() {
   const { sessionId } = useParams();
   const videoRef = useRef(null);
 
   useEffect(() => {
-    const peer = new Peer();
+    let peer;
+    let call;
 
-    peer.on("open", () => {
-      const call = peer.call(sessionId, null);
+    const startViewer = async () => {
+      try {
+        // Create peer
+        peer = new Peer({
+          config: {
+            iceServers: [
+              { urls: "stun:stun.l.google.com:19302" },
+              { urls: "stun:global.stun.twilio.com:3478" },
+            ],
+          },
+        });
 
-      call.on("stream", (remoteStream) => {
-        videoRef.current.srcObject = remoteStream;
-      });
-    });
+        // Dummy stream (important fix)
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: false,
+          audio: true,
+        });
 
-    return () => peer.destroy();
+        peer.on("open", () => {
+          call = peer.call(sessionId, stream);
+
+          if (!call) return;
+
+          call.on("stream", (remoteStream) => {
+            if (videoRef.current) {
+              videoRef.current.srcObject = remoteStream;
+            }
+          });
+
+          call.on("error", (err) => {
+            console.error("Call error:", err);
+          });
+        });
+
+        peer.on("error", (err) => {
+          console.error("Peer error:", err);
+        });
+
+      } catch (err) {
+        console.error("Viewer error:", err);
+      }
+    };
+
+    startViewer();
+
+    return () => {
+      call?.close();
+      peer?.destroy();
+    };
   }, [sessionId]);
 
   return (
@@ -31,6 +72,7 @@ export default function TrainerLiveFeedViewer() {
         ref={videoRef}
         autoPlay
         playsInline
+        controls
         className="w-full max-w-4xl rounded-lg"
       />
 
