@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import Peer from "peerjs";
 
@@ -6,13 +6,16 @@ export default function TrainerLiveViewer() {
   const { sessionId } = useParams();
   const videoRef = useRef(null);
 
+  const [status, setStatus] = useState("Connecting...");
+
   useEffect(() => {
     let peer;
     let call;
 
     const startViewer = async () => {
       try {
-        // Create peer
+        setStatus("Connecting to trainer...");
+
         peer = new Peer({
           config: {
             iceServers: [
@@ -22,34 +25,43 @@ export default function TrainerLiveViewer() {
           },
         });
 
-        // Dummy stream (important fix)
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: false,
-          audio: true,
-        });
-
         peer.on("open", () => {
-          call = peer.call(sessionId, stream);
+          console.log("Viewer peer open");
 
-          if (!call) return;
+          // 🔥 IMPORTANT: send empty stream instead of mic request
+          const emptyStream = new MediaStream();
+
+          call = peer.call(sessionId, emptyStream);
+
+          if (!call) {
+            setStatus("Trainer not available");
+            return;
+          }
 
           call.on("stream", (remoteStream) => {
+            console.log("Received stream");
+
             if (videoRef.current) {
               videoRef.current.srcObject = remoteStream;
             }
+
+            setStatus("Live");
           });
 
           call.on("error", (err) => {
             console.error("Call error:", err);
+            setStatus("Connection error");
           });
         });
 
         peer.on("error", (err) => {
           console.error("Peer error:", err);
+          setStatus("Peer error");
         });
 
       } catch (err) {
         console.error("Viewer error:", err);
+        setStatus("Error starting viewer");
       }
     };
 
@@ -72,9 +84,12 @@ export default function TrainerLiveViewer() {
         ref={videoRef}
         autoPlay
         playsInline
+        muted   // helps autoplay on browsers
         controls
-        className="w-full max-w-4xl rounded-lg"
+        className="w-full max-w-4xl rounded-lg bg-black"
       />
+
+      <p className="text-slate-400 mt-4">{status}</p>
 
     </div>
   );

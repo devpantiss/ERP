@@ -43,13 +43,14 @@ export default function TrainerLiveHost() {
 
       // Answer incoming calls
       peer.on("call", (call) => {
-        call.answer(streamRef.current);
+        if (streamRef.current) {
+          call.answer(streamRef.current);
+        }
       });
 
       peer.on("error", (err) => {
         console.error("Peer error:", err);
       });
-
     } catch (err) {
       console.error("Camera error:", err);
       setLoading(false);
@@ -70,7 +71,6 @@ export default function TrainerLiveHost() {
 
   return (
     <div className="p-6 bg-[#0b0f14] text-white rounded-xl max-w-3xl mx-auto">
-
       <h2 className="text-xl font-semibold text-emerald-400 mb-4">
         Trainer Live Session
       </h2>
@@ -84,7 +84,6 @@ export default function TrainerLiveHost() {
       />
 
       <div className="mt-4 flex gap-3">
-
         {!isLive && (
           <button
             onClick={startSession}
@@ -103,7 +102,6 @@ export default function TrainerLiveHost() {
             Stop
           </button>
         )}
-
       </div>
 
       {sessionId && (
@@ -112,7 +110,6 @@ export default function TrainerLiveHost() {
           <p className="text-emerald-400 break-all">{shareLink}</p>
         </div>
       )}
-
     </div>
   );
 }
