@@ -35,6 +35,8 @@ import PlacementDriveStepper from "./pages/Placement/PlacementDriveStepper";
 import PlacementStudentsList from "./pages/Placement/PlacementsStudentsList";
 import PlacementStudentDetailsStepper from "./pages/Placement/PlacementStudentDetailsStepper";
 import PlacementOpeningsDashboard from "./pages/Placement/PlacementOpeningsDashboard";
+import TrainerLiveFeedHost from "./pages/Trainer/TrainerLiveFeedHost";
+import TrainerLiveFeedViewer from "./pages/Trainer/TrainerLiveFeedViewer";
 
 
 function App() {
@@ -74,6 +76,8 @@ function App() {
           <Route path="profile" element={<TrainerProfile />} />
           <Route path="labs" element={<TrainerLab />} />
           <Route path="module-progress" element={<TrainersModuleHistory />} />
+          <Route path="live-feed-host" element={<TrainerLiveFeedHost />} />
+          <Route path="live/:sessionId" element={<TrainerLiveFeedViewer />} />
         </Route>
 
         {/* Placement Layout Routes */}

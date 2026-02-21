@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   Building2,
@@ -8,7 +8,8 @@ import {
   UserRoundPen,
   ChevronLeft,
   ChevronRight,
-  List
+  List,
+  LogOut
 } from "lucide-react";
 
 /* ================= MENU CONFIG ================= */
@@ -71,7 +72,6 @@ const PlacementSidebar = () => {
           >
             {({ isActive }) => (
               <>
-                {/* Active Indicator */}
                 {isActive && (
                   <span className="absolute left-0 top-0 h-full w-1 bg-cyan-400 rounded-r-md" />
                 )}
@@ -87,10 +87,22 @@ const PlacementSidebar = () => {
       </nav>
 
       {/* ================= FOOTER ================= */}
-      <div className="px-4 py-4 border-t border-slate-700 text-xs text-slate-500">
+      <div className="px-3 py-4 border-t border-slate-700 space-y-2">
 
+        {/* LOGOUT */}
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg
+          text-sm text-red-400 hover:bg-red-500/10
+          hover:text-red-300 transition"
+        >
+          <LogOut size={18} />
+          {!collapsed && <span>Log Out</span>}
+        </Link>
+
+        {/* BRAND */}
         {!collapsed && (
-          <div className="space-y-1">
+          <div className="px-3 text-xs text-slate-500">
             <p className="font-medium text-slate-400">Kovon Platform</p>
             <p>Placement Console v1.0</p>
           </div>

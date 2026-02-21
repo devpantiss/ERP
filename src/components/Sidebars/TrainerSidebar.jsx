@@ -1,17 +1,16 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   LayoutDashboard,
   UserCheck,
   MapPin,
   ClipboardCheck,
-  FlaskConical,
-  BookOpen,
-  FileText,
   BarChart3,
   UserRoundPen,
   ChevronLeft,
   ChevronRight,
+  LogOut,
+  Camera,
 } from "lucide-react";
 
 /* ================= MENU CONFIG ================= */
@@ -20,10 +19,8 @@ const MENU = [
   { label: "Dashboard", path: "/trainer/dashboard", icon: LayoutDashboard },
   { label: "Exposure Visits", path: "/trainer/exposure-visits", icon: MapPin },
   { label: "Internal Assessment", path: "/trainer/internal-assessment", icon: ClipboardCheck },
-  // { label: "Labs", path: "/trainer/labs", icon: FlaskConical },
-  // { label: "Study Modules", path: "/trainer/study-modules", icon: BookOpen },
-  // { label: "Daily Updates", path: "/trainer/daily-updates", icon: FileText },
   { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
+  { label: "Live Feed", path: "/trainer/live-feed", icon: Camera },
   { label: "Profile", path: "/trainer/profile", icon: UserRoundPen },
   { label: "Attendance", path: "/trainer/attendance", icon: UserCheck },
 ];
@@ -77,7 +74,6 @@ const TrainerSidebar = () => {
           >
             {({ isActive }) => (
               <>
-                {/* Active Indicator */}
                 {isActive && (
                   <span className="absolute left-0 top-0 h-full w-1 bg-emerald-400 rounded-r-md" />
                 )}
@@ -93,10 +89,22 @@ const TrainerSidebar = () => {
       </nav>
 
       {/* ================= FOOTER ================= */}
-      <div className="px-4 py-4 border-t border-slate-700 text-xs text-slate-500">
+      <div className="px-3 py-4 border-t border-slate-700 space-y-2">
 
+        {/* LOGOUT */}
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-3 py-2 rounded-lg
+          text-sm text-red-400 hover:bg-red-500/10
+          hover:text-red-300 transition"
+        >
+          <LogOut size={18} />
+          {!collapsed && <span>Log Out</span>}
+        </Link>
+
+        {/* BRAND */}
         {!collapsed && (
-          <div className="space-y-1">
+          <div className="px-3 text-xs text-slate-500">
             <p className="font-medium text-slate-400">Kovon Platform</p>
             <p>Trainer Console v1.0</p>
           </div>

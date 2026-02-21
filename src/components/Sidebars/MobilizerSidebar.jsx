@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import {
   CalendarCheck2,
   LayoutDashboard,
@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   UserCheck,
+  LogOut,
 } from "lucide-react";
 
 const MENU = [
@@ -30,9 +31,10 @@ const MobilizerSidebar = () => {
       ${collapsed ? "w-17" : "w-64"}`}
     >
       {/* ================= HEADER ================= */}
-      <div className="flex items-center justify-between px-4 h-16
-        border-b border-yellow-400/20">
-
+      <div
+        className="flex items-center justify-between px-4 h-16
+        border-b border-yellow-400/20"
+      >
         {!collapsed && (
           <span className="text-lg font-semibold tracking-wide text-yellow-400">
             Mobilize Hub
@@ -66,18 +68,32 @@ const MobilizerSidebar = () => {
             }
           >
             <Icon size={18} />
-
             {!collapsed && <span>{label}</span>}
           </NavLink>
         ))}
       </nav>
 
       {/* ================= FOOTER ================= */}
-      <div
-        className="px-4 py-3 border-t border-yellow-400/20
-        text-xs text-slate-400"
-      >
-        {!collapsed && "© Kovon Platform"}
+      <div className="px-3 py-3 border-t border-yellow-400/20 space-y-2">
+
+        {/* LOGOUT */}
+        <Link
+          to="/"
+          className="flex items-center gap-3 px-3 py-2 rounded-xl
+          text-sm text-red-400 hover:bg-red-500/10
+          hover:text-red-300 transition"
+        >
+          <LogOut size={18} />
+          {!collapsed && <span>Log Out</span>}
+        </Link>
+
+        {/* BRAND */}
+        {!collapsed && (
+          <div className="text-xs text-slate-500 px-3">
+            © Kovon Platform
+          </div>
+        )}
+
       </div>
     </aside>
   );
