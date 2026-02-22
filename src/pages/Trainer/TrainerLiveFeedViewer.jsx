@@ -11,6 +11,7 @@ const ICE_CONFIG = {
 
 export default function TrainerLiveViewer() {
   const { sessionId } = useParams();
+
   const videoRef = useRef(null);
   const peerRef = useRef(null);
   const callRef = useRef(null);
@@ -19,12 +20,12 @@ export default function TrainerLiveViewer() {
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  /* ================= CONNECTION ================= */
+  /* ================= CONNECT ================= */
 
   useEffect(() => {
     if (!sessionId) return;
 
-    let isMounted = true;
+    let mounted = true;
 
     const connect = () => {
       try {
@@ -32,19 +33,18 @@ export default function TrainerLiveViewer() {
 
         const peer = new Peer({
           config: ICE_CONFIG,
-          debug: 2,
         });
 
         peerRef.current = peer;
 
+        /* ===== PEER READY ===== */
+
         peer.on("open", () => {
-          if (!isMounted) return;
+          if (!mounted) return;
 
           console.log("Viewer peer ready");
 
-          const emptyStream = new MediaStream();
-
-          const call = peer.call(sessionId, emptyStream);
+          const call = peer.call(sessionId, new MediaStream());
 
           if (!call) {
             setStatus("trainer_offline");
@@ -53,11 +53,25 @@ export default function TrainerLiveViewer() {
 
           callRef.current = call;
 
-          call.on("stream", (remoteStream) => {
-            console.log("Remote stream received");
+          /* ===== STREAM RECEIVED ===== */
 
-            if (videoRef.current) {
-              videoRef.current.srcObject = remoteStream;
+          call.on("stream", async (remoteStream) => {
+            console.log("Remote stream received", remoteStream);
+
+            if (!videoRef.current) return;
+
+            videoRef.current.srcObject = remoteStream;
+
+            try {
+              await videoRef.current.play();
+            } catch (err) {
+              console.warn("Autoplay prevented:", err);
+            }
+
+            const tracks = remoteStream.getTracks();
+
+            if (tracks.length === 0) {
+              console.warn("No media tracks received");
             }
 
             setStatus("live");
@@ -74,6 +88,8 @@ export default function TrainerLiveViewer() {
             setStatus("error");
           });
         });
+
+        /* ===== PEER ERRORS ===== */
 
         peer.on("error", (err) => {
           console.error("Peer error", err);
@@ -96,7 +112,8 @@ export default function TrainerLiveViewer() {
     connect();
 
     return () => {
-      isMounted = false;
+      mounted = false;
+
       callRef.current?.close();
       peerRef.current?.destroy();
     };
@@ -105,11 +122,11 @@ export default function TrainerLiveViewer() {
   /* ================= RETRY ================= */
 
   const retry = () => {
-    setRetryCount((r) => r + 1);
     setError(null);
+    setRetryCount((r) => r + 1);
   };
 
-  /* ================= STATUS UI ================= */
+  /* ================= STATUS TEXT ================= */
 
   const renderStatus = () => {
     switch (status) {
@@ -130,6 +147,8 @@ export default function TrainerLiveViewer() {
     }
   };
 
+  /* ================= UI ================= */
+
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6">
 
@@ -144,19 +163,17 @@ export default function TrainerLiveViewer() {
         </p>
       </div>
 
-      {/* VIDEO CONTAINER */}
+      {/* VIDEO */}
       <div className="relative w-full max-w-5xl">
 
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          muted
           controls
           className="w-full rounded-xl bg-black border border-white/10"
         />
 
-        {/* LIVE BADGE */}
         {status === "live" && (
           <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1 rounded-full bg-red-600 text-white text-xs font-medium shadow">
             <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
@@ -164,7 +181,6 @@ export default function TrainerLiveViewer() {
           </div>
         )}
 
-        {/* OVERLAY */}
         {status !== "live" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 rounded-xl">
 
@@ -172,21 +188,12 @@ export default function TrainerLiveViewer() {
 
               <p className="text-slate-300">{renderStatus()}</p>
 
-              {status === "trainer_offline" && (
+              {(status === "trainer_offline" || status === "error") && (
                 <button
                   onClick={retry}
                   className="px-4 py-2 bg-emerald-500 rounded text-white text-sm"
                 >
                   Retry
-                </button>
-              )}
-
-              {status === "error" && (
-                <button
-                  onClick={retry}
-                  className="px-4 py-2 bg-yellow-500 rounded text-black text-sm"
-                >
-                  Try Again
                 </button>
               )}
 
@@ -197,7 +204,6 @@ export default function TrainerLiveViewer() {
 
       </div>
 
-      {/* FOOTER INFO */}
       <div className="mt-6 text-slate-500 text-xs text-center max-w-md">
         Ensure trainer has started the session and granted camera permissions.
       </div>
