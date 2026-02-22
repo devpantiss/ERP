@@ -1,30 +1,74 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import Peer from "peerjs";
 
-export default function PlacementLiveFeedHost() {
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:global.stun.twilio.com:3478" },
+  ],
+};
+
+export default function TrainerLiveFeedHost() {
   const videoRef = useRef(null);
-  const [stream, setStream] = useState(null);
+  const peerRef = useRef(null);
+  const streamRef = useRef(null);
+
   const [sessionId, setSessionId] = useState(null);
+  const [stream, setStream] = useState(null);
 
   const startSession = async () => {
-    const media = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true,
-    });
+    try {
+      const media = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
 
-    videoRef.current.srcObject = media;
-    setStream(media);
+      streamRef.current = media;
+      videoRef.current.srcObject = media;
+      setStream(media);
 
-    const id = crypto.randomUUID();
-    setSessionId(id);
+      // 🔥 Create Peer (IMPORTANT)
+      const peer = new Peer({
+        config: ICE_CONFIG,
+      });
 
-    // TODO: emit to socket server
+      peerRef.current = peer;
+
+      // 🔥 Get Peer ID
+      peer.on("open", (id) => {
+        console.log("Peer ID:", id);
+        setSessionId(id);
+      });
+
+      // 🔥 Answer Viewer Calls
+      peer.on("call", (call) => {
+        console.log("Incoming viewer");
+
+        if (streamRef.current) {
+          call.answer(streamRef.current);
+        }
+      });
+
+      peer.on("error", (err) => {
+        console.error(err);
+      });
+
+    } catch (err) {
+      console.error("Camera error:", err);
+    }
   };
 
   const stopSession = () => {
-    stream?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    peerRef.current?.destroy();
+
     setStream(null);
     setSessionId(null);
   };
+
+  const shareLink = sessionId
+    ? `${window.location.origin}/trainer/live/${sessionId}`
+    : "";
 
   return (
     <div className="p-6 bg-[#0b0f14] text-white rounded-xl">
@@ -37,6 +81,7 @@ export default function PlacementLiveFeedHost() {
         ref={videoRef}
         autoPlay
         playsInline
+        muted
         className="w-full max-w-xl rounded-lg border border-emerald-400/30"
       />
 
@@ -65,9 +110,7 @@ export default function PlacementLiveFeedHost() {
       {sessionId && (
         <div className="mt-4 p-3 bg-[#020617] rounded border border-emerald-400/20">
           <p className="text-sm text-slate-400">Share Link</p>
-          <p className="text-emerald-400 break-all">
-            {window.location.origin}/trainer/live/{sessionId}
-          </p>
+          <p className="text-emerald-400 break-all">{shareLink}</p>
         </div>
       )}
 
