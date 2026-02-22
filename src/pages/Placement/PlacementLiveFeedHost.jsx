@@ -1,22 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Peer from "peerjs";
-
-const ICE_CONFIG = {
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:global.stun.twilio.com:3478" },
-  ],
-};
 
 export default function TrainerLiveFeedHost() {
   const videoRef = useRef(null);
   const peerRef = useRef(null);
+  const streamRef = useRef(null);
 
-  const [stream, setStream] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [started, setStarted] = useState(false);
-
-  /* ================= START SESSION ================= */
 
   const startSession = async () => {
     try {
@@ -25,11 +16,13 @@ export default function TrainerLiveFeedHost() {
         audio: true,
       });
 
+      streamRef.current = media;
       videoRef.current.srcObject = media;
-      setStream(media);
 
       const peer = new Peer(undefined, {
-        config: ICE_CONFIG,
+        host: "peerjs.com",
+        secure: true,
+        port: 443,
       });
 
       peerRef.current = peer;
@@ -40,68 +33,48 @@ export default function TrainerLiveFeedHost() {
         setStarted(true);
       });
 
-      /* ===== VERY IMPORTANT PART ===== */
       peer.on("call", (call) => {
-        console.log("Incoming viewer connection");
+        console.log("Incoming call");
 
-        call.answer(media); // 🔥 SEND STREAM TO VIEWER
+        if (!streamRef.current) return;
+
+        call.answer(streamRef.current);
       });
 
     } catch (err) {
-      console.error("Camera error:", err);
-      alert("Camera permission denied");
+      console.error(err);
+      alert("Camera permission required");
     }
   };
 
-  /* ================= STOP ================= */
-
   const stopSession = () => {
-    stream?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
     peerRef.current?.destroy();
-
-    setStream(null);
-    setSessionId(null);
     setStarted(false);
+    setSessionId(null);
   };
 
-  /* ================= CLEANUP ================= */
-
-  useEffect(() => {
-    return () => {
-      peerRef.current?.destroy();
-      stream?.getTracks().forEach((t) => t.stop());
-    };
-  }, []);
-
-  /* ================= UI ================= */
-
   return (
-    <div className="p-6 bg-[#0b0f14] text-white rounded-xl">
-
-      <h2 className="text-xl mb-4 font-semibold text-emerald-400">
-        Trainer Live Feed
-      </h2>
+    <div className="p-6 text-white">
+      <h2 className="text-xl mb-4">Trainer Live Feed</h2>
 
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        className="w-full max-w-xl rounded-lg border border-emerald-400/30"
+        className="w-full max-w-xl rounded"
       />
 
-      <div className="mt-4 flex gap-3">
-
-        {!started && (
+      <div className="mt-4">
+        {!started ? (
           <button
             onClick={startSession}
-            className="px-4 py-2 bg-emerald-500 rounded"
+            className="px-4 py-2 bg-green-500 rounded"
           >
             Start Session
           </button>
-        )}
-
-        {started && (
+        ) : (
           <button
             onClick={stopSession}
             className="px-4 py-2 bg-red-500 rounded"
@@ -109,19 +82,16 @@ export default function TrainerLiveFeedHost() {
             Stop
           </button>
         )}
-
       </div>
 
       {sessionId && (
-        <div className="mt-4 p-3 bg-[#020617] rounded border border-emerald-400/20">
-          <p className="text-sm text-slate-400">Share Link</p>
-
-          <p className="text-emerald-400 break-all">
+        <div className="mt-4">
+          Share:
+          <div className="text-green-400 break-all">
             {window.location.origin}/trainer/live/{sessionId}
-          </p>
+          </div>
         </div>
       )}
-
     </div>
   );
 }
