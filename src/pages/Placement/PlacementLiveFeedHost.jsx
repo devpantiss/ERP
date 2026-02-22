@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Peer from "peerjs";
 
 const ICE_CONFIG = {
@@ -11,10 +11,10 @@ const ICE_CONFIG = {
 export default function TrainerLiveFeedHost() {
   const videoRef = useRef(null);
   const peerRef = useRef(null);
-  const streamRef = useRef(null);
 
+  const [stream, setStream] = useState(null);
   const [sessionId, setSessionId] = useState(null);
-  const [isLive, setIsLive] = useState(false);
+  const [started, setStarted] = useState(false);
 
   /* ================= START SESSION ================= */
 
@@ -25,10 +25,10 @@ export default function TrainerLiveFeedHost() {
         audio: true,
       });
 
-      streamRef.current = media;
       videoRef.current.srcObject = media;
+      setStream(media);
 
-      const peer = new Peer({
+      const peer = new Peer(undefined, {
         config: ICE_CONFIG,
       });
 
@@ -37,49 +37,49 @@ export default function TrainerLiveFeedHost() {
       peer.on("open", (id) => {
         console.log("Host Peer ID:", id);
         setSessionId(id);
-        setIsLive(true);
+        setStarted(true);
       });
 
-      /* 🔥 VERY IMPORTANT PART */
+      /* ===== VERY IMPORTANT PART ===== */
       peer.on("call", (call) => {
         console.log("Incoming viewer connection");
 
-        if (!streamRef.current) {
-          console.error("No stream available");
-          return;
-        }
-
-        call.answer(streamRef.current);
-      });
-
-      peer.on("error", (err) => {
-        console.error("Peer error:", err);
+        call.answer(media); // 🔥 SEND STREAM TO VIEWER
       });
 
     } catch (err) {
       console.error("Camera error:", err);
+      alert("Camera permission denied");
     }
   };
 
-  /* ================= STOP SESSION ================= */
+  /* ================= STOP ================= */
 
   const stopSession = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    stream?.getTracks().forEach((t) => t.stop());
     peerRef.current?.destroy();
 
+    setStream(null);
     setSessionId(null);
-    setIsLive(false);
+    setStarted(false);
   };
 
-  const shareLink = sessionId
-    ? `${window.location.origin}/trainer/live/${sessionId}`
-    : "";
+  /* ================= CLEANUP ================= */
+
+  useEffect(() => {
+    return () => {
+      peerRef.current?.destroy();
+      stream?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  /* ================= UI ================= */
 
   return (
     <div className="p-6 bg-[#0b0f14] text-white rounded-xl">
 
       <h2 className="text-xl mb-4 font-semibold text-emerald-400">
-        Trainer Live Session
+        Trainer Live Feed
       </h2>
 
       <video
@@ -87,24 +87,24 @@ export default function TrainerLiveFeedHost() {
         autoPlay
         playsInline
         muted
-        className="w-full max-w-2xl rounded-lg border border-emerald-400/30"
+        className="w-full max-w-xl rounded-lg border border-emerald-400/30"
       />
 
       <div className="mt-4 flex gap-3">
 
-        {!isLive && (
+        {!started && (
           <button
             onClick={startSession}
-            className="px-5 py-2 bg-emerald-500 rounded"
+            className="px-4 py-2 bg-emerald-500 rounded"
           >
             Start Session
           </button>
         )}
 
-        {isLive && (
+        {started && (
           <button
             onClick={stopSession}
-            className="px-5 py-2 bg-red-500 rounded"
+            className="px-4 py-2 bg-red-500 rounded"
           >
             Stop
           </button>
@@ -113,9 +113,12 @@ export default function TrainerLiveFeedHost() {
       </div>
 
       {sessionId && (
-        <div className="mt-5 p-3 bg-[#020617] rounded border border-emerald-400/20">
+        <div className="mt-4 p-3 bg-[#020617] rounded border border-emerald-400/20">
           <p className="text-sm text-slate-400">Share Link</p>
-          <p className="text-emerald-400 break-all">{shareLink}</p>
+
+          <p className="text-emerald-400 break-all">
+            {window.location.origin}/trainer/live/{sessionId}
+          </p>
         </div>
       )}
 
