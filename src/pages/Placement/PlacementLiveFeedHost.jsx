@@ -1,6 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import Peer from "peerjs";
 
+/* ================= ICE SERVERS (TURN + STUN) ================= */
+
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+  ],
+};
+
 export default function TrainerLiveFeedHost() {
   const videoRef = useRef(null);
   const peerRef = useRef(null);
@@ -31,6 +50,7 @@ export default function TrainerLiveFeedHost() {
         host: "0.peerjs.com",
         port: 443,
         secure: true,
+        config: ICE_CONFIG,
       });
 
       peerRef.current = peer;
@@ -42,7 +62,7 @@ export default function TrainerLiveFeedHost() {
         setStatus("live");
       });
 
-      /* ===== VERY IMPORTANT ===== */
+      /* ===== ANSWER VIEWER CALL ===== */
       peer.on("call", (call) => {
         console.log("Incoming viewer connection");
 
@@ -63,7 +83,7 @@ export default function TrainerLiveFeedHost() {
     }
   };
 
-  /* ================= STOP ================= */
+  /* ================= STOP SESSION ================= */
 
   const stopSession = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());

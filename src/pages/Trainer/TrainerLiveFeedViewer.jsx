@@ -2,6 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import Peer from "peerjs";
 
+/* ================= ICE SERVERS ================= */
+
+const ICE_CONFIG = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+  ],
+};
+
 export default function TrainerLiveViewer() {
   const { sessionId } = useParams();
 
@@ -20,6 +39,7 @@ export default function TrainerLiveViewer() {
       host: "0.peerjs.com",
       port: 443,
       secure: true,
+      config: ICE_CONFIG,
     });
 
     peerRef.current = peer;
@@ -46,7 +66,7 @@ export default function TrainerLiveViewer() {
         try {
           await videoRef.current.play();
         } catch (err) {
-          console.warn("Autoplay prevented:", err);
+          console.warn("Autoplay blocked:", err);
         }
 
         setStatus("live");
@@ -98,14 +118,12 @@ export default function TrainerLiveViewer() {
 
         {status !== "live" && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-xl">
-
             <p className="text-slate-300">
               {status === "connecting" && "Connecting to trainer..."}
               {status === "trainer_offline" && "Trainer not live yet"}
               {status === "ended" && "Session ended"}
               {status === "error" && "Connection error"}
             </p>
-
           </div>
         )}
 
