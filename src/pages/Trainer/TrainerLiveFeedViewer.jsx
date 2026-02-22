@@ -1,49 +1,59 @@
 import { useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
-import Peer from "peerjs";
 
-export default function TrainerLiveViewer() {
-  const { sessionId } = useParams();
+export default function TrainerLiveViewerMeet() {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    const peer = new Peer(undefined, {
-      host: "0.peerjs.com",
-      port: 443,
-      secure: true,
+    const params = new URLSearchParams(window.location.search);
+    const offerEncoded = params.get("offer");
+
+    if (!offerEncoded) return;
+
+    const offer = JSON.parse(atob(offerEncoded));
+
+    const pc = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     });
 
-    peer.on("open", () => {
-      console.log("Viewer ready");
+    pc.ontrack = (event) => {
+      videoRef.current.srcObject = event.streams[0];
+    };
 
-      const call = peer.call(sessionId, new MediaStream());
+    const start = async () => {
+      await pc.setRemoteDescription(offer);
 
-      call.on("stream", async (remoteStream) => {
-        console.log("Stream received");
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
 
-        videoRef.current.srcObject = remoteStream;
+      const encodedAnswer = btoa(JSON.stringify(answer));
 
-        try {
-          await videoRef.current.play();
-        } catch (err) {
-          console.log("Autoplay blocked, user interaction needed");
-        }
-      });
-    });
+      window.opener?.postMessage(
+        { answer: encodedAnswer },
+        "*"
+      );
+    };
 
-    return () => peer.destroy();
-  }, [sessionId]);
+    start();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6">
+    <div className="h-screen bg-black flex items-center justify-center">
 
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        controls
-        className="w-full max-w-4xl rounded"
-      />
+      <div className="relative w-full max-w-6xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
+
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          controls
+          className="w-full h-full object-cover"
+        />
+
+        <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-red-600 text-white text-xs font-medium">
+          LIVE
+        </div>
+
+      </div>
 
     </div>
   );
