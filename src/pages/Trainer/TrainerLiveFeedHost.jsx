@@ -104,7 +104,7 @@ export default function TrainerLiveHost() {
   /* ================= SHARE LINK ================= */
 
   const shareLink = sessionId
-    ? `${window.location.origin}/live/${sessionId}`
+    ? `${window.location.origin}/trainer/live/${sessionId}`
     : "";
 
   const copyLink = () => {

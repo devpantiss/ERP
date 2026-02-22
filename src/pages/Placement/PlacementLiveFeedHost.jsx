@@ -66,7 +66,7 @@ export default function PlacementLiveFeedHost() {
         <div className="mt-4 p-3 bg-[#020617] rounded border border-emerald-400/20">
           <p className="text-sm text-slate-400">Share Link</p>
           <p className="text-emerald-400 break-all">
-            {window.location.origin}/live/{sessionId}
+            {window.location.origin}/trainer/live/{sessionId}
           </p>
         </div>
       )}
