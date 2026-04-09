@@ -1,0 +1,25 @@
+/* ─── Page transition animation ─────────────────────────────────────────────── */
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-fade-in {
+  animation: pageFadeIn 0.3s ease-out;
+}
+
+/* ─── Smooth scrolling globally ─────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ─── GPU-accelerated transforms for layout containers ──────────────────────── */
+main {
+  will-change: scroll-position;
+}
