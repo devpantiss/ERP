@@ -41,14 +41,17 @@ const TOTAL_MODULES_PER_BATCH = 45;
 export default function TrainerModuleHistoryEnterprise() {
   const [view, setView] = useState("table");
   const [typeFilter, setTypeFilter] = useState("All");
+  const [selectedBatch, setSelectedBatch] = useState(null);
   const [preview, setPreview] = useState(null);
 
   /* ================= FILTERED DATA ================= */
 
   const filteredData = useMemo(() => {
-    if (typeFilter === "All") return MODULE_HISTORY;
-    return MODULE_HISTORY.filter((item) => item.type === typeFilter);
-  }, [typeFilter]);
+    let data = MODULE_HISTORY;
+    if (typeFilter !== "All") data = data.filter((item) => item.type === typeFilter);
+    if (selectedBatch) data = data.filter((item) => item.batch === selectedBatch);
+    return data;
+  }, [typeFilter, selectedBatch]);
 
   /* ================= BATCH PROGRESS ================= */
 
@@ -164,11 +167,21 @@ export default function TrainerModuleHistoryEnterprise() {
           {batchStats.map((b) => (
             <div
               key={b.batch}
-              className="bg-[#111827] border border-slate-700 rounded-xl p-5"
+              onClick={() => setSelectedBatch(selectedBatch === b.batch ? null : b.batch)}
+              className={`bg-[#111827] border rounded-xl p-5 cursor-pointer transition-all
+                ${selectedBatch === b.batch
+                  ? "border-emerald-400 ring-2 ring-emerald-400/30 scale-[1.02]"
+                  : "border-slate-700 hover:border-emerald-500/50"
+                }`}
             >
-              <p className="text-sm text-white/60">
-                {b.batch}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-white/60">
+                  {b.batch}
+                </p>
+                {selectedBatch === b.batch && (
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full">Active</span>
+                )}
+              </div>
 
               <p className="text-xl font-semibold text-emerald-400">
                 {b.percent}%
@@ -176,7 +189,7 @@ export default function TrainerModuleHistoryEnterprise() {
 
               <div className="w-full bg-slate-700 rounded-full h-2 mt-3">
                 <div
-                  className="bg-emerald-500 h-2 rounded-full"
+                  className="bg-emerald-500 h-2 rounded-full transition-all"
                   style={{ width: `${b.percent}%` }}
                 />
               </div>

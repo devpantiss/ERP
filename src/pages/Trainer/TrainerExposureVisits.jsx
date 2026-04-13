@@ -54,6 +54,22 @@ export default function ExposureVisitReportTable() {
   const [previewImage, setPreviewImage] = useState(null);
   const fileRefs = useRef({});
 
+  /* ===================== FILTERS ===================== */
+  const [filterIndustry, setFilterIndustry] = useState("");
+  const [filterProject, setFilterProject] = useState("");
+  const [filterTrade, setFilterTrade] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  const filteredVisits = useMemo(() => {
+    return visits.filter((v) => {
+      if (filterIndustry && v.industry !== filterIndustry) return false;
+      if (filterProject && v.project !== filterProject) return false;
+      if (filterTrade && v.trade !== filterTrade) return false;
+      if (filterStatus && v.status !== filterStatus) return false;
+      return true;
+    });
+  }, [visits, filterIndustry, filterProject, filterTrade, filterStatus]);
+
   /* ===================== UPLOAD ===================== */
 
   const handleUploadClick = (index) => {
@@ -79,13 +95,13 @@ export default function ExposureVisitReportTable() {
 
   const summary = useMemo(() => {
     return {
-      total: visits.length,
-      planned: visits.filter((v) => v.status === "Planned").length,
-      approved: visits.filter((v) => v.status === "Approved").length,
-      completed: visits.filter((v) => v.status === "Completed").length,
-      submitted: visits.filter((v) => v.status === "Submitted").length,
+      total: filteredVisits.length,
+      planned: filteredVisits.filter((v) => v.status === "Planned").length,
+      approved: filteredVisits.filter((v) => v.status === "Approved").length,
+      completed: filteredVisits.filter((v) => v.status === "Completed").length,
+      submitted: filteredVisits.filter((v) => v.status === "Submitted").length,
     };
-  }, [visits]);
+  }, [filteredVisits]);
 
   /* ===================== UI ===================== */
 
@@ -122,6 +138,45 @@ export default function ExposureVisitReportTable() {
           <SummaryCard label="Submitted" value={summary.submitted} />
         </div>
 
+        {/* ================= FILTERS ================= */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <select
+            value={filterIndustry}
+            onChange={(e) => setFilterIndustry(e.target.value)}
+            className="bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-emerald-400/50 focus:outline-none appearance-none cursor-pointer"
+          >
+            <option value="">All Industries</option>
+            {INDUSTRIES.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
+          </select>
+
+          <select
+            value={filterProject}
+            onChange={(e) => setFilterProject(e.target.value)}
+            className="bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-emerald-400/50 focus:outline-none appearance-none cursor-pointer"
+          >
+            <option value="">All Projects</option>
+            {PROJECTS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+
+          <select
+            value={filterTrade}
+            onChange={(e) => setFilterTrade(e.target.value)}
+            className="bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-emerald-400/50 focus:outline-none appearance-none cursor-pointer"
+          >
+            <option value="">All Trades</option>
+            {["Electrical", "Fitter", "Safety", "Welder"].map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-emerald-400/50 focus:outline-none appearance-none cursor-pointer"
+          >
+            <option value="">All Status</option>
+            {["Planned", "Approved", "Completed", "Submitted"].map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+
         {/* ================= TABLE ================= */}
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -142,7 +197,7 @@ export default function ExposureVisitReportTable() {
 
             <tbody className="divide-y divide-slate-700">
 
-              {visits.map((report, index) => (
+              {filteredVisits.map((report, index) => (
                 <tr
                   key={index}
                   className="hover:bg-transparent/60 transition"

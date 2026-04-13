@@ -1,6 +1,9 @@
 import Pagination from "../../components/common/Pagination";
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 /* ===================== CONSTANT DATA ===================== */
 
@@ -87,6 +90,11 @@ export default function CommunityHistory() {
   const [previewVideo, setPreviewVideo] = useState(null);
   const [previewMeta, setPreviewMeta] = useState(null);
 
+  /* ===================== FILTERS ===================== */
+  const [filterGP, setFilterGP] = useState("");
+  const [filterBlock, setFilterBlock] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+
   /* ===================== ACTIONS ===================== */
 
   const markCompleted = (id) => {
@@ -164,14 +172,49 @@ export default function CommunityHistory() {
     (e) => e.status === "Completed"
   ).length;
 
-  
+  /* ===================== FILTERED DATA ===================== */
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((e) => {
+      if (filterGP && e.gp !== filterGP) return false;
+      if (filterBlock && e.block !== filterBlock) return false;
+      if (filterDate && e.date !== filterDate) return false;
+      return true;
+    });
+  }, [events, filterGP, filterBlock, filterDate]);
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return events?.slice(start, start + itemsPerPage) || [];
-  }, [events, currentPage]);
-  const totalPages = Math.ceil((events?.length || 0) / itemsPerPage);
+    return filteredEvents.slice(start, start + itemsPerPage);
+  }, [filteredEvents, currentPage]);
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+
+  /* ===================== EXPORT ===================== */
+
+  const exportExcel = () => {
+    const rows = filteredEvents.map((e) => ({
+      Name: e.name, Project: e.project, Block: e.block,
+      GP: e.gp, Date: e.date, Participants: e.participants,
+      Location: e.location, Status: e.status,
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "CommunityEvents");
+    XLSX.writeFile(wb, "community_events.xlsx");
+  };
+
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    autoTable(doc, {
+      head: [["Name", "Project", "Block", "GP", "Date", "Participants", "Status"]],
+      body: filteredEvents.map((e) => [
+        e.name, e.project, e.block, e.gp, e.date, e.participants, e.status,
+      ]),
+    });
+    doc.save("community_events.pdf");
+  };
 
   return (
     <>
@@ -188,7 +231,21 @@ export default function CommunityHistory() {
             </p>
           </div>
 
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={exportExcel}
+              className="px-4 py-2 text-sm rounded-lg border border-yellow-400/30
+              text-yellow-400 hover:bg-yellow-400/10 transition font-medium"
+            >
+              Export Excel
+            </button>
+            <button
+              onClick={exportPDF}
+              className="px-4 py-2 text-sm rounded-lg border border-yellow-400/30
+              text-yellow-400 hover:bg-yellow-400/10 transition font-medium"
+            >
+              Export PDF
+            </button>
             <Link
               to="/mobilizer/create-community-drive"
               className="px-4 py-2 text-sm rounded-lg
@@ -204,6 +261,34 @@ export default function CommunityHistory() {
           <Card title="Total Events" value={events.length} />
           <Card title="Completed" value={completedCount} />
           <Card title="Participants" value={totalParticipants} />
+        </div>
+
+        {/* FILTERS */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <select
+            value={filterBlock}
+            onChange={(e) => { setFilterBlock(e.target.value); setCurrentPage(1); }}
+            className="bg-[#020617] border border-yellow-400/20 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-yellow-400/50 focus:outline-none appearance-none cursor-pointer"
+          >
+            <option value="">All Blocks</option>
+            {BLOCKS.map((b) => <option key={b} value={b}>{b}</option>)}
+          </select>
+
+          <select
+            value={filterGP}
+            onChange={(e) => { setFilterGP(e.target.value); setCurrentPage(1); }}
+            className="bg-[#020617] border border-yellow-400/20 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-yellow-400/50 focus:outline-none appearance-none cursor-pointer"
+          >
+            <option value="">All Gram Panchayats</option>
+            {GPS_LIST.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => { setFilterDate(e.target.value); setCurrentPage(1); }}
+            className="bg-[#020617] border border-yellow-400/20 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-yellow-400/50 focus:outline-none"
+          />
         </div>
 
         {/* TABLE */}

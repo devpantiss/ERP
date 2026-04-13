@@ -107,6 +107,8 @@ export default function PlacementDrivesPage({ role = "placement" }) {
 
   const [companyFilter, setCompanyFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
 
   /* ================= PAGINATION ================= */
 
@@ -122,10 +124,16 @@ export default function PlacementDrivesPage({ role = "placement" }) {
         return false;
 
       if (statusFilter && d.status !== statusFilter) return false;
+      if (dateFilter && d.date !== dateFilter) return false;
+      if (
+        locationFilter &&
+        !d.driveLocation.toLowerCase().includes(locationFilter.toLowerCase())
+      )
+        return false;
 
       return true;
     });
-  }, [drives, companyFilter, statusFilter]);
+  }, [drives, companyFilter, statusFilter, dateFilter, locationFilter]);
 
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -257,12 +265,26 @@ export default function PlacementDrivesPage({ role = "placement" }) {
         </div>
 
         {/* FILTERS */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 
           <input
             placeholder="Filter by Company"
             value={companyFilter}
             onChange={e => setCompanyFilter(e.target.value)}
+            className="input"
+          />
+
+          <input
+            placeholder="Filter by Location"
+            value={locationFilter}
+            onChange={e => setLocationFilter(e.target.value)}
+            className="input"
+          />
+
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value)}
             className="input"
           />
 

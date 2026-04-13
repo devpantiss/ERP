@@ -30,6 +30,12 @@ const CandidateEnrollmentStepper = lazy(() => import("./components/Mobilizer/Can
 const CommunityDriveStepper = lazy(() => import("./components/Mobilizer/CommunityDriveStepper"));
 const MobilizerRevenue = lazy(() => import("./pages/Mobilizer/MobilizerRevenue"));
 
+// Shared pages (HR Entitlement + Grievance)
+const SalaryDashboard = lazy(() => import("./pages/shared/SalaryDashboard"));
+const ReimbursementPortal = lazy(() => import("./pages/shared/ReimbursementPortal"));
+const GrievancePortal = lazy(() => import("./pages/shared/GrievancePortal"));
+const SharedAttendancePage = lazy(() => import("./pages/shared/AttendancePage"));
+
 // Trainer
 const TrainerDashboard = lazy(() => import("./pages/Trainer/TrainerDashboard"));
 const TrainerAttendance = lazy(() => import("./pages/Trainer/TrainerAttendance"));
@@ -43,6 +49,7 @@ const ExposureVisitEnterprisePro = lazy(() => import("./pages/Trainer/ExposureVi
 const TrainerLiveFeedHost = lazy(() => import("./pages/Trainer/TrainerLiveFeedHost"));
 const TrainerLiveFeedViewer = lazy(() => import("./pages/Trainer/TrainerLiveFeedViewer"));
 const TrainerRevenue = lazy(() => import("./pages/Trainer/TrainerRevenue"));
+const TeachingManagementSystem = lazy(() => import("./pages/Trainer/TeachingManagementSystem"));
 
 // Placement
 const PlacementDashboard = lazy(() => import("./pages/Placement/PlacementDashboard"));
@@ -129,6 +136,14 @@ function App() {
             <Route path="candidate-enrollment" element={<CandidateEnrollmentStepper />} />
             <Route path="create-community-drive" element={<CommunityDriveStepper />} />
             <Route path="revenue" element={<MobilizerRevenue />} />
+
+            {/* HR Entitlement */}
+            <Route path="hr/attendance" element={<MobilizerAttendance />} />
+            <Route path="hr/salary" element={<SalaryDashboard />} />
+            <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
+
+            {/* Grievance */}
+            <Route path="grievance" element={<GrievancePortal />} />
           </Route>
 
           {/* Trainer Layout Routes */}
@@ -146,6 +161,16 @@ function App() {
             <Route path="module-progress" element={<TrainersModuleHistory />} />
             <Route path="live-feed-host" element={<TrainerLiveFeedHost />} />
             <Route path="revenue" element={<TrainerRevenue />} />
+
+            {/* Teaching Management System (separate from HR — uses original attendance) */}
+            <Route path="teaching-management" element={<TrainerAttendance />} />
+
+            {/* HR Entitlement (no attendance for Trainer) */}
+            <Route path="hr/salary" element={<SalaryDashboard />} />
+            <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
+
+            {/* Grievance */}
+            <Route path="grievance" element={<GrievancePortal />} />
           </Route>
 
           {/* Placement Layout Routes */}
@@ -162,6 +187,14 @@ function App() {
             <Route path="job-openings" element={<PlacementOpeningsDashboard />} />
             <Route path="job-openings/new" element={<PlacementOpeningsDashboard />} />
             <Route path="revenue" element={<PlacementRevenue />} />
+
+            {/* HR Entitlement */}
+            <Route path="hr/attendance" element={<SharedAttendancePage />} />
+            <Route path="hr/salary" element={<SalaryDashboard />} />
+            <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
+
+            {/* Grievance */}
+            <Route path="grievance" element={<GrievancePortal />} />
           </Route>
 
           {/* Admin Layout Routes */}
