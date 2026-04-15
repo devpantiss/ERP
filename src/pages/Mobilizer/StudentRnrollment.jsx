@@ -1,6 +1,7 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import CandidateEnrollmentStepper from "../../components/Mobilizer/CandidateEnrollmentStepper";
 
 /* ===================== CONSTANTS ===================== */
 
@@ -47,6 +48,7 @@ export default function CandidatesTableDark() {
   const [status, setStatus] = useState("");
 
   const [previewFile, setPreviewFile] = useState(null);
+  const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
 
   /* ===================== FILTER ===================== */
 
@@ -165,14 +167,14 @@ export default function CandidatesTableDark() {
 
             {/* ACTION */}
             <div className="ml-auto">
-              <Link
-                to="/mobilizer/candidate-enrollment"
+              <button
+                onClick={() => setShowEnrollmentForm(true)}
                 className="px-4 py-2 text-sm rounded-md
                 bg-yellow-400 text-black font-semibold
-                hover:bg-yellow-300 transition shadow-lg shadow-yellow-400/10"
+                hover:bg-yellow-300 transition shadow-lg shadow-yellow-400/10 cursor-pointer"
               >
                 + Enroll Candidate
-              </Link>
+              </button>
             </div>
 
           </div>
@@ -311,6 +313,11 @@ export default function CandidatesTableDark() {
       {previewFile && (
         <FileModal file={previewFile} onClose={() => setPreviewFile(null)} />
       )}
+      {/* ================= ENROLLMENT FORM MODAL ================= */}
+      {showEnrollmentForm && (
+        <CandidateEnrollmentStepper onClose={() => setShowEnrollmentForm(false)} />
+      )}
+
     </>
   );
 }
@@ -388,24 +395,13 @@ function FileModal({ file, onClose }) {
   const isPDF = file?.includes(".pdf");
 
   return (
-    <div
-      className="fixed inset-0 bg-transparent/70 flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <div
-        className="bg-[#020617] rounded-xl p-4 max-w-3xl w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex justify-between mb-3">
+    <SlidePanel open={true} onClose={onClose} title="Document Preview" width="lg">
+        <div className="flex justify-end mb-3">
           <button
             onClick={() => window.open(file)}
             className="px-3 py-1 text-sm border border-yellow-400 text-yellow-400 rounded"
           >
             Download
-          </button>
-
-          <button onClick={onClose} className="text-white/60 hover:text-white">
-            ✕
           </button>
         </div>
 
@@ -414,7 +410,6 @@ function FileModal({ file, onClose }) {
         ) : (
           <img src={file} className="w-full rounded-lg" />
         )}
-      </div>
-    </div>
+    </SlidePanel>
   );
 }

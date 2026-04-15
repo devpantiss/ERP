@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import SlidePanel from "../../components/common/SlidePanel";
 
 /* ===================== MAIN ===================== */
 
-export default function NewPlacementDrivePage() {
-  const navigate = useNavigate();
+export default function NewPlacementDrivePage({ onClose }) {
 
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
@@ -59,7 +58,7 @@ export default function NewPlacementDrivePage() {
   function handleSubmit() {
     console.log("FINAL DATA", form);
     alert("Placement Drive Created Successfully");
-    navigate("/placement-officer/placement-drives");
+    if (onClose) onClose();
   }
 
   function handleDraft() {
@@ -70,13 +69,8 @@ export default function NewPlacementDrivePage() {
   /* ================= UI ================= */
 
   return (
-    <section className="p-8 bg-[#111827] min-h-screen text-white/90">
-
-      <div className="max-w-5xl mx-auto">
-
-        <h1 className="text-2xl font-semibold mb-6">
-          Create Placement Drive
-        </h1>
+    <SlidePanel open={true} onClose={onClose} title="Create Placement Drive" width="4xl">
+      <div className="space-y-6">
 
         <Stepper step={step} />
 
@@ -138,11 +132,9 @@ export default function NewPlacementDrivePage() {
           </div>
 
         </div>
-
       </div>
 
       <style>{`
-
         .input {
           width: 100%;
           padding: 10px;
@@ -186,8 +178,7 @@ export default function NewPlacementDrivePage() {
         }
 
       `}</style>
-
-    </section>
+    </SlidePanel>
   );
 }
 

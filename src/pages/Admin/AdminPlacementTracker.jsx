@@ -1,4 +1,5 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useState, useMemo } from "react";
 import { FileText, CheckCircle, Clock, X, Eye, Upload, ZoomIn, ShieldCheck, AlertCircle } from "lucide-react";
 
@@ -59,12 +60,11 @@ function DocPreviewModal({ student, onClose, onVerifyDoc, onVerifyAll }) {
   const uploadedCount = DOC_FIELDS.filter((f) => student.docs[f.key]).length;
   const verifiedCount = DOC_FIELDS.filter((f) => student.docs[f.key]?.verified).length;
   const allUploaded = uploadedCount === DOC_FIELDS.length;
-  const allVerified = allUploaded && verifiedCount === DOC_FIELDS.length;
+  const allVerified = verifiedCount === DOC_FIELDS.length;
   const activeDoc = student.docs[activeTab];
 
   return (
-    <div className="fixed inset-0 bg-transparent/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-[#111827] border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <SlidePanel open={true} onClose={onClose} title={`${student.name} — Document Verification`} width="xl">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
@@ -238,18 +238,7 @@ function DocPreviewModal({ student, onClose, onVerifyDoc, onVerifyAll }) {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Full-screen zoom */}
-      {zoomedDoc && (
-        <div className="fixed inset-0 bg-transparent/90 z-[60] flex items-center justify-center" onClick={() => setZoomedDoc(null)}>
-          <button onClick={() => setZoomedDoc(null)} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20">
-            <X size={20} />
-          </button>
-          <img src={zoomedDoc} alt="zoomed" className="max-w-[90vw] max-h-[90vh] rounded-lg" />
-        </div>
-      )}
-    </div>
+      </SlidePanel>
   );
 }
 

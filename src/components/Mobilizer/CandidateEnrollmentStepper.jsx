@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import Step1 from "./Dashboard/EnrollmentSteps/Step1";
 import Step2 from "./Dashboard/EnrollmentSteps/Step2";
 import Step3 from "./Dashboard/EnrollmentSteps/Step3";
@@ -12,7 +13,7 @@ const STEPS = [
   "Live Photo & Location",
 ];
 
-export default function CandidateEnrollmentStepper() {
+export default function CandidateEnrollmentStepper({ onClose }) {
   const [step, setStep] = useState(0);
   const [canProceed, setCanProceed] = useState(false);
 
@@ -28,18 +29,18 @@ export default function CandidateEnrollmentStepper() {
     setFormData((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <section className="min-h-screen bg-transparent text-white/90">
+    <SlidePanel open={true} onClose={onClose} title="Candidate Enrollment" width="4xl">
       {/* ================= HEADER ================= */}
-      <header className="bg-[#020617] border-b border-yellow-400/20 px-6 py-3 flex justify-between items-center">
-        <h2 className="font-semibold text-white/90">
-          Candidate Enrollment
+      <div className="flex justify-between items-center mb-6 border-b border-yellow-400/20 pb-4">
+        <h2 className="text-xl font-semibold text-yellow-400">
+          Step {step + 1} of {STEPS.length}
         </h2>
 
         <div className="flex gap-3">
           <button
             disabled={step === 0}
             onClick={() => setStep(step - 1)}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer
+            className={`px-3 py-1.5 rounded-md text-sm font-medium transition cursor-pointer
               ${
                 step === 0
                   ? "bg-slate-700 text-white/60 cursor-not-allowed"
@@ -52,24 +53,29 @@ export default function CandidateEnrollmentStepper() {
           <button
             disabled={!canProceed}
             onClick={() => {
-              setCanProceed(false);
-              setStep(step + 1);
+              if (step === STEPS.length - 1) {
+                // Submit logic here
+                onClose();
+              } else {
+                setCanProceed(false);
+                setStep(step + 1);
+              }
             }}
-            className={`px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer
+            className={`px-4 py-1.5 rounded-md text-sm font-medium transition cursor-pointer
               ${
                 canProceed
                   ? "bg-yellow-400 text-black hover:bg-yellow-300"
                   : "bg-slate-700 text-white/60 cursor-not-allowed"
               }`}
           >
-            Next →
+            {step === STEPS.length - 1 ? "Submit" : "Next →"}
           </button>
         </div>
-      </header>
+      </div>
 
       {/* ================= BODY ================= */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <h1 className="text-2xl md:text-3xl font-semibold mb-6 text-yellow-400">
+      <div className="space-y-6">
+        <h1 className="text-2xl font-semibold text-white/90">
           {STEPS[step]}
         </h1>
 
@@ -115,6 +121,6 @@ export default function CandidateEnrollmentStepper() {
           )}
         </div>
       </div>
-    </section>
+    </SlidePanel>
   );
 }

@@ -1,4 +1,5 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useState, useMemo } from "react";
 import { CheckCircle, XCircle, Calendar, FileText, Eye, X, ZoomIn, ShieldCheck, Upload, AlertCircle, Clock } from "lucide-react";
 
@@ -46,33 +47,22 @@ function DocPreviewModal({ visit, onClose, onVerifyDoc, onVerifyAll }) {
   const uploadedCount = DOC_FIELDS.filter((f) => visit.docs[f.key]).length;
   const verifiedCount = DOC_FIELDS.filter((f) => visit.docs[f.key]?.verified).length;
   const allUploaded = uploadedCount === DOC_FIELDS.length;
-  const allVerified = allUploaded && verifiedCount === DOC_FIELDS.length;
+  const allVerified = verifiedCount === DOC_FIELDS.length;
   const activeDoc = visit.docs[activeTab];
 
   return (
-    <div className="fixed inset-0 bg-transparent/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-[#111827] border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-100">{visit.trainer} — Visit Documents</h3>
-            <p className="text-xs text-white/60 mt-0.5">
-              {visit.industry} • {visit.batch} • {visit.trade} • {visit.date}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-white/60 bg-transparent px-2.5 py-1 rounded-lg">
-              {verifiedCount}/{DOC_FIELDS.length} verified
-            </span>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-700 text-white/60 hover:text-white transition">
-              <X size={18} />
-            </button>
-          </div>
+    <SlidePanel open={true} onClose={onClose} title={`${visit.trainer} — Visit Documents`} width="xl">
+        <p className="text-xs text-white/60 mb-4">
+          {visit.industry} • {visit.batch} • {visit.trade} • {visit.date}
+        </p>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-xs text-white/60 bg-transparent px-2.5 py-1 rounded-lg">
+            {verifiedCount}/{DOC_FIELDS.length} verified
+          </span>
         </div>
 
         {/* Document Tabs */}
-        <div className="flex border-b border-slate-700 px-4 overflow-x-auto">
+        <div className="flex border-b border-slate-700 mb-4 overflow-x-auto">
           {DOC_FIELDS.map((f) => {
             const doc = visit.docs[f.key];
             return (
@@ -88,7 +78,7 @@ function DocPreviewModal({ visit, onClose, onVerifyDoc, onVerifyAll }) {
         </div>
 
         {/* Preview Area */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto">
           {activeDoc ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -155,7 +145,7 @@ function DocPreviewModal({ visit, onClose, onVerifyDoc, onVerifyAll }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-700 flex items-center justify-between">
+        <div className="pt-4 mt-4 border-t border-slate-700 flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs">
             {DOC_FIELDS.map((f) => {
               const d = visit.docs[f.key];
@@ -185,15 +175,7 @@ function DocPreviewModal({ visit, onClose, onVerifyDoc, onVerifyAll }) {
             )}
           </div>
         </div>
-      </div>
-
-      {zoomedDoc && (
-        <div className="fixed inset-0 bg-transparent/90 z-[60] flex items-center justify-center" onClick={() => setZoomedDoc(null)}>
-          <button onClick={() => setZoomedDoc(null)} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 text-white hover:bg-white/20"><X size={20} /></button>
-          <img src={zoomedDoc} alt="zoomed" className="max-w-[90vw] max-h-[90vh] rounded-lg" />
-        </div>
-      )}
-    </div>
+    </SlidePanel>
   );
 }
 

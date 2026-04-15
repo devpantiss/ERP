@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import SlidePanel from "../../common/SlidePanel";
 import { useState } from "react";
 
 /* ===================== INITIAL DATA ===================== */
@@ -234,9 +235,7 @@ export default function TrainerFeedbackFintech() {
       </div>
 
       {/* ================= MODAL ================= */}
-      {showModal && (
-        <div className="fixed inset-0 bg-transparent/70 flex items-center justify-center z-50">
-          <div className="bg-[#0f172a] border border-slate-700 rounded-xl p-6 w-full max-w-md">
+      <SlidePanel open={!!showModal} onClose={() => setShowModal(false)} title="Submit Student Review" width="md">
 
             <h3 className="text-lg font-semibold text-slate-100 mb-4">
               Submit Student Review
@@ -293,9 +292,7 @@ export default function TrainerFeedbackFintech() {
                 Submit
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </section>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useLocation } from "react-router-dom";
 import {
   Receipt,
@@ -286,18 +287,8 @@ export default function ReimbursementPortal() {
       {/* ═══════════════════════════════════════════════════════
          NEW REIMBURSEMENT MODAL
       ═══════════════════════════════════════════════════════ */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-xl flex items-start justify-center z-50 p-4 pt-8 overflow-y-auto" onClick={() => setShowForm(false)}>
-          <div className="bg-[#0b1220] border border-white/10 rounded-2xl w-full max-w-2xl p-6 sm:p-8 space-y-6 shadow-2xl my-8" onClick={(e) => e.stopPropagation()}>
-            {/* Modal header */}
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <Receipt size={20} className={a.text} /> New Reimbursement Claim
-              </h3>
-              <button onClick={() => setShowForm(false)} className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-colors">
-                <X size={18} />
-              </button>
-            </div>
+      <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="New Reimbursement Claim" width="lg">
+          <div className="space-y-6">
 
             {/* Tour Info */}
             <div className="space-y-4">
@@ -449,8 +440,7 @@ export default function ReimbursementPortal() {
               <Send size={16} /> Submit Reimbursement Claim
             </button>
           </div>
-        </div>
-      )}
+      </SlidePanel>
     </section>
   );
 }

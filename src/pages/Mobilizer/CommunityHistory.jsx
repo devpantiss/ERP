@@ -1,6 +1,7 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import CommunityEventStepper from "../../components/Mobilizer/CommunityDriveStepper";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -94,6 +95,8 @@ export default function CommunityHistory() {
   const [filterGP, setFilterGP] = useState("");
   const [filterBlock, setFilterBlock] = useState("");
   const [filterDate, setFilterDate] = useState("");
+  
+  const [showEventForm, setShowEventForm] = useState(false);
 
   /* ===================== ACTIONS ===================== */
 
@@ -246,13 +249,13 @@ export default function CommunityHistory() {
             >
               Export PDF
             </button>
-            <Link
-              to="/mobilizer/create-community-drive"
+            <button
+              onClick={() => setShowEventForm(true)}
               className="px-4 py-2 text-sm rounded-lg
-              bg-yellow-400 text-black font-semibold hover:bg-yellow-300 transition"
+              bg-yellow-400 text-black font-semibold hover:bg-yellow-300 transition cursor-pointer"
             >
               + Create Event
-            </Link>
+            </button>
           </div>
         </div>
 
@@ -412,14 +415,14 @@ export default function CommunityHistory() {
 
       {/* IMAGE MODAL */}
       {previewImage && (
-        <Modal onClose={() => setPreviewImage(null)}>
+        <SlidePanel open={true} onClose={() => setPreviewImage(null)} width="md">
           <img src={previewImage} className="max-w-xl rounded-lg" />
-        </Modal>
+        </SlidePanel>
       )}
 
       {/* VIDEO MODAL WITH WATERMARK OVERLAY */}
       {previewVideo && (
-        <Modal onClose={() => setPreviewVideo(null)}>
+        <SlidePanel open={true} onClose={() => setPreviewVideo(null)} width="md">
           <div className="relative">
             <video src={previewVideo} controls autoPlay className="max-w-2xl rounded-lg" />
 
@@ -433,7 +436,12 @@ export default function CommunityHistory() {
               </div>
             )}
           </div>
-        </Modal>
+        </SlidePanel>
+      )}
+
+      {/* ================= EVENT FORM MODAL ================= */}
+      {showEventForm && (
+        <CommunityEventStepper onClose={() => setShowEventForm(false)} />
       )}
     </>
   );
@@ -471,15 +479,5 @@ function UploadButton({ disabled, onFile, label }) {
   );
 }
 
-function Modal({ children, onClose }) {
-  return (
-    <div
-      className="fixed inset-0 bg-transparent/70 flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <div onClick={(e) => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  );
-}
+
+

@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   FileText, Search, CheckCircle2, XCircle, Clock, Eye, ChevronDown,
   Building2, Filter, X, Check, Ban, CreditCard, ScrollText,
@@ -324,16 +325,8 @@ export default function SuperAdminInvoiceTracking() {
       {/* ═══════════════════════════════════════════════════════
          DETAIL \& EVIDENCE MODAL
       ═══════════════════════════════════════════════════════ */}
-      {detailInv && (
-        <div 
-          className="fixed inset-0 bg-transparent/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in" 
-          onClick={() => setDetailInv(null)}
-        >
-          <div 
-            className="bg-[#0f1522] border border-white/10 rounded-3xl w-full max-w-2xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-1 ring-white/5 scale-95 animate-scale-up" 
-            onClick={(e) => e.stopPropagation()}
-            style={{ animationFillMode: "forwards" }}
-          >
+      <SlidePanel open={!!detailInv} onClose={() => setDetailInv(null)} title="Invoice Details" width="xl">
+          <div>
             {(() => {
               const inv = detailInv;
               const sm  = STATUS_META[inv.status];
@@ -487,35 +480,14 @@ export default function SuperAdminInvoiceTracking() {
               );
             })()}
           </div>
-        </div>
-      )}
+      </SlidePanel>
 
       {/* ═══════════════════════════════════════════════════════
          PAY MODAL
       ═══════════════════════════════════════════════════════ */}
-      {payModal && (
-        <div 
-          className="fixed inset-0 bg-transparent/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-fade-in" 
-          onClick={() => { setPayModal(null); setTxnRef(""); }}
-        >
-          <div 
-            className="bg-[#0f1522] border border-emerald-500/20 rounded-3xl w-full max-w-md p-8 shadow-[0_0_50px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10 relative overflow-hidden scale-95 animate-scale-up" 
-            onClick={(e) => e.stopPropagation()}
-            style={{ animationFillMode: "forwards" }}
-          >
-            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 blur-[60px] rounded-full pointer-events-none" />
-            
-            <div className="relative z-10 flex items-center justify-between mb-8">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <CreditCard size={20} />
-                </div>
-                <h3 className="text-xl font-bold text-slate-100 tracking-tight">Confirm Payment</h3>
-              </div>
-              <button onClick={() => { setPayModal(null); setTxnRef(""); }} className="text-slate-500 hover:text-white transition rounded-full p-1 hover:bg-white/10"><X size={20} /></button>
-            </div>
-
-            <div className="relative z-10 space-y-5">
+      <SlidePanel open={!!payModal} onClose={() => { setPayModal(null); setTxnRef(""); }} title="Confirm Payment" width="md">
+            <div className="space-y-5">
+              {payModal && (<>
               <div className="bg-transparent/30 p-5 rounded-2xl border border-white/5 space-y-4">
                 <div className="flex justify-between items-center text-[13px]">
                   <span className="text-white/60 font-medium">Target Invoice</span>
@@ -549,10 +521,9 @@ export default function SuperAdminInvoiceTracking() {
               >
                 <CheckCircle2 size={18} /> Mark as Disbursed
               </button>
+              </>)}
             </div>
-          </div>
-        </div>
-      )}
+      </SlidePanel>
 
       {/* Tailwind specific animations injected via inline style block to ensure they exist since we removed framer */}
       <style dangerouslySetInnerHTML={{__html: `

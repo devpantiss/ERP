@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   Building2,
   MapPin,
@@ -37,7 +38,7 @@ const STEPS = [
 
 /* ================= COMPONENT ================= */
 
-export default function PlacementCompanyDatabaseStepper() {
+export default function PlacementCompanyDatabaseStepper({ onClose }) {
   const [step, setStep] = useState(1);
 
   const [form, setForm] = useState({
@@ -62,9 +63,8 @@ export default function PlacementCompanyDatabaseStepper() {
   /* ================= UI ================= */
 
   return (
-    <section className="min-h-screen bg-transparent text-white/90 p-8">
-
-      <div className="max-w-5xl mx-auto space-y-8">
+    <SlidePanel open={true} onClose={onClose} title="Company Registration" width="4xl">
+      <div className="space-y-8">
 
         {/* HEADER */}
         <div>
@@ -174,7 +174,7 @@ export default function PlacementCompanyDatabaseStepper() {
           </div>
         </div>
       </div>
-    </section>
+    </SlidePanel>
   );
 }
 

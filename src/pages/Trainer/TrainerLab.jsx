@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   Layers,
   ChevronRight,
@@ -382,15 +383,9 @@ function UploadModal({ onClose, onSubmit }) {
     classImage && activityImage && projectImage;
 
   return (
-    <div className="fixed inset-0 bg-transparent/80 backdrop-blur-md flex items-center justify-center z-50">
-
-      <div className="bg-[#020617] border border-white/[0.08] rounded-2xl p-6 w-full max-w-2xl">
-
-        <h3 className="text-xl font-semibold mb-1">
-          Upload Completion Evidence
-        </h3>
-
-        <p className="text-sm text-white/60 mb-6">
+    <SlidePanel open={true} onClose={onClose} title="Upload Completion Evidence" width="lg">
+      <div className="space-y-6">
+        <p className="text-sm text-white/60">
           Upload proof to complete module
         </p>
 
@@ -435,9 +430,8 @@ function UploadModal({ onClose, onSubmit }) {
           </button>
 
         </div>
-
       </div>
-    </div>
+    </SlidePanel>
   );
 }
 

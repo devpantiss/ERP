@@ -1,4 +1,5 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -14,7 +15,9 @@ import {
   FaClock,
   FaChevronLeft,
   FaChevronRight,
+  FaMapMarkerAlt,
 } from "react-icons/fa";
+import PlacementStudentDetailsStepperPage from "./PlacementStudentDetailsStepper";
 
 /* ================= DUMMY DATA ================= */
 
@@ -43,6 +46,9 @@ export default function CandidatePlacementSheetEnterpriseDark() {
   const [previewFile, setPreviewFile] = useState(null);
   const [progress, setProgress] = useState({});
   const [page, setPage] = useState(1);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   const pageSize = 20;
 
@@ -200,9 +206,7 @@ export default function CandidatePlacementSheetEnterpriseDark() {
           <div className="w-full lg:w-auto">
 
             <button
-              onClick={() =>
-                navigate("/placement-officer/placements-list/new")
-              }
+              onClick={() => setShowForm(true)}
               className="
               w-full lg:w-auto
               bg-cyan-500 hover:bg-cyan-400
@@ -314,6 +318,11 @@ export default function CandidatePlacementSheetEnterpriseDark() {
         />
       )}
 
+      {/* SlidePanel Form */}
+      {showForm && (
+        <PlacementStudentDetailsStepperPage onClose={() => setShowForm(false)} />
+      )}
+
     </div>
   );
 }
@@ -393,25 +402,12 @@ function PreviewModal({ file, onClose }) {
   const isImage = file.type.startsWith("image");
 
   return (
-    <div className="fixed inset-0 bg-transparent/70 backdrop-blur flex justify-center items-center z-50">
-
-      <div className="bg-[#111827] border border-cyan-900 rounded-xl p-4 w-[90%] max-w-3xl relative">
-
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-white/60"
-        >
-          <FaTimes />
-        </button>
-
+    <SlidePanel open={true} onClose={onClose} title="Document Preview" width="lg">
         {isImage ? (
           <img src={url} alt="" className="max-h-[70vh] mx-auto rounded" />
         ) : (
           <iframe src={url} className="w-full h-[70vh]" title="preview" />
         )}
-
-      </div>
-
-    </div>
+    </SlidePanel>
   );
 }

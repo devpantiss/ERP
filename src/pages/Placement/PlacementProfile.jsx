@@ -7,20 +7,21 @@ import {
   Upload,
   Eye,
   X,
+  Briefcase
 } from "lucide-react";
 
-const STORAGE_KEY = "mobilizer_profile_docs";
+const STORAGE_KEY = "placement_profile_docs";
 
-const MobilizerProfile = () => {
+const PlacementProfile = () => {
   const [profileImage, setProfileImage] = useState("");
   const [previewDoc, setPreviewDoc] = useState(null);
   const [showEdit, setShowEdit] = useState(false);
 
   const [details, setDetails] = useState({
     account: {
-      email: "gautamsam23@gmail.com",
-      category: "Plumber",
-      service: "Water Maintenance",
+      email: "placement@erp.com",
+      category: "Placement Manager",
+      service: "Corporate Relations",
     },
     personal: {
       dob: "15/08/1998 (26 years)",
@@ -134,13 +135,16 @@ const MobilizerProfile = () => {
           </div>
 
           <div>
-            <h1 className="text-xl font-semibold">Gautam Samanta</h1>
-            <p className="text-sm text-white/60">MWC120</p>
+            <h1 className="text-xl font-semibold flex items-center gap-2">
+              <Briefcase className="text-cyan-400" size={20} />
+              Gautam Samanta
+            </h1>
+            <p className="text-sm text-white/60">Placement Manager</p>
           </div>
 
           <button
             onClick={() => setShowEdit(true)}
-            className="ml-auto flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black text-sm font-medium rounded-lg hover:bg-yellow-300 transition cursor-pointer"
+            className="ml-auto flex items-center gap-2 px-4 py-2 bg-cyan-400 text-black text-sm font-medium rounded-lg hover:bg-cyan-300 transition cursor-pointer"
           >
             <Pencil size={16} /> Edit Profile
           </button>
@@ -148,8 +152,8 @@ const MobilizerProfile = () => {
 
         {/* ================= GRID ================= */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-[#020617] rounded-2xl border border-yellow-400/20 p-6">
-            <h3 className="font-semibold mb-4 text-yellow-400">Account Details</h3>
+          <div className="bg-[#020617] rounded-2xl border border-cyan-400/20 p-6">
+            <h3 className="font-semibold mb-4 text-cyan-400">Account Details</h3>
             <div className="grid grid-cols-2 gap-4">
               <Field label="Email" value={details.account.email} />
               <Field label="Category" value={details.account.category} />
@@ -157,8 +161,8 @@ const MobilizerProfile = () => {
             </div>
           </div>
 
-          <div className="bg-[#020617] rounded-2xl border border-yellow-400/20 p-6">
-            <h3 className="font-semibold mb-4 text-yellow-400">Personal Details</h3>
+          <div className="bg-[#020617] rounded-2xl border border-cyan-400/20 p-6">
+            <h3 className="font-semibold mb-4 text-cyan-400">Personal Details</h3>
             <div className="grid grid-cols-2 gap-4">
               {Object.entries(details.personal).map(([k, v]) => (
                 <Field key={k} label={k} value={v} />
@@ -168,8 +172,8 @@ const MobilizerProfile = () => {
         </div>
 
         {/* ================= ADDRESS ================= */}
-        <div className="bg-[#020617] rounded-2xl border border-yellow-400/20 p-6">
-          <h3 className="font-semibold mb-4 text-yellow-400">Address Details</h3>
+        <div className="bg-[#020617] rounded-2xl border border-cyan-400/20 p-6">
+          <h3 className="font-semibold mb-4 text-cyan-400">Address Details</h3>
           <div className="grid grid-cols-3 gap-4">
             {Object.entries(details.address).map(([k, v]) => (
               <Field key={k} label={k} value={v} />
@@ -178,8 +182,8 @@ const MobilizerProfile = () => {
         </div>
 
         {/* ================= DOCUMENTS ================= */}
-        <div className="bg-[#020617] rounded-2xl border border-yellow-400/20 p-6">
-          <h3 className="flex items-center gap-2 font-semibold mb-6 text-yellow-400">
+        <div className="bg-[#020617] rounded-2xl border border-cyan-400/20 p-6">
+          <h3 className="flex items-center gap-2 font-semibold mb-6 text-cyan-400">
             <FileText size={18} /> Documents
           </h3>
 
@@ -187,7 +191,7 @@ const MobilizerProfile = () => {
             {documents.map((doc, idx) => (
               <div
                 key={doc.title}
-                className="border border-yellow-400/20 rounded-xl p-4 space-y-3 bg-transparent"
+                className="border border-cyan-400/20 rounded-xl p-4 space-y-3 bg-transparent"
               >
                 <div className="flex justify-between items-start">
                   <div>
@@ -205,13 +209,13 @@ const MobilizerProfile = () => {
                     {doc.file && (
                       <button
                         onClick={() => setPreviewDoc(doc.file)}
-                        className="border border-yellow-400/30 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 hover:bg-yellow-400/10"
+                        className="border border-cyan-400/30 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 hover:bg-cyan-400/10"
                       >
                         <Eye size={14} /> View
                       </button>
                     )}
 
-                    <label className="border border-yellow-400/30 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 cursor-pointer hover:bg-yellow-400/10">
+                    <label className="border border-cyan-400/30 px-3 py-1.5 rounded-lg text-sm flex items-center gap-1 cursor-pointer hover:bg-cyan-400/10">
                       <Upload size={14} /> Upload
                       <input
                         type="file"
@@ -305,4 +309,4 @@ const MobilizerProfile = () => {
   );
 };
 
-export default MobilizerProfile;
+export default PlacementProfile;

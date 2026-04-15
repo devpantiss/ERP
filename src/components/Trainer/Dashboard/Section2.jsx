@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import SlidePanel from "../../common/SlidePanel";
 
 /* ===================== AUTO-GENERATED 6 MONTH DATA ===================== */
 
@@ -296,37 +297,13 @@ export default function Section2() {
       </section>
 
       {/* ================= CERTIFICATE MODAL ================= */}
-      {showCertificate && (
-        <div
-          className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50"
-          onClick={() => setShowCertificate(false)}
-        >
-          <div
-            className="bg-[#0f172a] border border-slate-700 rounded-xl p-6
-            max-w-3xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-semibold text-slate-100 mb-4">
-              TOT Certification Document
-            </h3>
-
+      <SlidePanel open={showCertificate} onClose={() => setShowCertificate(false)} title="TOT Certification Document" width="lg">
             <img
               src={trainer.totCertificate}
               alt="TOT Certificate"
               className="rounded-lg border border-slate-700"
             />
-
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={() => setShowCertificate(false)}
-                className="px-4 py-2 bg-emerald-500 text-black rounded-md"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </>
   );
 }

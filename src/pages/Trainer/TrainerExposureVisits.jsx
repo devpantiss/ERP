@@ -1,5 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import SlidePanel from "../../components/common/SlidePanel";
+import ExposureVisitEnterprisePro from "./ExposureVisitsStepper";
 
 /* ===================== CONFIG ===================== */
 
@@ -53,6 +55,8 @@ export default function ExposureVisitReportTable() {
   const [visits, setVisits] = useState(generateVisits());
   const [previewImage, setPreviewImage] = useState(null);
   const fileRefs = useRef({});
+
+  const [showExposureForm, setShowExposureForm] = useState(false);
 
   /* ===================== FILTERS ===================== */
   const [filterIndustry, setFilterIndustry] = useState("");
@@ -118,9 +122,7 @@ export default function ExposureVisitReportTable() {
           </h2>
 
           <button
-            onClick={() =>
-              navigate("/trainer/exposure-visits/new")
-            }
+            onClick={() => setShowExposureForm(true)}
             className="px-4 py-2 rounded-md
             bg-emerald-500 text-black font-medium
             hover:bg-emerald-400 transition"
@@ -321,23 +323,16 @@ export default function ExposureVisitReportTable() {
         </div>
       </section>
 
-      {/* ================= IMAGE MODAL ================= */}
-      {previewImage && (
-        <div
-          className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50"
-          onClick={() => setPreviewImage(null)}
-        >
-          <div
-            className="bg-[#0f172a] border border-slate-700 rounded-xl p-6 max-w-4xl w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img
-              src={previewImage}
-              alt="Exposure"
-              className="w-full rounded-lg"
-            />
-          </div>
-        </div>
+      <SlidePanel open={!!previewImage} onClose={() => setPreviewImage(null)} title="Visit Documentation" width="lg">
+          <img
+            src={previewImage}
+            alt="Exposure"
+            className="w-full rounded-lg"
+          />
+      </SlidePanel>
+
+      {showExposureForm && (
+        <ExposureVisitEnterprisePro onClose={() => setShowExposureForm(false)} />
       )}
     </>
   );

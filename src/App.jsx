@@ -26,8 +26,6 @@ const StudentEnrollment = lazy(() => import("./pages/Mobilizer/StudentRnrollment
 const CommunityHistory = lazy(() => import("./pages/Mobilizer/CommunityHistory"));
 const MobilizerAttendance = lazy(() => import("./pages/Mobilizer/MobilizerAttendance"));
 const MobilizerProfile = lazy(() => import("./pages/Mobilizer/MobilizerProfile"));
-const CandidateEnrollmentStepper = lazy(() => import("./components/Mobilizer/CandidateEnrollmentStepper"));
-const CommunityDriveStepper = lazy(() => import("./components/Mobilizer/CommunityDriveStepper"));
 const MobilizerRevenue = lazy(() => import("./pages/Mobilizer/MobilizerRevenue"));
 
 // Shared pages (HR Entitlement + Grievance)
@@ -45,7 +43,6 @@ const TrainerStudyModules = lazy(() => import("./pages/Trainer/TrainerStudyModul
 const TrainerProfile = lazy(() => import("./pages/Trainer/TrainerProfile"));
 const TrainerLab = lazy(() => import("./pages/Trainer/TrainerLab"));
 const TrainersModuleHistory = lazy(() => import("./pages/Trainer/TrainersModuleHistory"));
-const ExposureVisitEnterprisePro = lazy(() => import("./pages/Trainer/ExposureVisitsStepper"));
 const TrainerLiveFeedHost = lazy(() => import("./pages/Trainer/TrainerLiveFeedHost"));
 const TrainerLiveFeedViewer = lazy(() => import("./pages/Trainer/TrainerLiveFeedViewer"));
 const TrainerRevenue = lazy(() => import("./pages/Trainer/TrainerRevenue"));
@@ -61,6 +58,7 @@ const PlacementStudentsList = lazy(() => import("./pages/Placement/PlacementsStu
 const PlacementStudentDetailsStepper = lazy(() => import("./pages/Placement/PlacementStudentDetailsStepper"));
 const PlacementOpeningsDashboard = lazy(() => import("./pages/Placement/PlacementOpeningsDashboard"));
 const PlacementRevenue = lazy(() => import("./pages/Placement/PlacementRevenue"));
+const PlacementProfile = lazy(() => import("./pages/Placement/PlacementProfile"));
 
 // Admin
 const AdminDashboard = lazy(() => import("./pages/Admin/AdminDashboard"));
@@ -78,6 +76,9 @@ const AdminMobilizerDashboard = lazy(() => import("./pages/Admin/AdminMobilizerD
 const AdminCandidateApprovals = lazy(() => import("./pages/Admin/AdminCandidateApprovals"));
 const AdminCommunityEvents = lazy(() => import("./pages/Admin/AdminCommunityEvents"));
 const AdminTrainerList = lazy(() => import("./pages/Admin/AdminTrainerList"));
+const AdminSalaryApprovals = lazy(() => import("./pages/Admin/AdminSalaryApprovals"));
+const AdminProcurement = lazy(() => import("./pages/Admin/AdminProcurement"));
+const AdminApprovals = lazy(() => import("./pages/Admin/AdminApprovals"));
 const AdminTrainerDashboard = lazy(() => import("./pages/Admin/AdminTrainerDashboard"));
 const AdminExposureVisitApprovals = lazy(() => import("./pages/Admin/AdminExposureVisitApprovals"));
 const AdminModuleProgress = lazy(() => import("./pages/Admin/AdminModuleProgress"));
@@ -133,8 +134,6 @@ function App() {
             <Route path="community-engagement" element={<CommunityHistory />} />
             <Route path="attendance" element={<MobilizerAttendance />} />
             <Route path="profile" element={<MobilizerProfile />} />
-            <Route path="candidate-enrollment" element={<CandidateEnrollmentStepper />} />
-            <Route path="create-community-drive" element={<CommunityDriveStepper />} />
             <Route path="revenue" element={<MobilizerRevenue />} />
 
             {/* HR Entitlement */}
@@ -153,7 +152,6 @@ function App() {
             <Route path="dashboard" element={<TrainerDashboard />} />
             <Route path="attendance" element={<TrainerAttendance />} />
             <Route path="exposure-visits" element={<TrainerExposureVisits />} />
-            <Route path="exposure-visits/new" element={<ExposureVisitEnterprisePro />} />
             <Route path="internal-assessment" element={<TrainerInternalAssessments />} />
             <Route path="study-modules" element={<TrainerStudyModules />} />
             <Route path="profile" element={<TrainerProfile />} />
@@ -179,14 +177,11 @@ function App() {
 
             <Route path="dashboard" element={<PlacementDashboard />} />
             <Route path="company-database" element={<PlacementCompanyList />} />
-            <Route path="company-database/new" element={<PlacementCompanyDatabaseStepper />} />
             <Route path="placement-drives" element={<PlacementDrivesDetails />} />
-            <Route path="placement-drives/new" element={<PlacementDriveStepper />} />
             <Route path="placements-list" element={<PlacementStudentsList />} />
-            <Route path="placements-list/new" element={<PlacementStudentDetailsStepper />} />
             <Route path="job-openings" element={<PlacementOpeningsDashboard />} />
-            <Route path="job-openings/new" element={<PlacementOpeningsDashboard />} />
             <Route path="revenue" element={<PlacementRevenue />} />
+            <Route path="profile" element={<PlacementProfile />} />
 
             {/* HR Entitlement */}
             <Route path="hr/attendance" element={<SharedAttendancePage />} />
@@ -201,34 +196,45 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
 
-            {/* General */}
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="employee-list" element={<AdminTrainerList />} />
+            <Route
+              path="financial-management/salary-approvals"
+              element={<AdminSalaryApprovals />}
+            />
+            <Route
+              path="financial-management/invoices-raised"
+              element={<AdminInvoiceManagement />}
+            />
+            <Route
+              path="financial-management/procurement"
+              element={<AdminProcurement />}
+            />
+            <Route path="live-feed" element={<AdminTrainerLiveFeed />} />
+            <Route path="attendance-overview" element={<AdminAttendanceOverview />} />
+            <Route path="project-details-reports" element={<AdminProjectManagement />} />
+            <Route path="approvals" element={<AdminApprovals />} />
+
+            {/* Legacy admin routes kept for compatibility */}
             <Route path="user-management" element={<AdminUserManagement />} />
             <Route path="user-management/new" element={<AdminAddUserStepper />} />
             <Route path="project-management" element={<AdminProjectManagement />} />
             <Route path="project-management/new" element={<AdminAddProjectStepper />} />
             <Route path="center-management" element={<AdminCenterManagement />} />
-            <Route path="attendance-overview" element={<AdminAttendanceOverview />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="invoice-management" element={<AdminInvoiceManagement />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="profile" element={<AdminProfile />} />
-
-            {/* Mobilizers */}
             <Route path="mobilizer-list" element={<AdminMobilizerList />} />
             <Route path="mobilizer-dashboard/:id" element={<AdminMobilizerDashboard />} />
             <Route path="candidate-approvals" element={<AdminCandidateApprovals />} />
             <Route path="community-events" element={<AdminCommunityEvents />} />
-
-            {/* Trainers */}
             <Route path="trainer-list" element={<AdminTrainerList />} />
             <Route path="trainer-dashboard/:id" element={<AdminTrainerDashboard />} />
             <Route path="exposure-visit-approvals" element={<AdminExposureVisitApprovals />} />
             <Route path="module-progress" element={<AdminModuleProgress />} />
             <Route path="trainer-attendance" element={<AdminTrainerAttendance />} />
             <Route path="trainer-live-feed" element={<AdminTrainerLiveFeed />} />
-
-            {/* Placements */}
             <Route path="placement-drive-approvals" element={<AdminPlacementDriveApprovals />} />
             <Route path="placement-tracker" element={<AdminPlacementTracker />} />
           </Route>
@@ -265,7 +271,7 @@ function App() {
       </Suspense>
       <ToastContainer position="top-right" autoClose={2000} />
     </Router>
-  );r
+  );
 }
 
 export default App;

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   Building2,
   Users,
@@ -28,7 +29,7 @@ const TRADES = ["Electrical", "Fitter", "Safety", "Welder"];
 
 /* ================= MAIN ================= */
 
-export default function ExposureVisitEnterprisePro() {
+export default function ExposureVisitEnterprisePro({ onClose }) {
   const webcamRef = useRef(null);
 
   const [step, setStep] = useState(1);
@@ -113,9 +114,9 @@ export default function ExposureVisitEnterprisePro() {
   /* ================= UI ================= */
 
   return (
-    <section className="min-h-screen bg-[#0f172a] text-white/90 p-8">
-
-      <div className="max-w-6xl mx-auto space-y-6">
+    <>
+      <SlidePanel open={true} onClose={onClose} title="Enterprise Exposure Visit" width="4xl">
+        <div className="space-y-6">
 
         {/* HEADER */}
         <Header step={step} />
@@ -178,20 +179,18 @@ export default function ExposureVisitEnterprisePro() {
           </div>
         </div>
       </div>
+      </SlidePanel>
 
-      {/* CAMERA */}
-      {showCamera && (
-        <Modal onClose={() => setShowCamera(false)}>
-          <Webcam ref={webcamRef} screenshotFormat="image/jpeg" />
+      <SlidePanel open={showCamera} onClose={() => setShowCamera(false)} title="Capture Photo" width="sm">
+          <Webcam ref={webcamRef} screenshotFormat="image/jpeg" className="rounded-lg w-full" />
           <button
             onClick={capturePhoto}
             className="w-full mt-4 py-2 bg-emerald-500 text-black rounded"
           >
             Capture Photo
           </button>
-        </Modal>
-      )}
-    </section>
+      </SlidePanel>
+    </>
   );
 }
 
@@ -491,19 +490,7 @@ function Select({ label, value, options, onChange }) {
   );
 }
 
-const Modal = ({ children, onClose }) => (
-  <div
-    className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50"
-    onClick={onClose}
-  >
-    <div
-      className="bg-[#111827] p-6 rounded-xl max-w-md w-full border border-slate-700"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {children}
-    </div>
-  </div>
-);
+
 
 /* ================= GLOBAL INPUT STYLE ================= */
 

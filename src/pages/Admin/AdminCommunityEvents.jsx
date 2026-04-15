@@ -1,4 +1,5 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useState, useMemo } from "react";
 import { Eye } from "lucide-react";
 
@@ -129,11 +130,9 @@ export default function AdminCommunityEvents() {
       </div>
 
       {/* Image Preview */}
-      {previewImage && (
-        <div className="fixed inset-0 bg-transparent/80 z-50 flex items-center justify-center" onClick={() => setPreviewImage(null)}>
+      <SlidePanel open={!!previewImage} onClose={() => setPreviewImage(null)} title="Details" width="lg">
           <img src={previewImage} className="max-w-xl rounded-lg" />
-        </div>
-      )}
+      </SlidePanel>
     </div>
   );
 }

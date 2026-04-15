@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
+import SlidePanel from "../../components/common/SlidePanel";
 
 /* ================= CONFIG ================= */
 
@@ -230,38 +231,28 @@ const AttendancePage = () => {
         </div>
       </div>
 
-      {/* Camera Modal */}
-      {activePunch && (
-        <Modal onClose={() => setActivePunch(null)}>
-          <h3 className="font-semibold mb-3 text-white/90">
-            {activePunch === "in" ? "Punch In" : "Punch Out"}
-          </h3>
-          <Webcam ref={webcamRef} screenshotFormat="image/jpeg" />
+      <SlidePanel open={!!activePunch} onClose={() => setActivePunch(null)} title={activePunch === "in" ? "Punch In" : "Punch Out"} width="sm">
+          <Webcam ref={webcamRef} screenshotFormat="image/jpeg" className="rounded-lg w-full" />
           <button
             onClick={handlePunch}
             className="w-full mt-4 py-2 bg-cyan-500 text-white rounded-lg font-semibold hover:bg-cyan-400 transition-colors"
           >
             Capture & Save
           </button>
-        </Modal>
-      )}
+      </SlidePanel>
 
-      {previewImage && (
-        <Modal onClose={() => setPreviewImage(null)}>
-          <img src={previewImage} className="rounded-lg max-w-sm" />
-        </Modal>
-      )}
+      <SlidePanel open={!!previewImage} onClose={() => setPreviewImage(null)} title="Image Preview" width="sm">
+          <img src={previewImage} className="rounded-lg w-full" />
+      </SlidePanel>
 
-      {mapLocation && (
-        <Modal onClose={() => setMapLocation(null)}>
+      <SlidePanel open={!!mapLocation} onClose={() => setMapLocation(null)} title="Location" width="md">
           <iframe
             width="100%"
-            height="300"
+            height="400"
             className="rounded-lg border border-cyan-500/30"
-            src={`https://maps.google.com/maps?q=${mapLocation.lat},${mapLocation.lng}&z=15&output=embed`}
+            src={mapLocation ? `https://maps.google.com/maps?q=${mapLocation.lat},${mapLocation.lng}&z=15&output=embed` : ""}
           />
-        </Modal>
-      )}
+      </SlidePanel>
     </section>
   );
 };
@@ -283,18 +274,6 @@ const StatusBadge = ({ status }) => {
   return <span className="px-3 py-1 text-xs rounded-full bg-slate-700">—</span>;
 };
 
-const Modal = ({ children, onClose }) => (
-  <div
-    className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
-    onClick={onClose}
-  >
-    <div
-      className="bg-[#020617] p-6 rounded-xl max-w-md w-full border border-cyan-500/30"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {children}
-    </div>
-  </div>
-);
+
 
 export default AttendancePage;

@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import * as XLSX from "xlsx";
 import { Upload, Download } from "lucide-react";
+import SlidePanel from "../../components/common/SlidePanel";
 
 /* ================= CONFIG ================= */
 
@@ -243,17 +244,8 @@ function CreateAssessmentModal({ onClose, onCreate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50 p-4">
-
-      <div className="w-full max-w-3xl bg-[#0b1220] border border-slate-700 rounded-2xl">
-
-        <div className="p-6 border-b border-slate-700">
-          <h3 className="text-xl font-semibold text-slate-100">
-            Create Internal Assessment
-          </h3>
-        </div>
-
-        <div className="p-6 space-y-6">
+    <SlidePanel open={true} onClose={onClose} title="Create Internal Assessment" width="lg">
+      <div className="space-y-6">
 
           <div className="grid md:grid-cols-3 gap-4">
 
@@ -313,9 +305,7 @@ function CreateAssessmentModal({ onClose, onCreate }) {
 
           </label>
 
-        </div>
-
-        <div className="flex justify-end gap-3 p-6 border-t border-slate-700">
+        <div className="flex justify-end gap-3">
 
           <button onClick={onClose} className="px-4 py-2 bg-slate-700 rounded-md">
             Cancel
@@ -334,9 +324,8 @@ function CreateAssessmentModal({ onClose, onCreate }) {
           </button>
 
         </div>
-
       </div>
-    </div>
+    </SlidePanel>
   );
 }
 
@@ -416,21 +405,9 @@ function MarksModal({ assessment, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50 p-4">
-
-      <div className="w-full max-w-5xl bg-[#0b1220] border border-slate-700 rounded-2xl">
-
-        <div className="p-6 border-b border-slate-700 flex justify-between">
-          <h3 className="text-xl text-slate-100">
-            Marks Entry — {assessment.batch}
-          </h3>
-
-          <button onClick={onClose} className="px-4 py-2 bg-slate-700 rounded-md">
-            Close
-          </button>
-        </div>
-
-        <div className="flex gap-3 p-4 border-b border-slate-700">
+    <SlidePanel open={true} onClose={onClose} title={`Marks Entry — ${assessment.batch}`} width="xl">
+      <div className="space-y-4">
+        <div className="flex gap-3">
 
           <button
             onClick={exportTemplate}
@@ -458,7 +435,7 @@ function MarksModal({ assessment, onClose }) {
 
         </div>
 
-        <div className="max-h-[400px] overflow-y-auto">
+        <div className="max-h-[500px] overflow-y-auto">
 
           <table className="w-full text-sm text-left">
 
@@ -503,7 +480,7 @@ function MarksModal({ assessment, onClose }) {
 
         </div>
 
-        <div className="flex justify-end gap-3 p-6 border-t border-slate-700">
+        <div className="flex justify-end gap-3 pt-4 border-t border-slate-700">
 
           <button className="px-4 py-2 bg-slate-700 rounded-md">
             Save Draft
@@ -514,9 +491,8 @@ function MarksModal({ assessment, onClose }) {
           </button>
 
         </div>
-
       </div>
-    </div>
+    </SlidePanel>
   );
 }
 

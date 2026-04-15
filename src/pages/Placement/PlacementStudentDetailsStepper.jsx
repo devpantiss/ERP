@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   FaUser,
   FaBuilding,
@@ -9,7 +10,8 @@ import {
 /* ================= MAIN ================= */
 
 export default function PlacementStudentDetailsStepperPage({
-  onSubmit,
+  onSubmit, 
+  onClose
 }) {
   const [step, setStep] = useState(1);
 
@@ -32,23 +34,11 @@ export default function PlacementStudentDetailsStepperPage({
   const submit = () => {
     onSubmit?.(form);
     console.log("Submitted:", form);
+    if (onClose) onClose();
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1120] text-white/90 p-6">
-
-      {/* ================= PAGE HEADER ================= */}
-
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-cyan-400">
-          Enter Candidate Details
-        </h1>
-        <p className="text-sm text-white/60">
-          Placement Officer / Placements List / New
-        </p>
-      </div>
-
-      {/* ================= CARD ================= */}
+    <SlidePanel open={true} onClose={onClose} title="Enter Candidate Details" width="4xl">
 
       <div className="bg-[#111827] border border-cyan-900 rounded-xl w-full max-w-4xl p-6 shadow-xl">
 
@@ -109,7 +99,7 @@ export default function PlacementStudentDetailsStepperPage({
 
       </div>
 
-    </div>
+    </SlidePanel>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import Webcam from "react-webcam";
 
 /* ================= CONFIG ================= */
@@ -231,7 +232,7 @@ const MobilizerAttendance = () => {
 
       {/* Camera Modal */}
       {activePunch && (
-        <Modal onClose={() => setActivePunch(null)}>
+        <SlidePanel open={true} onClose={() => setActivePunch(null)} width="md">
           <h3 className="font-semibold mb-3 text-white/90">
             {activePunch === "in" ? "Punch In" : "Punch Out"}
           </h3>
@@ -242,24 +243,24 @@ const MobilizerAttendance = () => {
           >
             Capture & Save
           </button>
-        </Modal>
+        </SlidePanel>
       )}
 
       {previewImage && (
-        <Modal onClose={() => setPreviewImage(null)}>
+        <SlidePanel open={true} onClose={() => setPreviewImage(null)} width="md">
           <img src={previewImage} className="rounded-lg max-w-sm" />
-        </Modal>
+        </SlidePanel>
       )}
 
       {mapLocation && (
-        <Modal onClose={() => setMapLocation(null)}>
+        <SlidePanel open={true} onClose={() => setMapLocation(null)} width="md">
           <iframe
             width="100%"
             height="300"
             className="rounded-lg border border-yellow-400/30"
             src={`https://maps.google.com/maps?q=${mapLocation.lat},${mapLocation.lng}&z=15&output=embed`}
           />
-        </Modal>
+        </SlidePanel>
       )}
     </section>
   );
@@ -282,18 +283,6 @@ const StatusBadge = ({ status }) => {
   return <span className="px-3 py-1 text-xs rounded-full bg-slate-700">—</span>;
 };
 
-const Modal = ({ children, onClose }) => (
-  <div
-    className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50"
-    onClick={onClose}
-  >
-    <div
-      className="bg-[#020617] p-6 rounded-xl max-w-md w-full border border-yellow-400/30"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {children}
-    </div>
-  </div>
-);
+
 
 export default MobilizerAttendance;

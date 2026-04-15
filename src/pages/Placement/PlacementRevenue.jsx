@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   IndianRupee,
   Users,
@@ -275,9 +276,7 @@ export default function PlacementRevenue() {
       </div>
 
       {/* ─── Invoice Modal ────────────────────────────────── */}
-      {invoiceModal && (
-        <div className="fixed inset-0 bg-transparent/80 backdrop-blur-xl flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setInvoiceModal(false)}>
-          <div className="bg-[#0b1220] border border-white/10 rounded-2xl w-full max-w-md p-6 sm:p-8 space-y-6 shadow-2xl animate-scale-up" onClick={(e) => e.stopPropagation()}>
+      <SlidePanel open={!!invoiceModal} onClose={() => setInvoiceModal(false)} title="18} className=text-cyan-400 /> Raise Inv" width="md">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Send size={18} className="text-cyan-400" /> Raise Invoice
@@ -330,9 +329,7 @@ export default function PlacementRevenue() {
             >
               <Send size={16} /> Submit Invoice For Approval
             </button>
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </section>
   );
 }

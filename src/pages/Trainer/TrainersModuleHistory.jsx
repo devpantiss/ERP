@@ -3,6 +3,7 @@ import { BarChart3 } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import SlidePanel from "../../components/common/SlidePanel";
 
 /* ================= REAL TRAINING IMAGES ================= */
 
@@ -334,15 +335,9 @@ export default function TrainerModuleHistoryEnterprise() {
 
       </div>
 
-      {/* IMAGE PREVIEW MODAL */}
-      {preview && (
-        <div
-          className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50"
-          onClick={() => setPreview(null)}
-        >
-          <img src={preview} className="max-w-lg rounded-lg" />
-        </div>
-      )}
+      <SlidePanel open={!!preview} onClose={() => setPreview(null)} title="Image Preview" width="md">
+          <img src={preview} className="w-full rounded-lg" />
+      </SlidePanel>
 
     </section>
   );

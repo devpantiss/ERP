@@ -1,4 +1,5 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useState, useMemo } from "react";
 import { CheckCircle, XCircle, Eye, FileText, X } from "lucide-react";
 
@@ -152,9 +153,7 @@ export default function AdminCandidateApprovals() {
       </div>
 
       {/* View Modal */}
-      {viewCandidate && (
-        <div className="fixed inset-0 bg-transparent/80 backdrop-blur-md z-50 flex items-center justify-center">
-          <div className="bg-[#111827] border border-slate-700 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <SlidePanel open={!!viewCandidate} onClose={() => setViewCandidate(null)} title="Candidate Details" width="md">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-100">Candidate Details</h3>
               <button onClick={() => setViewCandidate(null)} className="text-white/60 hover:text-white"><X size={18} /></button>
@@ -194,19 +193,13 @@ export default function AdminCandidateApprovals() {
                   className="flex-1 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-400">Reject</button>
               </div>
             )}
-          </div>
-        </div>
-      )}
+      </SlidePanel>
 
       {/* File Preview */}
-      {previewFile && (
-        <div className="fixed inset-0 bg-transparent/70 z-[60] flex items-center justify-center" onClick={() => setPreviewFile(null)}>
-          <div className="bg-[#020617] rounded-xl p-4 max-w-3xl w-full" onClick={(e) => e.stopPropagation()}>
+      <SlidePanel open={!!previewFile} onClose={() => setPreviewFile(null)} title="Details" width="xl">
             <div className="flex justify-end mb-2"><button onClick={() => setPreviewFile(null)} className="text-white/60 hover:text-white">✕</button></div>
             {previewFile.includes(".pdf") ? <iframe src={previewFile} className="w-full h-[500px]" /> : <img src={previewFile} className="w-full rounded-lg" />}
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </div>
   );
 }

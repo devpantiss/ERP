@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   User,
   Phone,
@@ -286,19 +287,10 @@ function EditModal({ profile, setProfile, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-transparent/80 backdrop-blur-md z-50 flex justify-center overflow-y-auto">
-
-      <div className="w-full max-w-3xl my-10 bg-[#020617] border border-white/[0.08] rounded-2xl shadow-xl flex flex-col">
-
-        {/* HEADER */}
-        <div className="sticky top-0 bg-[#020617] border-b border-white/[0.08] px-6 py-4 rounded-t-2xl">
-          <h3 className="text-xl font-semibold">
-            Edit Trainer Profile
-          </h3>
-        </div>
+    <SlidePanel open={true} onClose={onClose} title="Edit Trainer Profile" width="xl">
 
         {/* BODY */}
-        <div className="p-6 space-y-8 overflow-y-auto max-h-[70vh]">
+        <div className="space-y-8">
 
           <Section title="Profile Photo">
 
@@ -408,8 +400,7 @@ function EditModal({ profile, setProfile, onClose }) {
 
         </div>
 
-        {/* FOOTER */}
-        <div className="sticky bottom-0 bg-[#020617] border-t border-white/[0.08] px-6 py-4 rounded-b-2xl flex justify-end gap-3">
+        <div className="flex justify-end gap-4 mt-6 pt-6 border-t border-white/[0.08]">
 
           <button
             onClick={onClose}
@@ -427,9 +418,7 @@ function EditModal({ profile, setProfile, onClose }) {
 
         </div>
 
-      </div>
-
-    </div>
+    </SlidePanel>
   );
 }
 

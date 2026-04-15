@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import SlidePanel from "../../common/SlidePanel";
 
 /* ===================== DUMMY DATA ===================== */
 
@@ -112,9 +113,7 @@ export default function Section4() {
       </div>
 
       {/* ================= MODAL ================= */}
-      {showModal && (
-        <div className="fixed inset-0 bg-transparent/70 z-50 flex items-center justify-center">
-          <div className="bg-[#020617] border border-yellow-400/30
+      <SlidePanel open={!!showModal} onClose={() => setShowModal(false)} title="editMode ? Edit Bank Details : Bank Deta" width="md">
             rounded-2xl w-full max-w-lg p-6 text-white/90">
 
             <h3 className="text-lg font-semibold mb-4">
@@ -186,9 +185,7 @@ export default function Section4() {
                 </div>
               </>
             )}
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </section>
   );
 }

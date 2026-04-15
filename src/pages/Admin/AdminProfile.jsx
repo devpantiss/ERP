@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import { User, Phone, Mail, MapPin, Briefcase, Edit, BookOpen, Users, Star, FileText } from "lucide-react";
 
 const INITIAL_PROFILE = {
@@ -95,9 +96,7 @@ export default function AdminProfile() {
       </div>
 
       {/* Edit Modal */}
-      {editOpen && (
-        <div className="fixed inset-0 bg-transparent/80 backdrop-blur-md z-50 flex justify-center overflow-y-auto">
-          <div className="w-full max-w-3xl my-10 bg-[#111827] border border-slate-700 rounded-2xl shadow-xl flex flex-col">
+      <SlidePanel open={!!editOpen} onClose={() => setEditOpen(false)} title="Edit Admin Profile" width="xl">
             <div className="sticky top-0 bg-[#111827] border-b border-slate-700 px-6 py-4 rounded-t-2xl">
               <h3 className="text-xl font-semibold">Edit Admin Profile</h3>
             </div>
@@ -119,9 +118,7 @@ export default function AdminProfile() {
               <button onClick={() => setEditOpen(false)} className="px-4 py-2 bg-slate-700 rounded-md">Cancel</button>
               <button onClick={() => setEditOpen(false)} className="px-6 py-2 bg-violet-500 text-white rounded-md font-medium hover:bg-violet-400">Save Changes</button>
             </div>
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </div>
   );
 }

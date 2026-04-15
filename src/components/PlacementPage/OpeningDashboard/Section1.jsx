@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import SlidePanel from "../../common/SlidePanel";
 import * as XLSX from "xlsx";
 import {
   FaBuilding,
@@ -355,24 +356,9 @@ function ViewButton({ onClick }) {
 
 function ContentModal({ title, content, onClose }) {
   return (
-    <div className="fixed inset-0 bg-transparent/70 flex justify-center items-center">
-
-      <div className="bg-[#111827] border border-cyan-900 rounded-xl p-6 w-[90%] max-w-2xl relative">
-
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3"
-        >
-          <FaTimes />
-        </button>
-
-        <h3 className="text-cyan-400 mb-4">{title}</h3>
-
+    <SlidePanel open={true} onClose={onClose} title={title} width="md">
         <div className="text-sm text-white/80">{content}</div>
-
-      </div>
-
-    </div>
+    </SlidePanel>
   );
 }
 
@@ -385,66 +371,78 @@ function EditModal({ job, onClose, onSave }) {
     setForm((prev) => ({ ...prev, [field]: value }));
 
   return (
-    <div className="fixed inset-0 bg-transparent/70 flex justify-center items-center">
+    <SlidePanel open={true} onClose={onClose} title="Edit Job Opening" width="3xl">
+        <div className="grid md:grid-cols-2 gap-5 mb-8">
+          <div>
+            <label className="text-xs text-white/60 mb-1 block">Company</label>
+            <input
+              value={form.company}
+              onChange={(e) => update("company", e.target.value)}
+              className="w-full bg-[#020617] border border-gray-700 p-2.5 rounded-lg text-sm focus:border-cyan-500 outline-none"
+            />
+          </div>
 
-      <div className="bg-[#111827] border border-cyan-900 rounded-xl p-6 w-[90%] max-w-lg space-y-4">
+          <div>
+            <label className="text-xs text-white/60 mb-1 block">Role</label>
+            <input
+              value={form.role}
+              onChange={(e) => update("role", e.target.value)}
+              className="w-full bg-[#020617] border border-gray-700 p-2.5 rounded-lg text-sm focus:border-cyan-500 outline-none"
+            />
+          </div>
 
-        <h3 className="text-cyan-400">Edit Job Opening</h3>
+          <div>
+            <label className="text-xs text-white/60 mb-1 block">Location</label>
+            <input
+              value={form.location}
+              onChange={(e) => update("location", e.target.value)}
+              className="w-full bg-[#020617] border border-gray-700 p-2.5 rounded-lg text-sm focus:border-cyan-500 outline-none"
+            />
+          </div>
 
-        <input
-          value={form.company}
-          onChange={(e) => update("company", e.target.value)}
-          className="w-full bg-[#020617] border border-gray-700 p-2 rounded"
-        />
+          <div>
+            <label className="text-xs text-white/60 mb-1 block">Salary</label>
+            <input
+              value={form.salary}
+              onChange={(e) => update("salary", e.target.value)}
+              className="w-full bg-[#020617] border border-gray-700 p-2.5 rounded-lg text-sm focus:border-cyan-500 outline-none"
+            />
+          </div>
 
-        <input
-          value={form.role}
-          onChange={(e) => update("role", e.target.value)}
-          className="w-full bg-[#020617] border border-gray-700 p-2 rounded"
-        />
+          <div>
+            <label className="text-xs text-white/60 mb-1 block">Vacancies</label>
+            <input
+              value={form.vacancies}
+              onChange={(e) => update("vacancies", e.target.value)}
+              className="w-full bg-[#020617] border border-gray-700 p-2.5 rounded-lg text-sm focus:border-cyan-500 outline-none"
+            />
+          </div>
 
-        <input
-          value={form.location}
-          onChange={(e) => update("location", e.target.value)}
-          className="w-full bg-[#020617] border border-gray-700 p-2 rounded"
-        />
+          <div>
+            <label className="text-xs text-white/60 mb-1 block">Status</label>
+            <select
+              value={form.status}
+              onChange={(e) => update("status", e.target.value)}
+              className="w-full bg-[#020617] border border-gray-700 p-2.5 rounded-lg text-sm focus:border-cyan-500 outline-none"
+            >
+              <option>Open</option>
+              <option>Closed</option>
+            </select>
+          </div>
+        </div>
 
-        <input
-          value={form.salary}
-          onChange={(e) => update("salary", e.target.value)}
-          className="w-full bg-[#020617] border border-gray-700 p-2 rounded"
-        />
-
-        <input
-          value={form.vacancies}
-          onChange={(e) => update("vacancies", e.target.value)}
-          className="w-full bg-[#020617] border border-gray-700 p-2 rounded"
-        />
-
-        <select
-          value={form.status}
-          onChange={(e) => update("status", e.target.value)}
-          className="w-full bg-[#020617] border border-gray-700 p-2 rounded"
-        >
-          <option>Open</option>
-          <option>Closed</option>
-        </select>
-
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="border px-4 py-2 rounded">
+        <div className="flex justify-end gap-3 pt-6 border-t border-gray-800">
+          <button onClick={onClose} className="border border-gray-600 text-white/80 px-5 py-2 rounded-lg font-medium hover:bg-gray-800 transition">
             Cancel
           </button>
 
           <button
             onClick={() => onSave(form)}
-            className="bg-cyan-500 text-black px-4 py-2 rounded"
+            className="bg-cyan-500 hover:bg-cyan-400 text-black px-5 py-2 rounded-lg font-medium transition shadow-lg shadow-cyan-500/20"
           >
-            Save
+            Save Changes
           </button>
         </div>
-
-      </div>
-
-    </div>
+    </SlidePanel>
   );
 }

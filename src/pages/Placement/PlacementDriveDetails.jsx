@@ -1,6 +1,8 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import PlacementDriveStepper from "./PlacementDriveStepper";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -102,6 +104,7 @@ export default function PlacementDrivesPage({ role = "placement" }) {
   const [geo, setGeo] = useState(null);
 
   const [viewerDrive, setViewerDrive] = useState(null);
+  const [showForm, setShowForm] = useState(false);
 
   /* ================= FILTERS ================= */
 
@@ -243,10 +246,8 @@ export default function PlacementDrivesPage({ role = "placement" }) {
             </button>
 
             <button
-              onClick={() =>
-                navigate("/placement-officer/placement-drives/new")
-              }
-              className="btn-primary"
+              onClick={() => setShowForm(true)}
+              className="px-4 py-2 bg-emerald-500 text-black font-medium rounded-md hover:bg-emerald-400 transition"
             >
               + Add Drive
             </button>
@@ -434,6 +435,11 @@ export default function PlacementDrivesPage({ role = "placement" }) {
         />
       )}
 
+      {/* SlidePanel Form */}
+      {showForm && (
+        <PlacementDriveStepper onClose={() => setShowForm(false)} />
+      )}
+
       <style>{`
         .btn {
           background:#020617;
@@ -508,35 +514,14 @@ function StatusBadge({ status }) {
 
 function GalleryModal({ drive, onClose }) {
   return (
-    <div className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50">
-
-      <div className="bg-[#020617] border border-cyan-500/30 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col">
-
-        {/* HEADER */}
-        <div className="p-5 border-b border-slate-700 flex justify-between items-center">
-
-          <div>
-            <h3 className="text-white font-semibold text-lg">
-              {drive.eventName}
-            </h3>
-
-            {drive.geo && (
-              <div className="text-xs text-cyan-400 mt-1">
-                📍 {drive.geo.placeName} •{" "}
-                {new Date(drive.geo.uploadedAt).toLocaleString()}
-              </div>
-            )}
+    <SlidePanel open={true} onClose={onClose} title={drive.eventName} width="xl">
+        {drive.geo && (
+          <div className="text-xs text-cyan-400 mb-4">
+            📍 {drive.geo.placeName} • {new Date(drive.geo.uploadedAt).toLocaleString()}
           </div>
+        )}
 
-          <button onClick={onClose} className="btn">
-            Close
-          </button>
-
-        </div>
-
-        {/* BODY */}
-        <div className="overflow-y-auto p-5 space-y-4">
-
+        <div className="space-y-4">
           {drive.geo && (
             <iframe
               width="100%"
@@ -547,23 +532,12 @@ function GalleryModal({ drive, onClose }) {
           )}
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-
             {drive.eventImages.map((img, i) => (
-              <img
-                key={i}
-                src={img.url}
-                className="rounded-lg object-cover w-full"
-                alt=""
-              />
+              <img key={i} src={img.url} className="rounded-lg object-cover w-full" alt="" />
             ))}
-
           </div>
-
         </div>
-
-      </div>
-
-    </div>
+    </SlidePanel>
   );
 }
 
@@ -575,58 +549,23 @@ function UploadModal({ drive, images, setImages, onSubmit, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-transparent/70 flex items-center justify-center z-50">
-
-      <div className="bg-[#020617] border border-cyan-500/30 p-6 rounded-2xl w-full max-w-2xl">
-
-        <h3 className="text-white text-lg font-semibold mb-4">
-          Upload Event Images — {drive.eventName}
-        </h3>
-
+    <SlidePanel open={true} onClose={onClose} title={`Upload Event Images — ${drive.eventName}`} width="lg">
         <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-600 rounded-xl p-8 cursor-pointer hover:border-cyan-400 transition">
-
           <div className="text-cyan-400 text-3xl mb-2">📤</div>
-
-          <div className="text-white/80 text-sm">
-            Click or Drag & Drop Images
-          </div>
-
-          <input
-            type="file"
-            multiple
-            hidden
-            accept="image/*"
-            onChange={handleFiles}
-          />
+          <div className="text-white/80 text-sm">Click or Drag & Drop Images</div>
+          <input type="file" multiple hidden accept="image/*" onChange={handleFiles} />
         </label>
 
         <div className="grid grid-cols-4 gap-3 mt-5">
-
           {images.map((img, i) => (
-            <img
-              key={i}
-              src={URL.createObjectURL(img)}
-              className="h-24 w-full object-cover rounded"
-              alt=""
-            />
+            <img key={i} src={URL.createObjectURL(img)} className="h-24 w-full object-cover rounded" alt="" />
           ))}
-
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
-
-          <button onClick={onClose} className="btn">
-            Cancel
-          </button>
-
-          <button onClick={onSubmit} className="btn-primary">
-            Submit
-          </button>
-
+          <button onClick={onClose} className="btn">Cancel</button>
+          <button onClick={onSubmit} className="btn-primary">Submit</button>
         </div>
-
-      </div>
-
-    </div>
+    </SlidePanel>
   );
 }

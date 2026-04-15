@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import SlidePanel from "../../components/common/SlidePanel";
 
 /* ================= CONFIG ================= */
 
@@ -292,10 +293,8 @@ export default function TrainerAttendance() {
 
       </div>
 
-      {/* CAMERA MODAL */}
-      {activePunch && (
-        <Modal onClose={() => setActivePunch(null)}>
-          <Webcam ref={webcamRef} screenshotFormat="image/jpeg" />
+      <SlidePanel open={!!activePunch} onClose={() => setActivePunch(null)} title="Capture Attendance" width="sm">
+          <Webcam ref={webcamRef} screenshotFormat="image/jpeg" className="rounded-lg w-full" />
           <button
             onClick={handlePunch}
             disabled={loading}
@@ -303,27 +302,20 @@ export default function TrainerAttendance() {
           >
             {loading ? "Processing..." : "Capture & Save"}
           </button>
-        </Modal>
-      )}
+      </SlidePanel>
 
-      {/* IMAGE MODAL */}
-      {previewImage && (
-        <Modal onClose={() => setPreviewImage(null)}>
-          <img src={previewImage} className="rounded max-w-sm" />
-        </Modal>
-      )}
+      <SlidePanel open={!!previewImage} onClose={() => setPreviewImage(null)} title="Image Preview" width="sm">
+          <img src={previewImage} className="rounded max-w-full" />
+      </SlidePanel>
 
-      {/* MAP MODAL */}
-      {mapData && (
-        <Modal onClose={() => setMapData(null)}>
+      <SlidePanel open={!!mapData} onClose={() => setMapData(null)} title="Location" width="md">
           <iframe
             width="100%"
-            height="300"
+            height="400"
             className="rounded"
-            src={`https://maps.google.com/maps?q=${mapData.lat},${mapData.lng}&z=15&output=embed`}
+            src={mapData ? `https://maps.google.com/maps?q=${mapData.lat},${mapData.lng}&z=15&output=embed` : ""}
           />
-        </Modal>
-      )}
+      </SlidePanel>
     </section>
   );
 }
@@ -447,16 +439,4 @@ const Stat = ({ label, value, highlight }) => (
   </div>
 );
 
-const Modal = ({ children, onClose }) => (
-  <div
-    className="fixed inset-0 bg-transparent/80 flex items-center justify-center z-50"
-    onClick={onClose}
-  >
-    <div
-      className="bg-[#111827] p-6 rounded-xl max-w-md w-full border border-slate-700"
-      onClick={(e) => e.stopPropagation()}
-    >
-      {children}
-    </div>
-  </div>
-);
+

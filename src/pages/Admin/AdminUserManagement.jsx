@@ -1,4 +1,5 @@
 import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -273,9 +274,7 @@ export default function AdminUserManagement() {
       </div>
 
       {/* ================= VIEW MODAL ================= */}
-      {viewModal && (
-        <div className="fixed inset-0 bg-transparent/80 backdrop-blur-md z-50 flex items-center justify-center">
-          <div className="bg-[#111827] border border-slate-700 rounded-2xl p-6 w-full max-w-md">
+      <SlidePanel open={!!viewModal} onClose={() => setViewModal(null)} title="User Details" width="md">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-slate-100">
                 User Details
@@ -332,9 +331,7 @@ export default function AdminUserManagement() {
             >
               Close
             </button>
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </div>
   );
 }

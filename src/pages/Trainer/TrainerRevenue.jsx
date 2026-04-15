@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   IndianRupee,
   Clock,
@@ -276,17 +277,8 @@ export default function TrainerRevenue() {
         </div>
       </div>
 
-      {/* ─── Invoice Modal ────────────────────────────────── */}
-      {invoiceModal && (
-        <div className="fixed inset-0 bg-transparent/80 backdrop-blur-xl flex items-center justify-center z-50 p-4 animate-fade-in" onClick={() => setInvoiceModal(false)}>
-          <div className="bg-[#0b1220] border border-white/10 rounded-2xl w-full max-w-md p-6 sm:p-8 space-y-6 shadow-2xl animate-scale-up" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Send size={18} className="text-emerald-400" /> Raise Invoice
-              </h3>
-              <button onClick={() => setInvoiceModal(false)} className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-colors"><X size={18} /></button>
-            </div>
-
+      <SlidePanel open={invoiceModal} onClose={() => setInvoiceModal(false)} title="Raise Invoice" width="md">
+          <div className="space-y-6">
             <div className="space-y-5 bg-white/[0.02] rounded-xl p-5 border border-white/5">
               <div className="flex justify-between items-center pb-4 border-b border-white/5">
                 <label className="text-xs text-white/60 font-medium">Month</label>
@@ -333,8 +325,7 @@ export default function TrainerRevenue() {
               <Send size={16} /> Submit Invoice For Approval
             </button>
           </div>
-        </div>
-      )}
+      </SlidePanel>
     </section>
   );
 }

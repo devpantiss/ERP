@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import {
   Building2,
   MapPin,
@@ -230,9 +231,7 @@ export default function AdminCenterManagement() {
       </div>
 
       {/* ================= VIEW MODAL ================= */}
-      {viewCenter && (
-        <div className="fixed inset-0 bg-transparent/80 backdrop-blur-md z-50 flex items-center justify-center">
-          <div className="bg-[#111827] border border-slate-700 rounded-2xl p-6 w-full max-w-md">
+      <SlidePanel open={!!viewCenter} onClose={() => setViewCenter(null)} title="viewCenter.name}" width="md">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-slate-100">
                 {viewCenter.name}
@@ -268,9 +267,7 @@ export default function AdminCenterManagement() {
             >
               Close
             </button>
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </div>
   );
 }

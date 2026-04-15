@@ -1,5 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import { useNavigate } from "react-router-dom";
+import PlacementCompanyDatabaseStepper from "./PlacementCompanyDatabaseStepper";
 
 /* ================= SEGMENTS ================= */
 
@@ -69,7 +71,9 @@ export default function CompanyDatabase() {
 
   useEffect(() => setPage(1), [filters]);
 
-  /* ================= LOI STATES ================= */
+  const [showForm, setShowForm] = useState(false);
+
+  /* ===================== FILTER STATES ===================== */
 
   const [loiModal, setLoiModal] = useState({
     open: false,
@@ -189,6 +193,7 @@ export default function CompanyDatabase() {
   /* ================= UI ================= */
 
   return (
+    <>
     <section className="mt-8 rounded-2xl p-8 bg-[#111827] border border-cyan-500">
 
       {/* HEADER */}
@@ -198,10 +203,10 @@ export default function CompanyDatabase() {
         </h2>
 
         <button
-          onClick={() =>
-            navigate("/placement-officer/company-database/new")
-          }
-          className="px-4 py-2 rounded-md bg-cyan-500 text-black font-medium hover:bg-cyan-400 transition"
+          onClick={() => setShowForm(true)}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg
+          bg-cyan-500 text-black font-semibold
+          hover:bg-cyan-400 transition shadow-lg shadow-cyan-500/20"
         >
           + Enter Company Details
         </button>
@@ -492,6 +497,12 @@ export default function CompanyDatabase() {
       )}
 
     </section>
+
+      {/* SlidePanel Form */}
+      {showForm && (
+        <PlacementCompanyDatabaseStepper onClose={() => setShowForm(false)} />
+      )}
+    </>
   );
 }
 
@@ -499,14 +510,9 @@ export default function CompanyDatabase() {
 
 function Modal({ title, children }) {
   return (
-    <div className="fixed inset-0 bg-transparent/70 flex items-center justify-center z-50">
-      <div className="bg-[#0f172a] border border-slate-700 rounded-xl p-6 w-full max-w-2xl">
-        <h3 className="text-lg font-semibold text-slate-100 mb-4">
-          {title}
-        </h3>
-        <div className="space-y-3">{children}</div>
-      </div>
-    </div>
+    <SlidePanel open={true} onClose={() => {}} title={title} width="lg">
+      <div className="space-y-3">{children}</div>
+    </SlidePanel>
   );
 }
 

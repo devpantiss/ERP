@@ -1,199 +1,177 @@
-import { useState, memo } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { memo, useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Users,
-  FolderKanban,
-  Building2,
-  ClipboardCheck,
-  BarChart3,
-  Settings,
-  UserRoundPen,
+  Briefcase,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  LogOut,
-  UserCheck,
-  CalendarCheck,
-  GraduationCap,
-  Video,
-  BookOpen,
-  Megaphone,
-  Briefcase,
+  ClipboardCheck,
   FileCheck,
-  IndianRupee,
-  Utensils,
+  LayoutDashboard,
+  LogOut,
+  Radio,
+  Receipt,
+  ShoppingCart,
+  Users,
+  Wallet,
 } from "lucide-react";
 
-/* ================= MENU CONFIG ================= */
-
-const SECTIONS = [
+const MENU_ITEMS = [
   {
-    key: "general",
-    title: "General",
+    label: "Dashboard",
+    path: "/admin/dashboard",
     icon: LayoutDashboard,
-    items: [
-      { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
-      { label: "User Management", path: "/admin/user-management", icon: Users },
-      { label: "Project Management", path: "/admin/project-management", icon: FolderKanban },
-      { label: "Center Management", path: "/admin/center-management", icon: Building2 },
-      { label: "Attendance Overview", path: "/admin/attendance-overview", icon: ClipboardCheck },
-      { label: "Reports & Analytics", path: "/admin/reports", icon: BarChart3 },
-      { label: "Invoice Management", path: "/admin/invoice-management", icon: IndianRupee },
+  },
+  {
+    label: "Employee List",
+    path: "/admin/employee-list",
+    icon: Users,
+  },
+  {
+    label: "Financial Management",
+    icon: Wallet,
+    key: "financial-management",
+    children: [
+      {
+        label: "Salary Approvals",
+        path: "/admin/financial-management/salary-approvals",
+        icon: Wallet,
+      },
+      {
+        label: "Invoices Raised",
+        path: "/admin/financial-management/invoices-raised",
+        icon: Receipt,
+      },
+      {
+        label: "Procurement",
+        path: "/admin/financial-management/procurement",
+        icon: ShoppingCart,
+      },
     ],
   },
   {
-    key: "mobilizers",
-    title: "Mobilizers",
-    icon: Megaphone,
-    items: [
-      { label: "Mobilizer List", path: "/admin/mobilizer-list", icon: Users },
-      { label: "Candidate Approvals", path: "/admin/candidate-approvals", icon: UserCheck },
-      { label: "Community Events", path: "/admin/community-events", icon: Megaphone },
-    ],
+    label: "Live Feed",
+    path: "/admin/live-feed",
+    icon: Radio,
   },
   {
-    key: "trainers",
-    title: "Trainers",
-    icon: GraduationCap,
-    items: [
-      { label: "Trainer List", path: "/admin/trainer-list", icon: GraduationCap },
-      { label: "Exposure Visits", path: "/admin/exposure-visit-approvals", icon: CalendarCheck },
-      { label: "Module Progress", path: "/admin/module-progress", icon: BookOpen },
-      { label: "Trainer Attendance", path: "/admin/trainer-attendance", icon: ClipboardCheck },
-      { label: "Live Feed", path: "/admin/trainer-live-feed", icon: Video },
-    ],
+    label: "Attendance Overview",
+    path: "/admin/attendance-overview",
+    icon: ClipboardCheck,
   },
   {
-    key: "placements",
-    title: "Placements",
+    label: "Project Details / Reports",
+    path: "/admin/project-details-reports",
     icon: Briefcase,
-    items: [
-      { label: "Drive Approvals", path: "/admin/placement-drive-approvals", icon: Briefcase },
-      { label: "Placement Tracker", path: "/admin/placement-tracker", icon: FileCheck },
-    ],
   },
   {
-    key: "account",
-    title: "Account",
-    icon: Settings,
-    items: [
-      { label: "Settings", path: "/admin/settings", icon: Settings },
-      { label: "Profile", path: "/admin/profile", icon: UserRoundPen },
-    ],
+    label: "Approvals",
+    path: "/admin/approvals",
+    icon: FileCheck,
   },
 ];
 
-/* ================= COMPONENT ================= */
-
-const AdminSidebar = () => {
+function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const [openSections, setOpenSections] = useState(["general"]);
+  const [openGroups, setOpenGroups] = useState(["financial-management"]);
 
-  const toggleSection = (key) => {
-    setOpenSections((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+  const toggleGroup = (groupKey) => {
+    setOpenGroups((current) =>
+      current.includes(groupKey)
+        ? current.filter((item) => item !== groupKey)
+        : [...current, groupKey]
     );
   };
 
   return (
     <aside
-      className={`h-screen sticky top-0 flex flex-col
-      bg-[#111827] text-white/80
-      border-r border-slate-700
-      transition-all duration-300
-      ${collapsed ? "w-20" : "w-64"}`}
+      className={`sticky top-0 flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 transition-all duration-300 ${
+        collapsed ? "w-20" : "w-72"
+      }`}
     >
-      {/* ================= HEADER ================= */}
-      <div className="flex items-center justify-between px-4 h-16 border-b border-slate-700">
-        {!collapsed && (
-          <span className="text-lg font-semibold tracking-tight text-violet-400">
-            Admin Hub
-          </span>
-        )}
+      <div className="flex h-16 items-center justify-between border-b border-slate-700 px-4">
+        {!collapsed && <span className="text-lg font-semibold tracking-tight text-violet-400">Admin Hub</span>}
         <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-md text-white/60 hover:text-white hover:bg-slate-700 transition"
+          onClick={() => setCollapsed((current) => !current)}
+          className="rounded-md p-2 text-white/60 transition hover:bg-slate-700 hover:text-white"
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
-      {/* ================= MENU ================= */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
-        {SECTIONS.map((section) => {
-          const isOpen = openSections.includes(section.key);
-          const SectionIcon = section.icon;
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        {MENU_ITEMS.map((item) => {
+          const Icon = item.icon;
+
+          if (!item.children) {
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
+                    isActive
+                      ? "bg-violet-500/10 text-violet-300"
+                      : "text-white/65 hover:bg-slate-800 hover:text-white"
+                  }`
+                }
+              >
+                <Icon size={17} className="shrink-0" />
+                {!collapsed && <span className="truncate">{item.label}</span>}
+              </NavLink>
+            );
+          }
+
+          const isOpen = openGroups.includes(item.key);
 
           return (
-            <div key={section.key}>
-              {/* Section Header (Dropdown Toggle) */}
+            <div key={item.key} className="space-y-1">
               <button
                 onClick={() => {
                   if (collapsed) {
                     setCollapsed(false);
-                    if (!isOpen) toggleSection(section.key);
-                  } else {
-                    toggleSection(section.key);
                   }
+                  toggleGroup(item.key);
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                text-sm font-semibold transition-all duration-200 cursor-pointer
-                ${
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
                   isOpen
-                    ? "bg-violet-500/10 text-violet-400"
-                    : "text-white/60 hover:bg-transparent hover:text-white"
+                    ? "bg-violet-500/10 text-violet-300"
+                    : "text-white/65 hover:bg-slate-800 hover:text-white"
                 }`}
               >
-                <SectionIcon size={16} className="shrink-0" />
-
+                <Icon size={17} className="shrink-0" />
                 {!collapsed && (
                   <>
-                    <span className="flex-1 text-left">{section.title}</span>
+                    <span className="flex-1 text-left">{item.label}</span>
                     <ChevronDown
-                      size={14}
-                      className={`shrink-0 transition-transform duration-200 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
+                      size={15}
+                      className={`transition ${isOpen ? "rotate-180" : ""}`}
                     />
                   </>
                 )}
               </button>
 
-              {/* Section Items (Expandable) */}
-              {!collapsed && (
-                <div
-                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                    isOpen ? "max-h-96 opacity-100 mt-0.5" : "max-h-0 opacity-0"
-                  }`}
-                >
-                  <div className="ml-3 pl-3 border-l border-slate-700/50 space-y-0.5">
-                    {section.items.map(({ label, path, icon: Icon }) => (
+              {!collapsed && isOpen && (
+                <div className="ml-4 space-y-1 border-l border-slate-700/70 pl-4">
+                  {item.children.map((child) => {
+                    const ChildIcon = child.icon;
+                    return (
                       <NavLink
-                        key={path}
-                        to={path}
+                        key={child.path}
+                        to={child.path}
                         className={({ isActive }) =>
-                          `relative w-full flex items-center gap-3 px-3 py-2 rounded-lg
-                          text-sm font-medium transition-all duration-200
-                          ${
+                          `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
                             isActive
-                              ? "bg-violet-500/10 text-violet-400"
-                              : "text-white/60 hover:bg-transparent hover:text-white"
+                              ? "bg-violet-500/10 text-violet-300"
+                              : "text-white/60 hover:bg-slate-800 hover:text-white"
                           }`
                         }
                       >
-                        {({ isActive }) => (
-                          <>
-                            {isActive && (
-                              <span className="absolute left-0 top-0 h-full w-0.5 bg-violet-400 rounded-r-md" />
-                            )}
-                            <Icon size={15} className="shrink-0" />
-                            <span className="truncate">{label}</span>
-                          </>
-                        )}
+                        <ChildIcon size={15} className="shrink-0" />
+                        <span>{child.label}</span>
                       </NavLink>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -201,27 +179,24 @@ const AdminSidebar = () => {
         })}
       </nav>
 
-      {/* ================= FOOTER ================= */}
-      <div className="px-3 py-4 border-t border-slate-700 space-y-2">
+      <div className="space-y-2 border-t border-slate-700 px-3 py-4">
         <Link
           to="/"
-          className="flex items-center gap-3 px-3 py-2 rounded-lg
-          text-sm text-red-400 hover:bg-red-500/10
-          hover:text-red-300 transition"
+          className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
         >
-          <LogOut size={18} />
+          <LogOut size={17} />
           {!collapsed && <span>Log Out</span>}
         </Link>
 
         {!collapsed && (
           <div className="px-3 text-xs text-slate-500">
             <p className="font-medium text-white/60">Kovon Platform</p>
-            <p>Admin Console v2.0</p>
+            <p>Admin Console</p>
           </div>
         )}
       </div>
     </aside>
   );
-};
+}
 
 export default memo(AdminSidebar);

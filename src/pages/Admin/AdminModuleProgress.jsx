@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import SlidePanel from "../../components/common/SlidePanel";
 import { BarChart3, Search, Filter, Eye, X, CheckCircle2, Clock, PlayCircle, BookOpen, Layers } from "lucide-react";
 
 /* ===================== MOCK DATA ===================== */
@@ -399,9 +400,7 @@ export default function AdminModuleProgress() {
       </div>
 
       {/* ================= DRILL-DOWN MODAL ================= */}
-      {selectedBatch && (
-        <div className="fixed inset-0 bg-transparent/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#111827] border border-slate-700 rounded-2xl w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in duration-200">
+      <SlidePanel open={!!selectedBatch} onClose={() => setSelectedBatch(null)} title="/span> Detailed Progress" width="lg">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
               <div>
@@ -476,9 +475,7 @@ export default function AdminModuleProgress() {
                 Close
               </button>
             </div>
-          </div>
-        </div>
-      )}
+      </SlidePanel>
     </div>
   );
 }
