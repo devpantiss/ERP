@@ -256,7 +256,12 @@ export default function Home2() {
 
   // ── Lenis ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const lenis = new Lenis({ duration: 1.8, smoothWheel: true });
+    const lenis = new Lenis({ 
+      duration: 2.2, 
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      touchMultiplier: 1.5,
+    });
     const loop  = (t) => { lenis.raf(t); requestAnimationFrame(loop); };
     const id    = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(id); lenis.destroy(); };
