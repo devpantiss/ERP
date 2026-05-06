@@ -4,7 +4,7 @@ import {
   BookOpen, Building2, Users, ExternalLink, TrendingUp
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ALL_USERS } from "./SuperAdminUserManagement";
+import { ALL_USERS } from "./superAdminUsers";
 
 const TRAINERS = ALL_USERS.filter(u => u.role === "Trainer");
 

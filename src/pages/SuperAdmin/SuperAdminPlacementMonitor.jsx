@@ -4,7 +4,7 @@ import {
   Target, Building2, Users, ExternalLink
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ALL_USERS } from "./SuperAdminUserManagement";
+import { ALL_USERS } from "./superAdminUsers";
 
 const POS = ALL_USERS.filter(u => u.role === "Placement Officer");
 

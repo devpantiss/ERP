@@ -2,11 +2,8 @@ import { useState, memo } from "react";
 import { NavLink, Link } from "react-router-dom";
 import {
   ShieldAlert,
-  LayoutDashboard,
   Users,
-  GraduationCap,
   Briefcase,
-  CalendarCheck,
   UserPlus,
   FolderKanban,
   Building2,
@@ -16,28 +13,44 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  LayoutDashboard,
   LogOut,
-  Eye,
   Lock,
   Activity,
-  Target,
-  FileText,
+  Camera,
+  Megaphone,
+  ReceiptText,
+  Wallet,
 } from "lucide-react";
 
 /* ================= MENU CONFIG ================= */
 
 const SECTIONS = [
   {
-    key: "monitoring",
-    title: "Monitoring Hub",
-    icon: Eye,
+    key: "operations",
+    title: "Operations",
+    icon: FolderKanban,
     items: [
-      { label: "Command Center", path: "/super-admin", icon: LayoutDashboard },
-      { label: "Enrollment Monitor", path: "/super-admin/enrollment-monitor", icon: GraduationCap },
-      { label: "Training Monitor", path: "/super-admin/training-monitor", icon: Activity },
-      { label: "Placement Monitor", path: "/super-admin/placement-monitor", icon: Target },
-      { label: "Attendance Monitor", path: "/super-admin/attendance-monitor", icon: CalendarCheck },
-      { label: "Invoice Tracking", path: "/super-admin/invoice-tracking", icon: FileText },
+      { label: "Dashboard", path: "/super-admin/dashboard", icon: LayoutDashboard },
+      { label: "Candidate Details", path: "/super-admin/candidate-details", icon: Users },
+      { label: "Employee Management", path: "/super-admin/employee-management", icon: UserCog },
+      { heading: "Training" },
+      { label: "Training Tracking", path: "/super-admin/training-tracking", icon: Activity },
+      { label: "Exposure Visits", path: "/super-admin/exposure-visits", icon: Camera },
+      { heading: "Mobilization" },
+      { label: "Mobilization", path: "/super-admin/mobilization", icon: Building2 },
+      { label: "Community Engagement Drives", path: "/super-admin/community-engagement-drives", icon: Megaphone },
+      { heading: "Placements" },
+      { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
+    ],
+  },
+  {
+    key: "finance",
+    title: "Finances",
+    icon: Wallet,
+    items: [
+      { label: "Salaries", path: "/super-admin/salaries", icon: Wallet },
+      { label: "Invoices", path: "/super-admin/invoices", icon: ReceiptText },
     ],
   },
   {
@@ -46,9 +59,6 @@ const SECTIONS = [
     icon: Lock,
     items: [
       { label: "User Management", path: "/super-admin/user-management", icon: UserPlus },
-      { label: "Project & Center Assignment", path: "/super-admin/project-assignment", icon: FolderKanban },
-      { label: "Trainer Assignment", path: "/super-admin/trainer-assignment", icon: UserCog },
-      { label: "Placement Officer Assignment", path: "/super-admin/placement-assignment", icon: Briefcase },
     ],
   },
   {
@@ -66,7 +76,7 @@ const SECTIONS = [
 
 const SuperAdminSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [openSections, setOpenSections] = useState(["monitoring"]);
+  const [openSections, setOpenSections] = useState(["operations"]);
 
   const toggleSection = (key) => {
     setOpenSections((prev) =>
@@ -144,32 +154,41 @@ const SuperAdminSidebar = () => {
                   }`}
                 >
                   <div className="ml-3 pl-3 border-l border-slate-700/50 space-y-1">
-                    {section.items.map(({ label, path, icon: Icon }) => (
-                      <NavLink
-                        key={path}
-                        to={path}
-                        end={path === "/super-admin"}
-                        className={({ isActive }) =>
-                          `relative w-full flex items-center gap-3 px-3 py-2 rounded-lg
-                          text-sm font-medium transition-all duration-200
-                          ${
-                            isActive
-                              ? "bg-red-500/10 text-red-500 font-bold"
-                              : "text-white/60 hover:bg-transparent hover:text-white"
-                          }`
-                        }
-                      >
-                        {({ isActive }) => (
-                          <>
-                            {isActive && (
-                              <span className="absolute left-0 top-0 h-full w-0.5 bg-red-500 rounded-r-md" />
-                            )}
-                            <Icon size={14} className="shrink-0" />
-                            <span className="truncate">{label}</span>
-                          </>
-                        )}
-                      </NavLink>
-                    ))}
+                    {section.items.map((item, idx) =>
+                      item.heading ? (
+                        <p
+                          key={item.heading}
+                          className={`text-[9px] font-black uppercase tracking-[0.2em] text-slate-500/70 px-3 ${idx === 0 ? "pt-1 pb-1" : "pt-3 pb-1"}`}
+                        >
+                          {item.heading}
+                        </p>
+                      ) : (
+                        <NavLink
+                          key={item.path}
+                          to={item.path}
+                          end={item.path === "/super-admin"}
+                          className={({ isActive }) =>
+                            `relative w-full flex items-center gap-3 px-3 py-2 rounded-lg
+                            text-sm font-medium transition-all duration-200
+                            ${
+                              isActive
+                                ? "bg-red-500/10 text-red-500 font-bold"
+                                : "text-white/60 hover:bg-transparent hover:text-white"
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              {isActive && (
+                                <span className="absolute left-0 top-0 h-full w-0.5 bg-red-500 rounded-r-md" />
+                              )}
+                              <item.icon size={14} className="shrink-0" />
+                              <span className="truncate">{item.label}</span>
+                            </>
+                          )}
+                        </NavLink>
+                      )
+                    )}
                   </div>
                 </div>
               )}

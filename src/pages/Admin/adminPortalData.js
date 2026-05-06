@@ -305,20 +305,25 @@ export const PROJECT_REPORTS = [
 ];
 
 export const TRAINER_APPROVALS = [
-  { id: "TR-APR-01", trainer: "Aditya Sahu", center: "Angul", requestType: "Exposure Visit Approval", submittedOn: "2026-04-10", batch: "Batch-101", status: "Pending", remarks: "Industry partner consent attached." },
-  { id: "TR-APR-02", trainer: "Sneha Mohanty", center: "Jharsuguda", requestType: "Assessment Completion", submittedOn: "2026-04-09", batch: "Batch-303", status: "Reviewed", remarks: "Assessor report uploaded." },
-  { id: "TR-APR-03", trainer: "Amit Panda", center: "Keonjhar", requestType: "Lab Consumables", submittedOn: "2026-04-08", batch: "Batch-107", status: "Pending", remarks: "Urgent welding rods restock required." },
-  { id: "TR-APR-04", trainer: "Suresh Naik", center: "Sundargarh", requestType: "Attendance Regularization", submittedOn: "2026-04-07", batch: "Batch-205", status: "Approved", remarks: "Biometric sync issue verified and closed." },
+  { id: "TR-APR-01", project: "PMKVY 4.0", trainer: "Aditya Sahu", center: "Angul", requestType: "Exposure Visit Approval", submittedOn: "2026-04-10", batch: "Batch-101", status: "Pending", remarks: "Industry partner consent attached." },
+  { id: "TR-APR-02", project: "CSR - Tata Steel", trainer: "Sneha Mohanty", center: "Jharsuguda", requestType: "Assessment Completion", submittedOn: "2026-04-09", batch: "Batch-303", status: "Reviewed", remarks: "Assessor report uploaded." },
+  { id: "TR-APR-03", project: "PMKVY 4.0", trainer: "Amit Panda", center: "Angul", requestType: "Lab Consumables", submittedOn: "2026-04-08", batch: "Batch-107", status: "Pending", remarks: "Urgent welding rods restock required." },
+  { id: "TR-APR-04", project: "DDUGKY", trainer: "Suresh Naik", center: "Kalahandi", requestType: "Attendance Regularization", submittedOn: "2026-04-07", batch: "Batch-205", status: "Approved", remarks: "Biometric sync issue verified and closed." },
+  { id: "TR-APR-05", project: "CSR - Tata Steel", trainer: "Tapan Rout", center: "Jharsuguda", requestType: "Module Extension", submittedOn: "2026-04-06", batch: "Batch-301", status: "Pending", remarks: "Requesting 2-week extension for practical module." },
+  { id: "TR-APR-06", project: "DDUGKY", trainer: "Aparna Sethy", center: "Kalahandi", requestType: "Guest Lecture", submittedOn: "2026-04-05", batch: "Batch-401", status: "Pending", remarks: "Industry expert session for hospitality batch." },
 ];
 
 export const MOBILIZER_APPROVALS = [
-  { id: "MB-APR-01", mobilizer: "Rahul Pradhan", center: "Jharsuguda", requestType: "Campaign Budget", submittedOn: "2026-04-12", location: "Block B", status: "Pending", remarks: "Requesting ₹5000 for local awareness camp tent and chairs." },
-  { id: "MB-APR-02", mobilizer: "Sonal Behera", center: "Kalahandi", requestType: "Candidate Override", submittedOn: "2026-04-11", location: "GP Panchayat", status: "Approved", remarks: "Age waiver requested for two promising candidates." },
-  { id: "MB-APR-03", mobilizer: "Ritika Sahoo", center: "Keonjhar", requestType: "Transport Allowance", submittedOn: "2026-04-10", location: "Zone 3", status: "Pending", remarks: "Travel bill to distant villages for mobilisation." },
+  { id: "MB-APR-01", project: "CSR - Tata Steel", mobilizer: "Rahul Pradhan", center: "Jharsuguda", requestType: "Campaign Budget", submittedOn: "2026-04-12", location: "Block B", status: "Pending", remarks: "Requesting ₹5000 for local awareness camp tent and chairs." },
+  { id: "MB-APR-02", project: "DDUGKY", mobilizer: "Sonal Behera", center: "Kalahandi", requestType: "Candidate Override", submittedOn: "2026-04-11", location: "GP Panchayat", status: "Approved", remarks: "Age waiver requested for two promising candidates." },
+  { id: "MB-APR-03", project: "PMKVY 4.0", mobilizer: "Ritika Sahoo", center: "Angul", requestType: "Transport Allowance", submittedOn: "2026-04-10", location: "Zone 3", status: "Pending", remarks: "Travel bill to distant villages for mobilisation." },
+  { id: "MB-APR-04", project: "PMKVY 4.0", mobilizer: "Deepak Mohapatra", center: "Bolangir", requestType: "Venue Booking", submittedOn: "2026-04-09", location: "Block A", status: "Pending", remarks: "Community hall booking for awareness camp." },
+  { id: "MB-APR-05", project: "DDUGKY", mobilizer: "Prakash Majhi", center: "Kalahandi", requestType: "Outreach Material", submittedOn: "2026-04-08", location: "Ward 7", status: "Reviewed", remarks: "Pamphlets and banner printing for enrollment drive." },
 ];
 
 export const PLACEMENT_APPROVALS = [
-  { id: "PL-APR-01", officer: "Meera Das", center: "Angul", requestType: "Placement Drive", submittedOn: "2026-04-13", entity: "Tech Mahindra", status: "Pending", remarks: "Initial term sheet for mass hiring drive." },
-  { id: "PL-APR-02", officer: "Bikash Naik", center: "Kalahandi", requestType: "Corporate MoU", submittedOn: "2026-04-11", entity: "L&T Construction", status: "Reviewed", remarks: "Apprenticeship agreement pending final signature." },
-  { id: "PL-APR-03", officer: "Pooja Patel", center: "Sundargarh", requestType: "Offer Letter Verification", submittedOn: "2026-04-09", entity: "Jindal Steel", status: "Approved", remarks: "Verified 15 offer letters for the Q3 batch." },
+  { id: "PL-APR-01", project: "PMKVY 4.0", officer: "Meera Das", center: "Angul", requestType: "Placement Drive", submittedOn: "2026-04-13", entity: "Tech Mahindra", status: "Pending", remarks: "Initial term sheet for mass hiring drive." },
+  { id: "PL-APR-02", project: "DDUGKY", officer: "Bikash Naik", center: "Kalahandi", requestType: "Corporate MoU", submittedOn: "2026-04-11", entity: "L&T Construction", status: "Reviewed", remarks: "Apprenticeship agreement pending final signature." },
+  { id: "PL-APR-03", project: "CSR - Tata Steel", officer: "Pooja Patel", center: "Jharsuguda", requestType: "Offer Letter Verification", submittedOn: "2026-04-09", entity: "Jindal Steel", status: "Approved", remarks: "Verified 15 offer letters for the Q3 batch." },
+  { id: "PL-APR-04", project: "PMKVY 4.0", officer: "Lopamudra Deo", center: "Bolangir", requestType: "Salary Verification", submittedOn: "2026-04-08", entity: "Vedanta Resources", status: "Pending", remarks: "3-month salary slip verification for 8 candidates." },
 ];

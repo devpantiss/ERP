@@ -3,7 +3,7 @@ import SuperAdminSidebar from "../Sidebars/SuperAdminSidebar";
 
 const SuperAdminLayout = () => {
   return (
-    <div className="flex min-h-screen bg-[#020617] relative">
+    <div className="relative flex h-screen overflow-hidden bg-[#020617]">
       {/* Background grid */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
@@ -25,7 +25,7 @@ const SuperAdminLayout = () => {
 
       {/* Main content */}
       <main
-        className="flex-1 p-8 relative z-10"
+        className="relative z-10 h-screen min-w-0 flex-1 overflow-y-auto overflow-x-hidden p-5 md:p-8"
         style={{
           scrollbarWidth: "thin",
           scrollbarColor: "#1e293b transparent",

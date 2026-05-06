@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, CalendarCheck, MapPin, TrendingUp, CheckCircle2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { ALL_USERS } from "./SuperAdminUserManagement";
+import { ALL_USERS } from "./superAdminUsers";
 
 const MOB_MAP = {};
 ALL_USERS.filter(u => u.role === "Mobilizer").forEach(u => { MOB_MAP[u.id] = u; });

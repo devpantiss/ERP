@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Target, Briefcase, TrendingUp, Building2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ALL_USERS } from "./SuperAdminUserManagement";
+import { ALL_USERS } from "./superAdminUsers";
 
 const PO_MAP = {};
 ALL_USERS.filter(u => u.role === "Placement Officer").forEach(u => { PO_MAP[u.id] = u; });

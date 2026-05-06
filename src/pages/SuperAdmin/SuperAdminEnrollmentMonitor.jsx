@@ -4,7 +4,7 @@ import {
   GraduationCap, Building2, Users, ExternalLink,
   CheckCircle2, Clock, XCircle, Download
 } from "lucide-react";
-import { ALL_USERS } from "./SuperAdminUserManagement";
+import { ALL_USERS } from "./superAdminUsers";
 
 const MOBILIZERS = ALL_USERS.filter(u => u.role === "Mobilizer");
 

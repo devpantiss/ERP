@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck,
   FileCheck,
   LayoutDashboard,
   LogOut,
@@ -55,11 +54,6 @@ const MENU_ITEMS = [
     icon: Radio,
   },
   {
-    label: "Attendance Overview",
-    path: "/admin/attendance-overview",
-    icon: ClipboardCheck,
-  },
-  {
     label: "Project Details / Reports",
     path: "/admin/project-details-reports",
     icon: Briefcase,
@@ -85,15 +79,20 @@ function AdminSidebar() {
 
   return (
     <aside
-      className={`sticky top-0 flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 transition-all duration-300 ${
+      className={`admin-future-sidebar sticky top-0 flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 transition-all duration-300 ${
         collapsed ? "w-20" : "w-72"
       }`}
     >
-      <div className="flex h-16 items-center justify-between border-b border-slate-700 px-4">
-        {!collapsed && <span className="text-lg font-semibold tracking-tight text-violet-400">Admin Hub</span>}
+      <div className="admin-future-sidebar__brand flex h-16 items-center justify-between border-b border-slate-700 px-4">
+        {!collapsed && (
+          <span className="text-lg font-semibold tracking-tight text-violet-400">
+            Admin Hub
+          </span>
+        )}
         <button
           onClick={() => setCollapsed((current) => !current)}
-          className="rounded-md p-2 text-white/60 transition hover:bg-slate-700 hover:text-white"
+          className="admin-future-icon-button rounded-md p-2 text-white/60 transition hover:bg-slate-700 hover:text-white"
+          aria-label={collapsed ? "Expand admin sidebar" : "Collapse admin sidebar"}
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
@@ -179,7 +178,7 @@ function AdminSidebar() {
         })}
       </nav>
 
-      <div className="space-y-2 border-t border-slate-700 px-3 py-4">
+      <div className="admin-future-sidebar__footer space-y-2 border-t border-slate-700 px-3 py-4">
         <Link
           to="/"
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-400 transition hover:bg-red-500/10 hover:text-red-300"

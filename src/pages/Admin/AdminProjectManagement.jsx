@@ -5,6 +5,7 @@ import {
   Award,
   BriefcaseBusiness,
   CalendarRange,
+  ChevronDown,
   ChevronRight,
   CircleAlert,
   ExternalLink,
@@ -18,6 +19,14 @@ import {
   Target,
   TrendingUp,
   Users,
+  BookOpen,
+  Briefcase,
+  FileDown,
+  CheckCircle,
+  XCircle,
+  Eye,
+  X,
+  Download,
 } from "lucide-react";
 import { PROJECT_REPORTS } from "./adminPortalData";
 import SlidePanel from "../../components/common/SlidePanel";
@@ -91,6 +100,42 @@ const PLACEMENT_STATUS_ORDER = [
   "Employer Mapping",
   "Interview Scheduled",
   "Placed",
+];
+
+const COMPANY_NAMES = [
+  "Tata Steel",
+  "Jindal Steel & Power",
+  "L&T Construction",
+  "Tech Mahindra",
+  "Vedanta Resources",
+  "NALCO",
+  "Hindalco Industries",
+  "Adani Group",
+  "JSW Steel",
+  "Infosys BPO",
+  "Wipro Consumer",
+  "SAIL Rourkela",
+  "NTPC",
+  "Bharat Forge",
+  "Reliance Industries",
+];
+
+const DESIGNATIONS = [
+  "Junior Technician",
+  "Trainee Electrician",
+  "Welding Operator",
+  "Solar Panel Installer",
+  "Plant Operator",
+  "Sales Associate",
+  "Data Entry Operator",
+  "Hospitality Attendant",
+  "Fitter Trainee",
+  "General Duty Assistant",
+  "Machine Operator",
+  "Quality Inspector",
+  "Site Supervisor Trainee",
+  "Customer Service Rep",
+  "Retail Floor Executive",
 ];
 
 const formatNumber = (value) => new Intl.NumberFormat("en-IN").format(value);
@@ -173,7 +218,7 @@ const getHealthMeta = (score) => {
       label: "High Confidence",
       badgeClass: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
       accentClass: "text-emerald-300",
-      barClass: "from-emerald-500 to-cyan-400",
+      barClass: "from-emerald-500 to-violet-400",
     };
   }
 
@@ -234,9 +279,9 @@ const getTrainingStatusMeta = (status) => {
 
   if (status === "In Progress") {
     return {
-      badgeClass: "border-cyan-500/20 bg-cyan-500/10 text-cyan-300",
-      toneClass: "bg-cyan-500/10 text-cyan-300",
-      dotClass: "bg-cyan-400",
+      badgeClass: "border-violet-500/20 bg-violet-500/10 text-violet-300",
+      toneClass: "bg-violet-500/10 text-violet-300",
+      dotClass: "bg-violet-400",
     };
   }
 
@@ -266,9 +311,9 @@ const getPlacementStatusMeta = (status) => {
 
   if (status === "Employer Mapping") {
     return {
-      badgeClass: "border-cyan-500/20 bg-cyan-500/10 text-cyan-300",
-      toneClass: "bg-cyan-500/10 text-cyan-300",
-      dotClass: "bg-cyan-400",
+      badgeClass: "border-violet-500/20 bg-violet-500/10 text-violet-300",
+      toneClass: "bg-violet-500/10 text-violet-300",
+      dotClass: "bg-violet-400",
     };
   }
 
@@ -375,17 +420,17 @@ const buildCenterSnapshot = (center, projectName) => {
       let placementStatus = "Not Yet Eligible";
 
       if (
-        placementReadiness >= 90 &&
-        learnerIndex < Math.round(mappedCandidates * 0.52)
+        placementReadiness >= 82 &&
+        learnerIndex < Math.max(Math.round(mappedCandidates * 0.58), Math.round(parsed.size * 0.18))
       ) {
         placementStatus = "Placed";
       } else if (
-        placementReadiness >= 80 &&
+        placementReadiness >= 72 &&
         learnerIndex < Math.round(mappedCandidates * 0.82)
       ) {
         placementStatus = "Interview Scheduled";
       } else if (
-        placementReadiness >= 68 &&
+        placementReadiness >= 60 &&
         learnerIndex < Math.max(mappedCandidates, Math.round(parsed.size * 0.35))
       ) {
         placementStatus = "Employer Mapping";
@@ -406,6 +451,51 @@ const buildCenterSnapshot = (center, projectName) => {
 
       const trainingMeta = getTrainingStatusMeta(trainingStatus);
       const placementMeta = getPlacementStatusMeta(placementStatus);
+
+      const totalTrainingDays = clamp(42 + (learnerIndex % 9) * 6, 42, 120);
+      const completedTrainingDays = clamp(
+        Math.round((trainingProgress / 100) * totalTrainingDays),
+        0,
+        totalTrainingDays
+      );
+      const totalTheoryHours = clamp(
+        Math.round(completedTrainingDays * 3.2 + (learnerIndex % 5) * 4),
+        0,
+        Math.round(totalTrainingDays * 3.5)
+      );
+      const totalPracticalHours = clamp(
+        Math.round(completedTrainingDays * 4.8 + (learnerIndex % 7) * 3),
+        0,
+        Math.round(totalTrainingDays * 5.2)
+      );
+
+      const placementSeed =
+        center.name.length * 7 + index * 13 + learnerIndex * 19;
+      const company =
+        COMPANY_NAMES[placementSeed % COMPANY_NAMES.length];
+      const designation =
+        DESIGNATIONS[(placementSeed + 3) % DESIGNATIONS.length];
+      const salary =
+        placementStatus === "Placed"
+          ? (10000 + ((placementSeed * 137) % 15000)) * 1
+          : 0;
+      const joiningDateOffset = 14 + (placementSeed % 30);
+      const joiningDate =
+        placementStatus === "Placed"
+          ? new Date(
+              Date.now() - joiningDateOffset * 24 * 60 * 60 * 1000
+            )
+              .toISOString()
+              .split("T")[0]
+          : null;
+      const hasOfferLetter = placementStatus === "Placed";
+      const monthsWorked =
+        placementStatus === "Placed" ? Math.min(3, Math.floor(joiningDateOffset / 30) + 1) : 0;
+      const hasM1 = monthsWorked >= 1;
+      const hasM2 = monthsWorked >= 2;
+      const hasM3 = monthsWorked >= 3;
+      const hasBankStatement = placementStatus === "Placed" && learnerIndex % 3 !== 2;
+      const isVerified = placementStatus === "Placed" && learnerIndex % 4 !== 3;
 
       return {
         id: `${center.id}-${parsed.id}-candidate-${learnerIndex + 1}`,
@@ -428,6 +518,20 @@ const buildCenterSnapshot = (center, projectName) => {
         nextMilestone,
         trainingMeta,
         placementMeta,
+        totalTrainingDays,
+        completedTrainingDays,
+        totalTheoryHours,
+        totalPracticalHours,
+        company,
+        designation,
+        salary,
+        joiningDate,
+        hasOfferLetter,
+        hasM1,
+        hasM2,
+        hasM3,
+        hasBankStatement,
+        isVerified,
       };
     });
     const trainingStatusMix = buildStatusMix(
@@ -503,9 +607,9 @@ const buildCenterSnapshot = (center, projectName) => {
     {
       label: "Placement",
       value: placementOps,
-      accentClass: "text-cyan-300",
-      panelClass: "bg-cyan-500/10",
-      barClass: "bg-cyan-500",
+      accentClass: "text-violet-300",
+      panelClass: "bg-violet-500/10",
+      barClass: "bg-violet-500",
     },
     {
       label: "Admin and Welfare",
@@ -575,7 +679,7 @@ const buildCenterSnapshot = (center, projectName) => {
     subtitle: `${formatNumber(batch.size)} learners / ${batch.track}`,
     meta: `Attendance ${batch.attendanceRate}% / Assessment ${batch.assessmentRate}% / Ready ${batch.readiness}%`,
     tag: `${batch.mappedCandidates} employer mapped`,
-    toneClass: "bg-cyan-500/10 text-cyan-300",
+    toneClass: "bg-violet-500/10 text-violet-300",
     description: `${batch.riskCount} learner(s) flagged for intervention support.`,
   }));
 
@@ -615,7 +719,7 @@ const buildCenterSnapshot = (center, projectName) => {
       role.demandSignal >= 85
         ? "bg-emerald-500/10 text-emerald-300"
         : role.demandSignal >= 72
-        ? "bg-cyan-500/10 text-cyan-300"
+        ? "bg-violet-500/10 text-violet-300"
         : "bg-amber-500/10 text-amber-300",
     description: `${role.title} remains one of the delivery lanes for ${center.name}.`,
   }));
@@ -915,8 +1019,8 @@ export default function AdminProjectManagement() {
         {
           label: "Enrollment Achievement",
           value: selectedProject.avgEnrollmentAchievement,
-          accentClass: "text-cyan-300",
-          barClass: "bg-cyan-500",
+          accentClass: "text-violet-300",
+          barClass: "bg-violet-500",
         },
         {
           label: "Assessment Pass Rate",
@@ -968,26 +1072,51 @@ export default function AdminProjectManagement() {
   const PanelIcon = detailPanel.icon;
 
   return (
-    <div className="space-y-6 text-white">
-      <header className="rounded-[30px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(129,140,248,0.18),_transparent_36%),linear-gradient(180deg,_rgba(15,23,42,0.96),_rgba(2,6,23,0.98))] p-6 shadow-[0_24px_80px_rgba(2,6,23,0.38)]">
-        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-200">
-              <FolderKanban size={14} />
-              Project Details / Reports
+    <EnterpriseProjectDashboard
+      portfolio={portfolio}
+      projectSnapshots={projectSnapshots}
+      selectedProject={selectedProject}
+      activeCenter={activeCenter}
+      selectedBatch={selectedBatch}
+      rankedCenters={rankedCenters}
+      onProjectSelect={handleProjectSelect}
+      onCenterSelect={handleCenterSelect}
+      onBatchSelect={setSelectedBatchId}
+      onBack={handleBack}
+      onResetProject={() => {
+        setSelectedProjectId("");
+        setSelectedCenterId("");
+        setSelectedBatchId("");
+      }}
+      onResetCenter={() => {
+        setSelectedCenterId("");
+        setSelectedBatchId("");
+      }}
+    />
+  );
+
+  return (
+    <div className="admin-project-details space-y-8 text-white">
+      <header className="admin-project-hero rounded-[28px] border border-white/10 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.42)] lg:p-7">
+        <div className="grid gap-7 xl:grid-cols-[minmax(0,1.12fr)_minmax(380px,0.88fr)]">
+          <div className="flex min-h-full flex-col justify-between gap-8">
+            <div className="space-y-5">
+              <div className="admin-project-kicker inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-200">
+                <FolderKanban size={14} />
+                Project Details / Reports
+              </div>
+              <div className="space-y-3">
+                <h1 className="max-w-4xl text-3xl font-semibold tracking-tight text-white md:text-5xl md:leading-[1.05]">
+                  Project intelligence for execution, governance, and learner outcomes.
+                </h1>
+                <p className="max-w-3xl text-sm leading-6 text-slate-300 md:text-base md:leading-7">
+                  A focused command surface for portfolio health, center performance,
+                  batch movement, staffing, learner progress, and governance risk.
+                </p>
+              </div>
             </div>
-            <div className="space-y-3">
-              <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">
-                Skilling project command center with portfolio signals, center
-                execution, delivery health, and governance depth.
-              </h1>
-              <p className="max-w-3xl text-sm leading-6 text-slate-300">
-                This view is designed like an enterprise project intelligence
-                surface, but tuned for skilling operations: center performance,
-                batches, job roles, staffing, learner outcomes, and grievance
-                control in one place.
-              </p>
-            </div>
+
+            <ProjectWorkflowStepper currentStep={currentStep} />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -1006,8 +1135,8 @@ export default function AdminProjectManagement() {
                 portfolio.mappedCandidates
               )} learners already aligned to placement pipelines.`}
               icon={Users}
-              accentClass="text-cyan-300"
-              panelClass="border-cyan-500/15 bg-cyan-500/10"
+              accentClass="text-fuchsia-200"
+              panelClass="border-white/10 bg-white/[0.035]"
             />
             <PortfolioStatCard
               label="Portfolio Health"
@@ -1029,19 +1158,18 @@ export default function AdminProjectManagement() {
         </div>
       </header>
 
-      <section className="rounded-[28px] border border-white/10 bg-[#0b1220] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.24)]">
+      <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
         <div className="flex flex-col gap-4 border-b border-white/10 pb-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
-              Guided Flow
+            <p className="admin-project-kicker text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
+              Guided Workflow
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-white">
               Select project first, then center, then review performance
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-              The page now moves in a clearer order. Users choose the skilling
-              project, then the center inside that project, and only after that
-              do the detailed performance views appear.
+              Start with the program portfolio, narrow into a center, then review
+              the operating metrics, learner movement, and governance signals.
             </p>
           </div>
 
@@ -1132,7 +1260,7 @@ export default function AdminProjectManagement() {
 
       {currentStep === 3 && selectedProject && activeCenter ? (
         <div className="space-y-6">
-          <section className="rounded-[30px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(34,211,238,0.12),_transparent_34%),linear-gradient(180deg,_rgba(15,23,42,0.98),_rgba(2,6,23,0.98))] p-6 shadow-[0_18px_60px_rgba(2,6,23,0.28)]">
+          <section className="admin-project-focus rounded-[28px] border border-white/10 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.3)] lg:p-7">
             <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
               <div className="space-y-5">
                 <div className="flex flex-wrap items-center gap-3">
@@ -1152,7 +1280,7 @@ export default function AdminProjectManagement() {
                     {activeCenter.healthScore}% center health
                   </span>
                   {selectedBatch ? (
-                    <span className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                    <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-300">
                       Batch focus: {selectedBatch.label}
                     </span>
                   ) : null}
@@ -1164,9 +1292,8 @@ export default function AdminProjectManagement() {
                   </h2>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
                     {activeCenter.name} is the selected delivery center under{" "}
-                    {selectedProject.name}. The layout below is now separated
-                    into overview, batch and learner clarity, and operations so
-                    the center narrative is easier to scan.
+                    {selectedProject.name}. Key delivery signals, batch flow,
+                    staffing, and risk posture are consolidated below.
                   </p>
                 </div>
 
@@ -1256,10 +1383,10 @@ export default function AdminProjectManagement() {
                 </div>
 
                 {selectedBatch ? (
-                  <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,_rgba(12,22,40,0.92),_rgba(7,14,28,0.96))] p-5">
+                  <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,_rgba(24,24,27,0.94),_rgba(10,10,12,0.96))] p-5">
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
                           Batch Focus
                         </p>
                         <p className="mt-2 text-2xl font-semibold text-white">
@@ -1301,9 +1428,9 @@ export default function AdminProjectManagement() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <section className="rounded-[28px] border border-white/10 bg-[#0b1220] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.24)]">
+            <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
               <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                <div className="rounded-2xl bg-cyan-500/10 p-2 text-cyan-300">
+                <div className="rounded-2xl bg-violet-500/10 p-2 text-violet-300">
                   <Target size={18} />
                 </div>
                 <div>
@@ -1359,19 +1486,18 @@ export default function AdminProjectManagement() {
               </div>
             </section>
 
-            <section className="rounded-[28px] border border-white/10 bg-[#0b1220] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.24)]">
+            <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
               <div className="flex flex-col gap-4 border-b border-white/10 pb-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
                     Center Switchboard
                   </p>
                   <h3 className="mt-2 text-2xl font-semibold text-white">
                     Compare or switch centers without leaving the details view
                   </h3>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                    This version keeps center switching compact, so the page
-                    stays readable while still giving context inside the selected
-                    project.
+                    Switch between centers in the selected project while keeping
+                    health, attendance, placement, and risk context visible.
                   </p>
                 </div>
                 <span
@@ -1394,19 +1520,18 @@ export default function AdminProjectManagement() {
             </section>
           </section>
 
-          <section className="rounded-[28px] border border-white/10 bg-[#0b1220] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.24)]">
+          <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
             <div className="flex flex-col gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
                   Batch And Learner Clarity
                 </p>
                 <h3 className="mt-2 text-2xl font-semibold text-white">
                   Batch details and candidate roster for the selected center
                 </h3>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                  Batch navigation is separated from the roster itself, so users
-                  can first choose the batch and then inspect individual
-                  candidates with training and placement indicators.
+                  Select a batch to inspect candidate readiness, training status,
+                  placement movement, and the next milestone for each learner.
                 </p>
               </div>
 
@@ -1456,7 +1581,7 @@ export default function AdminProjectManagement() {
                 {selectedBatch ? (
                   <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
                     <div className="flex items-center gap-3">
-                      <div className="rounded-2xl bg-cyan-500/10 p-2 text-cyan-300">
+                      <div className="rounded-2xl bg-violet-500/10 p-2 text-violet-300">
                         <Sparkles size={18} />
                       </div>
                       <div>
@@ -1530,7 +1655,7 @@ export default function AdminProjectManagement() {
                   <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.02))] p-5">
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
                           Batch Details
                         </p>
                         <h4 className="mt-2 text-2xl font-semibold text-white">
@@ -1550,7 +1675,7 @@ export default function AdminProjectManagement() {
                             title: "Batch Candidate Roster",
                             subtitle: `${selectedBatch.label} / ${activeCenter.name} / ${selectedProject.name}`,
                             icon: GraduationCap,
-                            accentClass: "text-cyan-300",
+                            accentClass: "text-violet-300",
                             records: selectedBatch.candidateRecords,
                           })
                         }
@@ -1676,18 +1801,18 @@ export default function AdminProjectManagement() {
             </div>
           </section>
 
-          <section className="rounded-[28px] border border-white/10 bg-[#0b1220] p-5 shadow-[0_18px_60px_rgba(2,6,23,0.24)]">
+          <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
             <div className="flex flex-col gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
                   Operations And Governance
                 </p>
                 <h3 className="mt-2 text-2xl font-semibold text-white">
                   Delivery performance, staffing, and operational controls
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-slate-400">
-                  The lower section now keeps execution and governance together
-                  so the learner view above stays focused.
+                  Delivery metrics, staffing distribution, personnel, job-role
+                  coverage, and open governance items for the selected center.
                 </p>
               </div>
             </div>
@@ -1696,7 +1821,7 @@ export default function AdminProjectManagement() {
               <div className="space-y-6">
                 <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
                   <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-cyan-500/10 p-2 text-cyan-300">
+                    <div className="rounded-2xl bg-violet-500/10 p-2 text-violet-300">
                       <TrendingUp size={18} />
                     </div>
                     <div>
@@ -1715,8 +1840,8 @@ export default function AdminProjectManagement() {
                       {
                         label: "Enrollment Achievement",
                         value: activeCenter.enrollmentAchievement,
-                        accentClass: "text-cyan-300",
-                        barClass: "bg-cyan-500",
+                        accentClass: "text-violet-300",
+                        barClass: "bg-violet-500",
                       },
                       {
                         label: "Assessment Pass Rate",
@@ -1822,7 +1947,7 @@ export default function AdminProjectManagement() {
                       title: "Key Personnel",
                       subtitle: `${activeCenter.name} / ${selectedProject.name}`,
                       icon: Users,
-                      accentClass: "text-cyan-300",
+                      accentClass: "text-violet-300",
                       records: activeCenter.employeeRecords,
                     })
                   }
@@ -1957,6 +2082,1185 @@ export default function AdminProjectManagement() {
   );
 }
 
+function EnterpriseProjectDashboard({
+  portfolio,
+  projectSnapshots,
+  selectedProject,
+  activeCenter,
+  selectedBatch,
+  rankedCenters,
+  onProjectSelect,
+  onCenterSelect,
+  onBatchSelect,
+  onBack,
+  onResetProject,
+  onResetCenter,
+}) {
+  const mode = !selectedProject ? "Portfolio" : !activeCenter ? "Project" : "Center";
+  const visibleCandidates = selectedBatch?.candidateRecords.slice(0, 8) || [];
+
+  return (
+    <div className="enterprise-project-page space-y-6 text-white">
+      <section className="enterprise-project-shell rounded-[28px] border border-white/10 p-6 lg:p-7">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-200">
+              <FolderKanban size={14} />
+              Enterprise Project Dashboard
+            </div>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-5xl md:leading-[1.05]">
+              Project details, simplified for operating decisions.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base md:leading-7">
+              Move from portfolio health to project execution to center-level
+              delivery without losing context.
+            </p>
+          </div>
+
+          <div className="grid min-w-full gap-3 sm:grid-cols-3 lg:min-w-[460px]">
+            <EnterpriseMetric label="Mode" value={mode} caption="Current view" />
+            <EnterpriseMetric
+              label="Live Programs"
+              value={`${portfolio.activeProjects}/${portfolio.projects}`}
+              caption="Active portfolio"
+            />
+            <EnterpriseMetric
+              label="Health"
+              value={`${portfolio.avgHealthScore}%`}
+              caption="Portfolio average"
+            />
+          </div>
+        </div>
+
+        <EnterpriseFlowBar
+          selectedProject={selectedProject}
+          activeCenter={activeCenter}
+          onResetProject={onResetProject}
+          onResetCenter={onResetCenter}
+        />
+      </section>
+
+      {!selectedProject ? (
+        <EnterprisePortfolioView
+          portfolio={portfolio}
+          projects={projectSnapshots}
+          onProjectSelect={onProjectSelect}
+        />
+      ) : !activeCenter ? (
+        <EnterpriseProjectView
+          project={selectedProject}
+          centers={rankedCenters}
+          onBack={onBack}
+          onCenterSelect={onCenterSelect}
+        />
+      ) : (
+        <EnterpriseCenterView
+          project={selectedProject}
+          center={activeCenter}
+          centers={rankedCenters}
+          selectedBatch={selectedBatch}
+          visibleCandidates={visibleCandidates}
+          onBack={onBack}
+          onCenterSelect={onCenterSelect}
+          onBatchSelect={onBatchSelect}
+        />
+      )}
+    </div>
+  );
+}
+
+function EnterpriseFlowBar({
+  selectedProject,
+  activeCenter,
+  onResetProject,
+  onResetCenter,
+}) {
+  const steps = [
+    { label: "Portfolio", value: "All projects", active: !selectedProject },
+    { label: "Project", value: selectedProject?.name || "Choose project", active: selectedProject && !activeCenter },
+    { label: "Center", value: activeCenter?.location || "Choose center", active: activeCenter },
+  ];
+
+  return (
+    <div className="mt-6 grid gap-3 border-t border-white/10 pt-5 md:grid-cols-3">
+      {steps.map((step, index) => (
+        <div
+          key={step.label}
+          className={`rounded-[18px] border px-4 py-3 ${
+            step.active
+              ? "border-violet-400/30 bg-violet-500/10"
+              : "border-white/10 bg-black/20"
+          }`}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+              {step.label}
+            </p>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs text-slate-300">
+              {index + 1}
+            </span>
+          </div>
+          <p className="mt-2 truncate text-sm font-medium text-white">{step.value}</p>
+        </div>
+      ))}
+      {selectedProject ? (
+        <div className="md:col-span-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onResetProject}
+            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/[0.08]"
+          >
+            Reset project
+          </button>
+          {activeCenter ? (
+            <button
+              type="button"
+              onClick={onResetCenter}
+              className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/[0.08]"
+            >
+              Change center
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function EnterprisePortfolioView({ portfolio, projects, onProjectSelect }) {
+  return (
+    <div className="space-y-6">
+      <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+        <div className="flex flex-col gap-2 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
+              Portfolio Snapshot
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">
+              Operating overview
+            </h2>
+          </div>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <EnterpriseMetric label="Projects" value={portfolio.projects} caption={`${portfolio.activeProjects} active`} />
+          <EnterpriseMetric label="Centers" value={portfolio.centerCount} caption="Under delivery governance" />
+          <EnterpriseMetric label="Learners" value={formatNumber(portfolio.learners)} caption={`${formatNumber(portfolio.mappedCandidates)} mapped`} />
+          <EnterpriseMetric label="At Risk" value={portfolio.atRiskProjects} caption="Needs review" tone="amber" />
+        </div>
+      </section>
+
+      <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+        <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-white">Projects</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              Select one project to inspect centers, batches, and delivery health.
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 overflow-x-auto rounded-[20px] border border-white/10">
+          <table className="w-full min-w-[960px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-[0.16em] text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-medium">Project</th>
+                <th className="px-4 py-3 font-medium">Centers</th>
+                <th className="px-4 py-3 font-medium">Learners</th>
+                <th className="px-4 py-3 font-medium">Placement</th>
+                <th className="px-4 py-3 font-medium">Health</th>
+                <th className="px-4 py-3 font-medium text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {projects.map((project) => (
+                <tr key={project.id} className="transition hover:bg-violet-500/[0.06]">
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-white">{project.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">{project.fundingAgency}</p>
+                  </td>
+                  <td className="px-4 py-4 text-slate-300">{project.centerCount}</td>
+                  <td className="px-4 py-4 text-slate-300">{formatNumber(project.totalCandidates)}</td>
+                  <td className="px-4 py-4 text-slate-300">{project.avgPlacementRate}%</td>
+                  <td className="px-4 py-4">
+                    <InlineHealth value={project.healthScore} />
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => onProjectSelect(project.id)}
+                      className="inline-flex items-center gap-2 rounded-full bg-violet-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-400"
+                    >
+                      Open
+                      <ChevronRight size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function EnterpriseProjectView({ project, centers, onBack, onCenterSelect }) {
+  return (
+    <div className="space-y-6">
+      <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <button
+              type="button"
+              onClick={onBack}
+              className="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+            >
+              <ArrowLeft size={16} />
+              Back to portfolio
+            </button>
+            <h2 className="text-3xl font-semibold text-white">{project.name}</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              {project.fundingAgency} • {formatDate(project.startDate)} to {formatDate(project.endDate)}
+            </p>
+          </div>
+          <InlineHealth value={project.healthScore} label="Project health" />
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
+          <EnterpriseMetric label="Centers" value={project.centerCount} caption="Delivery locations" />
+          <EnterpriseMetric label="Batches" value={project.totalBatches} caption="Active cohorts" />
+          <EnterpriseMetric label="Learners" value={formatNumber(project.totalCandidates)} caption="In motion" />
+          <EnterpriseMetric label="Placement" value={`${project.avgPlacementRate}%`} caption="Conversion" tone="emerald" />
+        </div>
+      </section>
+
+      <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+        <h3 className="text-2xl font-semibold text-white">Centers</h3>
+        <p className="mt-1 text-sm text-slate-400">
+          Choose a center to open the operating dashboard.
+        </p>
+        <EnterpriseCenterTable centers={centers} onCenterSelect={onCenterSelect} />
+      </section>
+    </div>
+  );
+}
+
+function EnterpriseCenterView({
+  project,
+  center,
+  centers,
+  selectedBatch,
+  onBack,
+  onCenterSelect,
+  onBatchSelect,
+}) {
+  return (
+    <div className="space-y-6">
+      <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <button
+              type="button"
+              onClick={onBack}
+              className="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+            >
+              <ArrowLeft size={16} />
+              Back to centers
+            </button>
+            <h2 className="text-3xl font-semibold text-white">{center.name}</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              {project.name} • Managed by {center.manager}
+            </p>
+          </div>
+          <InlineHealth value={center.healthScore} label="Center health" />
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-5">
+          <EnterpriseMetric label="Learners" value={formatNumber(center.candidates)} caption="Current center" />
+          <EnterpriseMetric label="Attendance" value={`${center.attendanceRate}%`} caption="Average" />
+          <EnterpriseMetric label="Placement" value={`${center.placementRate}%`} caption="Conversion" tone="emerald" />
+          <EnterpriseMetric label="Compliance" value={`${center.complianceScore}%`} caption="Confidence" />
+          <EnterpriseMetric label="Issues" value={center.grievances} caption={center.riskLabel} tone="amber" />
+        </div>
+      </section>
+
+      <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+        <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-white">Batch dashboard</h3>
+            <p className="mt-1 text-sm text-slate-400">
+              Select a batch to review candidate readiness and placement status.
+            </p>
+          </div>
+          {selectedBatch ? (
+            <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-200">
+              {selectedBatch.label}
+            </span>
+          ) : null}
+        </div>
+        <EnterpriseBatchTable
+          batches={center.batchSnapshots}
+          selectedBatch={selectedBatch}
+          onBatchSelect={onBatchSelect}
+        />
+      </section>
+
+      {selectedBatch ? (
+        <CandidateRosterTabs
+          selectedBatch={selectedBatch}
+          project={project}
+          center={center}
+          centers={centers}
+          batches={center.batchSnapshots}
+          onCenterSelect={onCenterSelect}
+          onBatchSelect={onBatchSelect}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function EnterpriseCenterTable({ centers, onCenterSelect }) {
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <table className="w-full min-w-[860px] text-left text-sm">
+        <thead className="text-xs uppercase tracking-[0.16em] text-slate-500">
+          <tr>
+            <th className="px-4 py-3 font-medium">Center</th>
+            <th className="px-4 py-3 font-medium">Batches</th>
+            <th className="px-4 py-3 font-medium">Learners</th>
+            <th className="px-4 py-3 font-medium">Attendance</th>
+            <th className="px-4 py-3 font-medium">Risk</th>
+            <th className="px-4 py-3 font-medium text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/10">
+          {centers.map((center) => (
+            <tr key={center.id} className="transition hover:bg-violet-500/[0.06]">
+              <td className="px-4 py-4">
+                <p className="font-medium text-white">{center.name}</p>
+                <p className="mt-1 text-xs text-slate-500">{center.location}</p>
+              </td>
+              <td className="px-4 py-4 text-slate-300">{center.batchSnapshots.length}</td>
+              <td className="px-4 py-4 text-slate-300">{formatNumber(center.candidates)}</td>
+              <td className="px-4 py-4 text-slate-300">{center.attendanceRate}%</td>
+              <td className="px-4 py-4">
+                <span className={`rounded-full border px-2.5 py-1 text-xs ${getRiskMeta(center.riskLabel).badgeClass}`}>
+                  {center.riskLabel}
+                </span>
+              </td>
+              <td className="px-4 py-4 text-right">
+                <button
+                  type="button"
+                  onClick={() => onCenterSelect(center.id)}
+                  className="inline-flex items-center gap-2 rounded-full bg-violet-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-400"
+                >
+                  Open
+                  <ChevronRight size={14} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function EnterpriseBatchTable({ batches, selectedBatch, onBatchSelect }) {
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <table className="w-full min-w-[760px] text-left text-sm">
+        <thead className="text-xs uppercase tracking-[0.16em] text-slate-500">
+          <tr>
+            <th className="px-4 py-3 font-medium">Batch</th>
+            <th className="px-4 py-3 font-medium">Learners</th>
+            <th className="px-4 py-3 font-medium">Attendance</th>
+            <th className="px-4 py-3 font-medium">Readiness</th>
+            <th className="px-4 py-3 font-medium">Placed</th>
+            <th className="px-4 py-3 font-medium text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-white/10">
+          {batches.map((batch) => (
+            <tr
+              key={batch.id}
+              className={`transition ${
+                selectedBatch?.id === batch.id ? "bg-violet-500/10" : "hover:bg-violet-500/[0.06]"
+              }`}
+            >
+              <td className="px-4 py-4">
+                <p className="font-medium text-white">{batch.label}</p>
+                <p className="mt-1 text-xs text-slate-500">{batch.track} • {batch.mode}</p>
+              </td>
+              <td className="px-4 py-4 text-slate-300">{formatNumber(batch.size)}</td>
+              <td className="px-4 py-4 text-slate-300">{batch.attendanceRate}%</td>
+              <td className="px-4 py-4"><InlineHealth value={batch.readiness} /></td>
+              <td className="px-4 py-4 text-slate-300">{formatNumber(batch.placedCandidates)}</td>
+              <td className="px-4 py-4 text-right">
+                <button
+                  type="button"
+                  onClick={() => onBatchSelect(batch.id)}
+                  className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.08]"
+                >
+                  Review
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CandidateRosterTabs({
+  selectedBatch,
+  project,
+  center,
+  centers,
+  batches,
+  onCenterSelect,
+  onBatchSelect,
+}) {
+  const [activeTab, setActiveTab] = useState("training");
+  const [verificationState, setVerificationState] = useState(() => {
+    const initial = {};
+    selectedBatch.candidateRecords.forEach((c) => {
+      initial[c.id] = c.isVerified;
+    });
+    return initial;
+  });
+
+  useEffect(() => {
+    const initial = {};
+    selectedBatch.candidateRecords.forEach((c) => {
+      initial[c.id] = c.isVerified;
+    });
+    setVerificationState(initial);
+  }, [selectedBatch]);
+
+  const toggleVerification = (candidateId) => {
+    setVerificationState((prev) => ({
+      ...prev,
+      [candidateId]: !prev[candidateId],
+    }));
+  };
+
+  const tabs = [
+    { key: "training", label: "Training Detail", icon: BookOpen },
+    { key: "placements", label: "Placements", icon: Briefcase },
+  ];
+
+  return (
+    <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+      <div className="flex flex-col gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h3 className="text-xl font-semibold text-white">Candidate Roster</h3>
+          <p className="mt-1 text-sm text-slate-400">
+            {selectedBatch.candidateRecords.length} candidates in{" "}
+            {selectedBatch.label}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-right">
+          <EnterpriseMiniStat
+            label="Certified"
+            value={selectedBatch.certifiedCandidates}
+          />
+          <EnterpriseMiniStat
+            label="Placed"
+            value={selectedBatch.placedCandidates}
+          />
+          <EnterpriseMiniStat
+            label="Risk"
+            value={selectedBatch.riskCount}
+          />
+        </div>
+      </div>
+
+      {/* Selectors row: center + batch dropdowns | tab pills */}
+      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {/* Left: center & batch selectors */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Center selector */}
+          <div className="relative">
+            <MapPin
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-violet-400"
+            />
+            <select
+              value={center.id}
+              onChange={(e) => onCenterSelect(e.target.value)}
+              className="h-9 appearance-none rounded-xl border border-white/10 bg-white/[0.05] py-1.5 pl-8 pr-9 text-sm font-medium text-white outline-none transition hover:border-violet-400/30 hover:bg-white/[0.08] focus:border-violet-400/40 focus:ring-1 focus:ring-violet-500/30"
+            >
+              {centers.map((c) => (
+                <option
+                  key={c.id}
+                  value={c.id}
+                  className="bg-[#0f172a] text-white"
+                >
+                  {c.location}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={14}
+              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500"
+            />
+          </div>
+
+          {/* Batch selector */}
+          <div className="relative">
+            <GraduationCap
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-fuchsia-400"
+            />
+            <select
+              value={selectedBatch.id}
+              onChange={(e) => onBatchSelect(e.target.value)}
+              className="h-9 appearance-none rounded-xl border border-white/10 bg-white/[0.05] py-1.5 pl-8 pr-9 text-sm font-medium text-white outline-none transition hover:border-violet-400/30 hover:bg-white/[0.08] focus:border-violet-400/40 focus:ring-1 focus:ring-violet-500/30"
+            >
+              {batches.map((b) => (
+                <option
+                  key={b.id}
+                  value={b.id}
+                  className="bg-[#0f172a] text-white"
+                >
+                  {b.label} — {b.size} learners
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={14}
+              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500"
+            />
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="hidden h-7 w-px bg-white/10 md:block" />
+
+        {/* Right: tab pills */}
+        <div className="flex gap-2">
+          {tabs.map((tab) => {
+            const TabIcon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                  isActive
+                    ? "border-violet-400/30 bg-violet-500/15 text-violet-200 shadow-[0_0_20px_rgba(124,58,237,0.12)]"
+                    : "border-white/10 bg-white/[0.03] text-slate-400 hover:bg-white/[0.06] hover:text-slate-200"
+                }`}
+              >
+                <TabIcon size={15} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Tab content */}
+      {activeTab === "training" ? (
+        <TrainingDetailTable
+          candidates={selectedBatch.candidateRecords}
+          project={project}
+          batchLabel={selectedBatch.label}
+        />
+      ) : (
+        <PlacementsTable
+          candidates={selectedBatch.candidateRecords}
+          project={project}
+          batchLabel={selectedBatch.label}
+          verificationState={verificationState}
+          onToggleVerification={toggleVerification}
+        />
+      )}
+    </section>
+  );
+}
+
+function TrainingDetailTable({ candidates, project, batchLabel }) {
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <div className="max-h-[560px] overflow-auto">
+        <table className="w-full min-w-[960px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Name</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">Job Role</th>
+              <th className="px-4 py-3 font-medium">Duration Received</th>
+              <th className="px-4 py-3 font-medium">Theory Hours</th>
+              <th className="px-4 py-3 font-medium">Practical Hours</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {candidates.map((candidate) => (
+              <tr
+                key={candidate.id}
+                className="align-top transition hover:bg-violet-500/[0.06]"
+              >
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {candidate.candidateCode}
+                  </p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                <td className="px-4 py-4">
+                  <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                    {batchLabel}
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-slate-300">
+                  {candidate.jobRole}
+                </td>
+                <td className="px-4 py-4">
+                  <div>
+                    <p className="font-medium text-white">
+                      {candidate.completedTrainingDays} days
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      of {candidate.totalTrainingDays} days total
+                    </p>
+                    <div className="mt-2 h-1.5 w-20 overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400"
+                        style={{
+                          width: `${Math.round(
+                            (candidate.completedTrainingDays /
+                              candidate.totalTrainingDays) *
+                              100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-4">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-300">
+                    <BookOpen size={12} />
+                    {candidate.totalTheoryHours} hrs
+                  </span>
+                </td>
+                <td className="px-4 py-4">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-300">
+                    <Target size={12} />
+                    {candidate.totalPracticalHours} hrs
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function DocBadge({ available, label, onClick }) {
+  if (!available) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-slate-500/20 bg-slate-500/10 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+        <XCircle size={10} />
+        {label}
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-300 transition hover:border-emerald-400/40 hover:bg-emerald-500/20 hover:shadow-[0_0_12px_rgba(52,211,153,0.12)]"
+    >
+      <Eye size={10} className="opacity-70 transition group-hover:opacity-100" />
+      {label}
+    </button>
+  );
+}
+
+function DocumentPreviewModal({ isOpen, onClose, documentInfo }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      requestAnimationFrame(() => setVisible(true));
+    } else {
+      setVisible(false);
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !documentInfo) return null;
+
+  const { type, label, candidateName, candidateCode, company, salary, joiningDate } = documentInfo;
+
+  const docMeta = {
+    offer: { title: "Offer Letter", fileType: "PDF", icon: "📄", color: "violet" },
+    m1: { title: "Month 1 Salary Slip", fileType: "PDF", icon: "📋", color: "blue" },
+    m2: { title: "Month 2 Salary Slip", fileType: "PDF", icon: "📋", color: "blue" },
+    m3: { title: "Month 3 Salary Slip", fileType: "PDF", icon: "📋", color: "blue" },
+    bank: { title: "Bank Statement", fileType: "Image", icon: "🏦", color: "amber" },
+  }[type] || { title: label, fileType: "PDF", icon: "📄", color: "violet" };
+
+  const colorAccent = {
+    violet: "border-violet-500/30",
+    blue: "border-blue-500/30",
+    amber: "border-amber-500/30",
+  }[docMeta.color] || "border-violet-500/30";
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex" onClick={onClose}>
+      {/* Backdrop */}
+      <div
+        className={`absolute inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity duration-300 ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
+      />
+
+      {/* Right-side slide panel */}
+      <div
+        className={`absolute right-0 top-0 flex h-full w-full max-w-[480px] flex-col border-l ${colorAccent} bg-[#0a0f1e] shadow-[-20px_0_60px_rgba(0,0,0,0.5)] transition-transform duration-300 ease-out ${
+          visible ? "translate-x-0" : "translate-x-full"
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Panel header */}
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-lg">
+              {docMeta.icon}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">{docMeta.title}</p>
+              <p className="mt-0.5 truncate text-xs text-slate-400">
+                {candidateName} • {candidateCode}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-shrink-0 items-center gap-1.5">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/[0.1] hover:text-white"
+            >
+              <Download size={12} />
+              Download
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-lg border border-white/10 bg-white/[0.05] p-1.5 text-slate-400 transition hover:bg-white/[0.1] hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* File type badge */}
+        <div className="flex items-center gap-2 border-b border-white/10 px-5 py-2.5">
+          <span className="inline-flex items-center gap-1 rounded-md bg-white/[0.06] px-2 py-0.5 text-[11px] font-semibold text-slate-400">
+            <FileText size={10} />
+            {docMeta.fileType}
+          </span>
+          <span className="text-xs text-slate-500">•</span>
+          <span className="text-xs text-slate-500">{company}</span>
+        </div>
+
+        {/* Scrollable preview content */}
+        <div className="flex-1 overflow-auto">
+          <div className="p-5">
+            {type === "offer" ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6">
+                <div className="border-b border-white/10 pb-4 text-center">
+                  <p className="text-base font-bold text-violet-300">{company}</p>
+                  <p className="mt-1.5 text-[10px] uppercase tracking-[0.22em] text-slate-500">
+                    Employment Offer Letter
+                  </p>
+                </div>
+                <div className="mt-5 space-y-4 text-[13px] leading-7 text-slate-300">
+                  <p>
+                    Date:{" "}
+                    <span className="text-white">
+                      {joiningDate ? formatDate(joiningDate) : "—"}
+                    </span>
+                  </p>
+                  <p>
+                    Dear{" "}
+                    <span className="font-semibold text-white">{candidateName}</span>,
+                  </p>
+                  <p>
+                    We are pleased to offer you the position of{" "}
+                    <span className="font-semibold text-violet-300">
+                      {documentInfo.designation}
+                    </span>{" "}
+                    at {company}. Your starting compensation will be{" "}
+                    <span className="font-semibold text-emerald-300">
+                      ₹{formatNumber(salary)}
+                    </span>{" "}
+                    per month.
+                  </p>
+                  <p>
+                    Your tentative joining date is{" "}
+                    <span className="text-white">
+                      {joiningDate ? formatDate(joiningDate) : "TBD"}
+                    </span>
+                    . Please report to the HR department on your first day.
+                  </p>
+                  <p>We look forward to having you on our team.</p>
+                  <div className="mt-6 border-t border-white/10 pt-4">
+                    <p className="text-[10px] uppercase tracking-widest text-slate-500">
+                      Authorized Signatory
+                    </p>
+                    <div className="mt-3 h-px w-24 bg-slate-600" />
+                    <p className="mt-2 text-xs italic text-slate-400">
+                      HR Department, {company}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : type === "bank" ? (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6">
+                  <div className="border-b border-white/10 pb-4 text-center">
+                    <p className="text-base font-bold text-amber-300">Bank Statement</p>
+                    <p className="mt-1.5 text-[10px] uppercase tracking-[0.22em] text-slate-500">
+                      State Bank of India
+                    </p>
+                  </div>
+                  <div className="mt-5 space-y-2">
+                    <div className="flex justify-between rounded-lg bg-white/[0.03] px-4 py-2.5 text-sm">
+                      <span className="text-slate-400">Account Holder</span>
+                      <span className="font-medium text-white">{candidateName}</span>
+                    </div>
+                    <div className="flex justify-between rounded-lg bg-white/[0.03] px-4 py-2.5 text-sm">
+                      <span className="text-slate-400">Account No.</span>
+                      <span className="font-medium text-white">
+                        XXXX XXXX{" "}
+                        {String(candidateCode.replace(/\D/g, ""))
+                          .padStart(4, "0")
+                          .slice(-4)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between rounded-lg bg-white/[0.03] px-4 py-2.5 text-sm">
+                      <span className="text-slate-400">Employer</span>
+                      <span className="font-medium text-white">{company}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 overflow-hidden">
+                  <div className="bg-white/[0.04] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Recent Credits
+                  </div>
+                  {[1, 2, 3].map((m) => (
+                    <div
+                      key={m}
+                      className="flex items-center justify-between border-t border-white/10 px-4 py-3 text-sm"
+                    >
+                      <span className="text-slate-400">Month {m} Salary</span>
+                      <span className="font-semibold text-emerald-300">
+                        + ₹{formatNumber(salary)}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between border-t border-white/10 bg-emerald-500/5 px-4 py-3 text-sm font-semibold">
+                    <span className="text-emerald-300">Total Credited</span>
+                    <span className="text-emerald-300">₹{formatNumber(salary * 3)}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6">
+                  <div className="border-b border-white/10 pb-4 text-center">
+                    <p className="text-base font-bold text-blue-300">{company}</p>
+                    <p className="mt-1.5 text-[10px] uppercase tracking-[0.22em] text-slate-500">
+                      Salary Slip — {docMeta.title}
+                    </p>
+                  </div>
+                  <div className="mt-5 space-y-2">
+                    <div className="flex justify-between rounded-lg bg-white/[0.03] px-4 py-2.5 text-sm">
+                      <span className="text-slate-400">Employee</span>
+                      <span className="font-medium text-white">{candidateName}</span>
+                    </div>
+                    <div className="flex justify-between rounded-lg bg-white/[0.03] px-4 py-2.5 text-sm">
+                      <span className="text-slate-400">Designation</span>
+                      <span className="font-medium text-white">
+                        {documentInfo.designation}
+                      </span>
+                    </div>
+                    <div className="flex justify-between rounded-lg bg-white/[0.03] px-4 py-2.5 text-sm">
+                      <span className="text-slate-400">Emp. Code</span>
+                      <span className="font-medium text-white">{candidateCode}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-white/10 overflow-hidden">
+                  <div className="bg-white/[0.04] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Earnings
+                  </div>
+                  <div className="flex justify-between border-t border-white/10 px-4 py-2.5 text-sm">
+                    <span className="text-slate-400">Basic Pay</span>
+                    <span className="text-white">
+                      ₹{formatNumber(Math.round(salary * 0.5))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-white/10 px-4 py-2.5 text-sm">
+                    <span className="text-slate-400">HRA</span>
+                    <span className="text-white">
+                      ₹{formatNumber(Math.round(salary * 0.2))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-white/10 px-4 py-2.5 text-sm">
+                    <span className="text-slate-400">DA + Allowances</span>
+                    <span className="text-white">
+                      ₹{formatNumber(Math.round(salary * 0.3))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-white/10 bg-emerald-500/5 px-4 py-3 text-sm font-semibold">
+                    <span className="text-emerald-300">Net Payable</span>
+                    <span className="text-emerald-300">₹{formatNumber(salary)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VerificationToggle({ isVerified, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full border transition-colors duration-200 ${
+        isVerified
+          ? "border-emerald-500/30 bg-emerald-500/20"
+          : "border-slate-500/30 bg-slate-700/50"
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full shadow-lg transition-transform duration-200 ${
+          isVerified
+            ? "translate-x-5 bg-emerald-400"
+            : "translate-x-1 bg-slate-400"
+        }`}
+      />
+    </button>
+  );
+}
+
+function PlacementsTable({
+  candidates,
+  project,
+  batchLabel,
+  verificationState,
+  onToggleVerification,
+}) {
+  const [previewDoc, setPreviewDoc] = useState(null);
+
+  const openDocPreview = (candidate, type, label) => {
+    setPreviewDoc({
+      type,
+      label,
+      candidateName: candidate.name,
+      candidateCode: candidate.candidateCode,
+      company: candidate.company,
+      designation: candidate.designation,
+      salary: candidate.salary,
+      joiningDate: candidate.joiningDate,
+    });
+  };
+
+  const placedCandidates = candidates.filter(
+    (c) => c.placementStatus === "Placed"
+  );
+
+  if (!placedCandidates.length) {
+    return (
+      <div className="mt-6 flex flex-col items-center justify-center rounded-[20px] border border-white/10 bg-black/20 py-16 text-center">
+        <Briefcase size={32} className="text-slate-600" />
+        <p className="mt-4 text-base font-medium text-slate-300">
+          No placements recorded yet
+        </p>
+        <p className="mt-2 text-sm text-slate-500">
+          Candidates who get placed will appear here with their placement
+          details.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+        <div className="max-h-[560px] overflow-auto">
+          <table className="w-full min-w-[1280px] text-left text-sm">
+            <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-medium">Student Name</th>
+                <th className="px-4 py-3 font-medium">Project</th>
+                <th className="px-4 py-3 font-medium">Batch</th>
+                <th className="px-4 py-3 font-medium">Company</th>
+                <th className="px-4 py-3 font-medium">Designation</th>
+                <th className="px-4 py-3 font-medium">Salary</th>
+                <th className="px-4 py-3 font-medium">Joining Date</th>
+                <th className="px-4 py-3 font-medium">Offer Letter</th>
+                <th className="px-4 py-3 font-medium">M1</th>
+                <th className="px-4 py-3 font-medium">M2</th>
+                <th className="px-4 py-3 font-medium">M3</th>
+                <th className="px-4 py-3 font-medium">Bank Stmt</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {placedCandidates.map((candidate) => (
+                <tr
+                  key={candidate.id}
+                  className="align-top transition hover:bg-violet-500/[0.06]"
+                >
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-white">{candidate.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {candidate.candidateCode}
+                    </p>
+                  </td>
+                  <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                  <td className="px-4 py-4">
+                    <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                      {batchLabel}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-white">
+                      {candidate.company}
+                    </p>
+                  </td>
+                  <td className="px-4 py-4 text-slate-300">
+                    {candidate.designation}
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className="font-semibold text-emerald-300">
+                      ₹{formatNumber(candidate.salary)}
+                    </span>
+                    <p className="mt-1 text-xs text-slate-500">/month</p>
+                  </td>
+                  <td className="px-4 py-4 text-slate-300">
+                    {candidate.joiningDate
+                      ? formatDate(candidate.joiningDate)
+                      : "—"}
+                  </td>
+                  <td className="px-4 py-4">
+                    <DocBadge
+                      available={candidate.hasOfferLetter}
+                      label="Offer"
+                      onClick={() => openDocPreview(candidate, "offer", "Offer Letter")}
+                    />
+                  </td>
+                  <td className="px-4 py-4">
+                    <DocBadge
+                      available={candidate.hasM1}
+                      label="M1"
+                      onClick={() => openDocPreview(candidate, "m1", "M1 Salary Slip")}
+                    />
+                  </td>
+                  <td className="px-4 py-4">
+                    <DocBadge
+                      available={candidate.hasM2}
+                      label="M2"
+                      onClick={() => openDocPreview(candidate, "m2", "M2 Salary Slip")}
+                    />
+                  </td>
+                  <td className="px-4 py-4">
+                    <DocBadge
+                      available={candidate.hasM3}
+                      label="M3"
+                      onClick={() => openDocPreview(candidate, "m3", "M3 Salary Slip")}
+                    />
+                  </td>
+                  <td className="px-4 py-4">
+                    <DocBadge
+                      available={candidate.hasBankStatement}
+                      label="Bank"
+                      onClick={() => openDocPreview(candidate, "bank", "Bank Statement")}
+                    />
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2">
+                      <VerificationToggle
+                        isVerified={verificationState[candidate.id]}
+                        onToggle={() => onToggleVerification(candidate.id)}
+                      />
+                      <span
+                        className={`text-xs font-semibold ${
+                          verificationState[candidate.id]
+                            ? "text-emerald-300"
+                            : "text-slate-500"
+                        }`}
+                      >
+                        {verificationState[candidate.id]
+                          ? "Verified"
+                          : "Pending"}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <DocumentPreviewModal
+        isOpen={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        documentInfo={previewDoc}
+      />
+    </>
+  );
+}
+
+function EnterpriseMetric({ label, value, caption, tone = "violet" }) {
+  const toneClass = {
+    violet: "text-violet-200",
+    emerald: "text-emerald-300",
+    amber: "text-amber-300",
+  }[tone] || "text-violet-200";
+
+  return (
+    <div className="rounded-[18px] border border-white/10 bg-black/25 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className={`mt-2 text-2xl font-semibold ${toneClass}`}>{value}</p>
+      <p className="mt-1 text-xs text-slate-500">{caption}</p>
+    </div>
+  );
+}
+
+function EnterpriseMiniStat({ label, value }) {
+  return (
+    <div className="rounded-[14px] border border-white/10 bg-black/25 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function InlineHealth({ value, label = "Health" }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-200">
+      {label !== "Health" ? `${label}: ` : null}
+      {value}%
+    </span>
+  );
+}
+
 function PortfolioStatCard({
   label,
   value,
@@ -2001,11 +3305,57 @@ function SelectionChip({ label, value, onClear }) {
   );
 }
 
+function ProjectWorkflowStepper({ currentStep }) {
+  const steps = [
+    { id: 1, label: "Project", caption: "Portfolio view" },
+    { id: 2, label: "Center", caption: "Execution scope" },
+    { id: 3, label: "Performance", caption: "Operational detail" },
+  ];
+
+  return (
+    <div className="admin-project-stepper grid gap-2 rounded-[22px] border border-white/10 bg-black/25 p-2 sm:grid-cols-3">
+      {steps.map((step) => {
+        const isActive = currentStep === step.id;
+        const isComplete = currentStep > step.id;
+
+        return (
+          <div
+            key={step.id}
+            className={`rounded-[18px] border px-3 py-3 transition ${
+              isActive
+                ? "border-violet-400/30 bg-violet-500/10 text-white"
+                : isComplete
+                  ? "border-emerald-400/20 bg-emerald-500/10 text-white"
+                  : "border-white/0 bg-transparent text-slate-400"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  isActive
+                    ? "bg-violet-400 text-black"
+                    : isComplete
+                      ? "bg-emerald-400 text-black"
+                      : "bg-white/10 text-slate-400"
+                }`}
+              >
+                {step.id}
+              </span>
+              <p className="text-sm font-medium">{step.label}</p>
+            </div>
+            <p className="mt-2 pl-8 text-xs text-slate-500">{step.caption}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function GuidedStepSection({ step, title, description, children }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+    <div className="admin-project-subsection rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
       <div className="mb-5 border-b border-white/10 pb-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">
+        <p className="admin-project-kicker text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
           {step}
         </p>
         <h3 className="mt-2 text-2xl font-semibold text-white">{title}</h3>
@@ -2125,13 +3475,16 @@ function ProjectRailCard({ project, isActive, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-[24px] border p-4 text-left transition-all ${
+      className={`admin-project-card admin-project-card--rail group relative w-full overflow-hidden rounded-[24px] border p-4 text-left transition-all ${
         isActive
-          ? "border-violet-500/30 bg-violet-500/10 shadow-[0_12px_30px_rgba(76,29,149,0.14)]"
-          : "border-white/10 bg-black/[0.16] hover:border-white/20 hover:bg-white/[0.04]"
+          ? "border-violet-400/40 bg-violet-500/10 shadow-[0_12px_30px_rgba(124,58,237,0.16)]"
+          : "border-white/10 bg-black/[0.16] hover:-translate-y-1 hover:border-violet-400/40 hover:bg-white/[0.04]"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="admin-project-card__halo" />
+      <div className="admin-project-card__surface" />
+
+      <div className="relative flex items-start justify-between gap-3">
         <div>
           <p className="text-lg font-medium text-white">{project.name}</p>
           <p className="mt-1 text-sm text-slate-400">{project.fundingAgency}</p>
@@ -2143,7 +3496,14 @@ function ProjectRailCard({ project, isActive, onClick }) {
         </span>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="relative mt-4 h-1.5 overflow-hidden rounded-full bg-slate-800/80">
+        <span
+          className={`block h-full rounded-full bg-gradient-to-r ${healthMeta.barClass}`}
+          style={{ width: `${project.healthScore}%` }}
+        />
+      </div>
+
+      <div className="relative mt-4 grid grid-cols-2 gap-3">
         <SmallStat label="Centers" value={`${project.centerCount}`} />
         <SmallStat
           label="Learners"
@@ -2156,7 +3516,7 @@ function ProjectRailCard({ project, isActive, onClick }) {
         <SmallStat label="Health" value={`${project.healthScore}%`} />
       </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
+      <div className="relative mt-4 flex items-center justify-between border-t border-white/10 pt-3">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
             Best center
@@ -2189,7 +3549,7 @@ function ProjectMetaCard({ icon: Icon, label, value, caption }) {
   return (
     <div className="rounded-[22px] border border-white/10 bg-white/[0.03] p-4">
       <div className="flex items-start gap-3">
-        <div className="rounded-2xl bg-white/[0.04] p-2 text-cyan-300">
+        <div className="rounded-2xl bg-white/[0.04] p-2 text-violet-300">
           <Icon size={18} />
         </div>
         <div>
@@ -2238,7 +3598,7 @@ function CenterBenchmarkCard({ center, isActive, onClick }) {
       onClick={onClick}
       className={`rounded-[24px] border p-5 text-left transition-all ${
         isActive
-          ? "border-cyan-500/30 bg-cyan-500/10 shadow-[0_12px_28px_rgba(8,145,178,0.14)]"
+          ? "border-violet-500/30 bg-violet-500/10 shadow-[0_12px_28px_rgba(124,58,237,0.16)]"
           : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"
       }`}
     >
@@ -2290,7 +3650,7 @@ function CenterSwitchRow({ center, isActive, onClick }) {
       onClick={onClick}
       className={`w-full rounded-[22px] border p-4 text-left transition-all ${
         isActive
-          ? "border-cyan-500/30 bg-cyan-500/10 shadow-[0_12px_28px_rgba(8,145,178,0.14)]"
+          ? "border-violet-500/30 bg-violet-500/10 shadow-[0_12px_28px_rgba(124,58,237,0.16)]"
           : "border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]"
       }`}
     >
@@ -2310,7 +3670,7 @@ function CenterSwitchRow({ center, isActive, onClick }) {
           </span>
           <ChevronRight
             size={16}
-            className={isActive ? "text-cyan-300" : "text-slate-500"}
+            className={isActive ? "text-violet-300" : "text-slate-500"}
           />
         </div>
       </div>
@@ -2425,7 +3785,7 @@ function CenterMetricCard({
 
 function InlinePercent({ value, tone = "cyan" }) {
   const toneMap = {
-    cyan: "bg-cyan-500/10 text-cyan-300",
+    cyan: "bg-violet-500/10 text-violet-300",
     violet: "bg-violet-500/10 text-violet-300",
     emerald: "bg-emerald-500/10 text-emerald-300",
   };
@@ -2480,7 +3840,7 @@ function PreviewPanel({
     <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
       <div className="flex items-start justify-between gap-3 border-b border-white/10 pb-4">
         <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-white/[0.04] p-2 text-cyan-300">
+          <div className="rounded-2xl bg-white/[0.04] p-2 text-violet-300">
             <Icon size={18} />
           </div>
           <div>

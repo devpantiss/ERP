@@ -3,7 +3,7 @@ import {
   CalendarCheck, Building2, Users, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ALL_USERS } from "./SuperAdminUserManagement";
+import { ALL_USERS } from "./superAdminUsers";
 
 const ALL_STAFF = ALL_USERS.filter(u => u.role !== "Admin");
 

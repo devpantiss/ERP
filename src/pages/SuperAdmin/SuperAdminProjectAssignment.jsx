@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderKanban, ChevronLeft, ChevronRight, Check, User, Briefcase, Building2, FileCheck, CheckCircle2 } from "lucide-react";
-import { ALL_USERS } from "./SuperAdminUserManagement";
+import { ALL_USERS } from "./superAdminUsers";
 
 const STEPS = [
   { label: "Select Admin", icon: User },

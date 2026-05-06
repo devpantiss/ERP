@@ -3,9 +3,7 @@ import {
   Users,
   Building2,
   FolderKanban,
-  ClipboardCheck,
   MapPin,
-  TrendingUp,
 } from "lucide-react";
 import Marquee from "react-fast-marquee";
 import {
@@ -99,8 +97,6 @@ export default function AdminDashboardSection1({
   const animatedUsers = useCountUp(data.totalUsers);
   const animatedCenters = useCountUp(data.activeCenters);
   const animatedProjects = useCountUp(data.activeProjects);
-  const animatedAttendance = useCountUp(data.overallAttendance);
-
   const targetPie = (achieved, target) => [
     { name: "Achieved", value: achieved },
     { name: "Remaining", value: Math.max(target - achieved, 0) },
@@ -160,7 +156,7 @@ export default function AdminDashboardSection1({
         </div>
 
         {/* KPI GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
           <KpiCard
             title="Total Users"
@@ -186,13 +182,6 @@ export default function AdminDashboardSection1({
             pie={targetPie(data.activeProjects, data.activeProjectsTarget)}
           />
 
-          <KpiCard
-            title="Overall Attendance"
-            value={`${animatedAttendance}%`}
-            target={`Target: ${data.attendanceTarget}%`}
-            icon={<ClipboardCheck size={18} />}
-            pie={targetPie(data.overallAttendance, data.attendanceTarget)}
-          />
         </div>
       </div>
     </section>
