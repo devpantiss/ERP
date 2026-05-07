@@ -43,7 +43,13 @@ const SECTIONS = [
       { label: "Community Engagement Drives", path: "/super-admin/community-engagement-drives", icon: Megaphone },
       { heading: "Placements" },
       { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
-      { heading: "Grievances" },
+    ],
+  },
+  {
+    key: "grievances",
+    title: "Grievances",
+    icon: MessageSquareWarning,
+    items: [
       { label: "Grievance Tracker", path: "/super-admin/grievance-tracker", icon: MessageSquareWarning },
     ],
   },
