@@ -19,6 +19,7 @@ import {
   Activity,
   Camera,
   Megaphone,
+  MessageSquareWarning,
   ReceiptText,
   Wallet,
 } from "lucide-react";
@@ -42,6 +43,8 @@ const SECTIONS = [
       { label: "Community Engagement Drives", path: "/super-admin/community-engagement-drives", icon: Megaphone },
       { heading: "Placements" },
       { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
+      { heading: "Grievances" },
+      { label: "Grievance Tracker", path: "/super-admin/grievance-tracker", icon: MessageSquareWarning },
     ],
   },
   {

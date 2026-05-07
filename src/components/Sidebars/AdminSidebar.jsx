@@ -8,6 +8,7 @@ import {
   FileCheck,
   LayoutDashboard,
   LogOut,
+  MessageSquareWarning,
   Radio,
   Receipt,
   ShoppingCart,
@@ -62,6 +63,11 @@ const MENU_ITEMS = [
     label: "Approvals",
     path: "/admin/approvals",
     icon: FileCheck,
+  },
+  {
+    label: "Grievance Portal",
+    path: "/admin/grievance-portal",
+    icon: MessageSquareWarning,
   },
 ];
 

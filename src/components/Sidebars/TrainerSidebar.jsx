@@ -22,13 +22,11 @@ import {
 
 const TOP_MENU = [
   { label: "Dashboard", path: "/trainer/dashboard", icon: LayoutDashboard },
+  { label: "Teaching Management", path: "/trainer/teaching-management", icon: GraduationCap },
   { label: "Exposure Visits", path: "/trainer/exposure-visits", icon: MapPin },
   { label: "Internal Assessment", path: "/trainer/internal-assessment", icon: ClipboardCheck },
   { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
 ];
-
-/* Teaching Management System — separate top-level (NOT inside HR) */
-const TMS_ITEM = { label: "Teaching Management", path: "/trainer/teaching-management", icon: GraduationCap };
 
 /* HR Entitlement — NO Attendance for Trainer */
 const HR_MENU = [
@@ -107,9 +105,6 @@ const TrainerSidebar = () => {
         {TOP_MENU.map((item) => (
           <NavItem key={item.path} {...item} />
         ))}
-
-        {/* Teaching Management System — separate top-level */}
-        <NavItem {...TMS_ITEM} />
 
         {/* HR Entitlement — collapsible group (NO Attendance) */}
         <div className="pt-2">

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
+import MentionInput from "../../components/common/MentionInput";
 import { useLocation } from "react-router-dom";
+import { GRIEVANCE_PEOPLE_DIRECTORY } from "./grievanceData";
 import {
   MessageSquareWarning,
   Plus,
@@ -131,9 +133,10 @@ export default function GrievancePortal() {
   const [priority, setPriority] = useState("Medium");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [attachFile, setAttachFile] = useState(null);
+  const [addressedTo, setAddressedTo] = useState([]);
 
   const resetForm = () => {
-    setCategory(""); setSubject(""); setDescription(""); setPriority("Medium"); setIsAnonymous(false); setAttachFile(null);
+    setCategory(""); setSubject(""); setDescription(""); setPriority("Medium"); setIsAnonymous(false); setAttachFile(null); setAddressedTo([]);
     setShowForm(false);
   };
 
@@ -144,6 +147,7 @@ export default function GrievancePortal() {
       subject,
       description,
       priority,
+      addressedTo: addressedTo.length > 0 ? addressedTo.map((p) => p.name).join(", ") : "Admin",
       status: "Open",
       submittedOn: new Date().toISOString().split("T")[0],
       resolvedOn: null,
@@ -318,6 +322,16 @@ export default function GrievancePortal() {
       <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="Raise Grievance" width="md">
           <div className="space-y-6">
 
+            {/* Addressed To — @mention */}
+            <MentionInput
+              values={addressedTo}
+              onChange={setAddressedTo}
+              people={GRIEVANCE_PEOPLE_DIRECTORY}
+              placeholder="Type @ to search people..."
+              accentColor={roleKey === "trainer" ? "emerald" : roleKey === "placement-officer" ? "cyan" : "yellow"}
+              label="Addressed To *"
+            />
+
             {/* Category */}
             <div>
               <label className="text-xs text-white/60 mb-1.5 block">Category *</label>
@@ -403,7 +417,7 @@ export default function GrievancePortal() {
             {/* Submit */}
             <button
               onClick={handleSubmit}
-              disabled={!category || !subject || !description}
+              disabled={!category || !subject || !description || addressedTo.length === 0}
               className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${a.btn} shadow-lg ${a.shadow}`}
             >
               <Send size={16} /> Submit Grievance

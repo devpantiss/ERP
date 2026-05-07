@@ -86,6 +86,7 @@ const AdminTrainerLiveFeed = lazy(() => import("./pages/Admin/AdminTrainerLiveFe
 const AdminPlacementDriveApprovals = lazy(() => import("./pages/Admin/AdminPlacementDriveApprovals"));
 const AdminPlacementTracker = lazy(() => import("./pages/Admin/AdminPlacementTracker"));
 const AdminInvoiceManagement = lazy(() => import("./pages/Admin/AdminInvoiceManagement"));
+const AdminGrievancePortal = lazy(() => import("./pages/Admin/AdminGrievancePortal"));
 
 // Super Admin
 const SuperAdminDashboard = lazy(() => import("./pages/SuperAdmin/SuperAdminDashboard"));
@@ -110,6 +111,7 @@ const SuperAdminCommunityEngagementDrives = lazy(() => import("./pages/SuperAdmi
 const SuperAdminTrainingTracking = lazy(() => import("./pages/SuperAdmin/SuperAdminTrainingTracking"));
 const SuperAdminExposureVisits = lazy(() => import("./pages/SuperAdmin/SuperAdminExposureVisits"));
 const SuperAdminEmployeeManagement = lazy(() => import("./pages/SuperAdmin/SuperAdminEmployeeManagement"));
+const SuperAdminGrievancePortal = lazy(() => import("./pages/SuperAdmin/SuperAdminGrievancePortal"));
 
 // ─── Suspense fallback ───────────────────────────────────────────────────────
 const PageFallback = (
@@ -244,6 +246,7 @@ function App() {
             <Route path="trainer-live-feed" element={<AdminTrainerLiveFeed />} />
             <Route path="placement-drive-approvals" element={<AdminPlacementDriveApprovals />} />
             <Route path="placement-tracker" element={<AdminPlacementTracker />} />
+            <Route path="grievance-portal" element={<AdminGrievancePortal />} />
           </Route>
 
           {/* Super Admin Layout Routes */}
@@ -282,6 +285,7 @@ function App() {
             <Route path="training-tracking" element={<SuperAdminTrainingTracking />} />
             <Route path="exposure-visits" element={<SuperAdminExposureVisits />} />
             <Route path="employee-management" element={<SuperAdminEmployeeManagement />} />
+            <Route path="grievance-tracker" element={<SuperAdminGrievancePortal />} />
 
             {/* Settings */}
             <Route path="settings" element={<AdminSettings />} />
