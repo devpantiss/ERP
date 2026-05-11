@@ -1,6 +1,47 @@
 import { Outlet } from "react-router-dom";
-import MobilizerSidebar from "../Sidebars/MobilizerSidebar";
 import TrainerSidebar from "../Sidebars/TrainerSidebar";
+import MobileBottomDock from "../common/MobileBottomDock";
+import {
+  LayoutDashboard,
+  GraduationCap,
+  MapPin,
+  ClipboardCheck,
+  BarChart3,
+  Briefcase,
+  IndianRupee,
+  Receipt,
+  MessageSquareWarning,
+  UserRoundPen,
+} from "lucide-react";
+
+/* ─── Dock config ─── */
+const DOCK_ITEMS = [
+  { label: "Dashboard", shortLabel: "Home", path: "/trainer/dashboard", icon: LayoutDashboard },
+  { label: "Teaching", path: "/trainer/teaching-management", icon: GraduationCap },
+  { label: "Visits", path: "/trainer/exposure-visits", icon: MapPin },
+];
+
+const DRAWER_ITEMS = [
+  { label: "Internal Assessment", path: "/trainer/internal-assessment", icon: ClipboardCheck },
+  { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
+  {
+    label: "HR Entitlement",
+    icon: Briefcase,
+    children: [
+      { label: "Salary", path: "/trainer/hr/salary", icon: IndianRupee },
+      { label: "Reimbursement", path: "/trainer/hr/reimbursement", icon: Receipt },
+    ],
+  },
+  { label: "Grievance Portal", path: "/trainer/grievance", icon: MessageSquareWarning },
+  { label: "Profile", path: "/trainer/profile", icon: UserRoundPen },
+];
+
+const ACCENT = {
+  activeBg: "bg-emerald-500/10",
+  activeText: "text-emerald-400",
+  dot: "bg-emerald-400",
+  headerText: "text-emerald-400",
+};
 
 const TrainerLayout = () => {
   return (
@@ -35,13 +76,21 @@ const TrainerLayout = () => {
         />
 
         {/* ================= CONTENT AREA ================= */}
-        <main className="relative z-10 flex-1 min-w-0">
-          <div className="mx-auto w-full max-w-[1600px] min-w-0 px-6 py-6">
+        <main className="relative z-10 flex-1 min-w-0 pb-20 md:pb-0">
+          <div className="mx-auto w-full max-w-[1600px] min-w-0 px-4 md:px-6 py-6">
             <Outlet />
           </div>
         </main>
 
       </div>
+
+      {/* ================= MOBILE DOCK ================= */}
+      <MobileBottomDock
+        dockItems={DOCK_ITEMS}
+        drawerItems={DRAWER_ITEMS}
+        accentClass={ACCENT}
+        roleLabel="Teach Hub"
+      />
     </div>
   );
 };

@@ -121,7 +121,7 @@ const ExecutiveSidebar = () => {
 
   return (
     <aside
-      className={`h-screen sticky top-0 flex flex-col
+      className={`h-screen sticky top-0 hidden md:flex flex-col
       bg-[#0f172a] text-white/80
       border-r border-slate-700/50
       transition-all duration-300 z-50

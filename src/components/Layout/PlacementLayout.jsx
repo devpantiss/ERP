@@ -1,5 +1,48 @@
 import { Outlet } from "react-router-dom";
 import PlacementSidebar from "../Sidebars/PlacementSidebar";
+import MobileBottomDock from "../common/MobileBottomDock";
+import {
+  LayoutDashboard,
+  Building2,
+  CalendarCheck,
+  List,
+  Briefcase,
+  UserCheck,
+  IndianRupee,
+  Receipt,
+  MessageSquareWarning,
+  UserRoundPen,
+} from "lucide-react";
+
+/* ─── Dock config ─── */
+const DOCK_ITEMS = [
+  { label: "Dashboard", shortLabel: "Home", path: "/placement-officer/dashboard", icon: LayoutDashboard },
+  { label: "Companies", path: "/placement-officer/company-database", icon: Building2 },
+  { label: "Drives", path: "/placement-officer/placement-drives", icon: CalendarCheck },
+];
+
+const DRAWER_ITEMS = [
+  { label: "Placement-List", path: "/placement-officer/placements-list", icon: List },
+  { label: "Openings Dashboard", path: "/placement-officer/job-openings", icon: LayoutDashboard },
+  {
+    label: "HR Entitlement",
+    icon: Briefcase,
+    children: [
+      { label: "Attendance", path: "/placement-officer/hr/attendance", icon: UserCheck },
+      { label: "Salary", path: "/placement-officer/hr/salary", icon: IndianRupee },
+      { label: "Reimbursement", path: "/placement-officer/hr/reimbursement", icon: Receipt },
+    ],
+  },
+  { label: "Grievance Portal", path: "/placement-officer/grievance", icon: MessageSquareWarning },
+  { label: "Profile", path: "/placement-officer/profile", icon: UserRoundPen },
+];
+
+const ACCENT = {
+  activeBg: "bg-cyan-500/10",
+  activeText: "text-cyan-400",
+  dot: "bg-cyan-400",
+  headerText: "text-cyan-400",
+};
 
 const PlacementLayout = () => {
   return (
@@ -34,13 +77,21 @@ const PlacementLayout = () => {
         />
 
         {/* ================= CONTENT AREA ================= */}
-        <main className="relative z-10 flex-1 min-w-0">
-          <div className="mx-auto w-full max-w-[1600px] min-w-0 px-6 py-6">
+        <main className="relative z-10 flex-1 min-w-0 pb-20 md:pb-0">
+          <div className="mx-auto w-full max-w-[1600px] min-w-0 px-4 md:px-6 py-6">
             <Outlet />
           </div>
         </main>
 
       </div>
+
+      {/* ================= MOBILE DOCK ================= */}
+      <MobileBottomDock
+        dockItems={DOCK_ITEMS}
+        drawerItems={DRAWER_ITEMS}
+        accentClass={ACCENT}
+        roleLabel="PlaCom Hub"
+      />
     </div>
   );
 };

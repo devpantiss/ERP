@@ -66,7 +66,7 @@ const MobilizerSidebar = () => {
 
   return (
     <aside
-      className={`h-screen sticky top-0 flex flex-col
+      className={`h-screen sticky top-0 hidden md:flex flex-col
       bg-[#020617] text-white/90
       border-r border-yellow-400/30
       transition-all duration-300

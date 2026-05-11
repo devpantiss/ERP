@@ -1,5 +1,45 @@
 import { Outlet } from "react-router-dom";
 import MobilizerSidebar from "../Sidebars/MobilizerSidebar";
+import MobileBottomDock from "../common/MobileBottomDock";
+import {
+  LayoutDashboard,
+  Users,
+  CalendarCheck2,
+  Briefcase,
+  UserCheck,
+  IndianRupee,
+  Receipt,
+  MessageSquareWarning,
+  UserRoundPen,
+} from "lucide-react";
+
+/* ─── Dock config ─── */
+const DOCK_ITEMS = [
+  { label: "Dashboard", shortLabel: "Home", path: "/mobilizer/dashboard", icon: LayoutDashboard },
+  { label: "Enrollment", shortLabel: "Enroll", path: "/mobilizer/student-enrollment", icon: Users },
+  { label: "Community", path: "/mobilizer/community-engagement", icon: CalendarCheck2 },
+];
+
+const DRAWER_ITEMS = [
+  {
+    label: "HR Entitlement",
+    icon: Briefcase,
+    children: [
+      { label: "Attendance", path: "/mobilizer/hr/attendance", icon: UserCheck },
+      { label: "Salary", path: "/mobilizer/hr/salary", icon: IndianRupee },
+      { label: "Reimbursement", path: "/mobilizer/hr/reimbursement", icon: Receipt },
+    ],
+  },
+  { label: "Grievance Portal", path: "/mobilizer/grievance", icon: MessageSquareWarning },
+  { label: "Profile", path: "/mobilizer/profile", icon: UserRoundPen },
+];
+
+const ACCENT = {
+  activeBg: "bg-yellow-400/15",
+  activeText: "text-yellow-400",
+  dot: "bg-yellow-400",
+  headerText: "text-yellow-400",
+};
 
 const MobilizerLayout = () => {
   return (
@@ -34,13 +74,21 @@ const MobilizerLayout = () => {
         />
 
         {/* ================= CONTENT AREA ================= */}
-        <main className="relative z-10 flex-1">
-          <div className="max-w-[1600px] mx-auto px-6 py-6">
+        <main className="relative z-10 flex-1 pb-20 md:pb-0">
+          <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-6">
             <Outlet />
           </div>
         </main>
 
       </div>
+
+      {/* ================= MOBILE DOCK ================= */}
+      <MobileBottomDock
+        dockItems={DOCK_ITEMS}
+        drawerItems={DRAWER_ITEMS}
+        accentClass={ACCENT}
+        roleLabel="Mobilize Hub"
+      />
     </div>
   );
 };

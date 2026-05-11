@@ -1,4 +1,5 @@
 import Pagination from "../../components/common/Pagination";
+import ExportPDFButton from "../../components/common/ExportPDFButton";
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -40,9 +41,18 @@ export default function AdminTrainerAttendance() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-100">Trainer Attendance</h1>
-        <p className="text-sm text-white/60 mt-1">Monitor attendance across all trainers</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100">Trainer Attendance</h1>
+          <p className="text-sm text-white/60 mt-1">Monitor attendance across all trainers</p>
+        </div>
+        <ExportPDFButton
+          title="Trainer Attendance"
+          columns={["Name","Center","Present","Absent","Late","Rate"]}
+          data={filtered.map(t=>[t.name,t.center,t.presentDays,t.totalDays-t.presentDays,t.lateDays,`${Math.round((t.presentDays/t.totalDays)*100)}%`])}
+          fileName="trainer_attendance"
+          accent="violet"
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-4">

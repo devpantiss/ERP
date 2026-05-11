@@ -85,7 +85,7 @@ function AdminSidebar() {
 
   return (
     <aside
-      className={`admin-future-sidebar sticky top-0 flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 transition-all duration-300 ${
+      className={`admin-future-sidebar sticky top-0 hidden md:flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 transition-all duration-300 ${
         collapsed ? "w-20" : "w-72"
       }`}
     >

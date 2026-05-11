@@ -1,5 +1,6 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
+import ExportPDFButton from "../../components/common/ExportPDFButton";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -83,10 +84,19 @@ export default function AdminUserManagement() {
             Manage all platform users across roles
           </p>
         </div>
-        <button onClick={() => navigate("/admin/user-management/new")} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-violet-500 text-white font-medium hover:bg-violet-400 transition">
-          <UserPlus size={16} />
-          Add User
-        </button>
+        <div className="flex items-center gap-3">
+          <ExportPDFButton
+            title="User Management"
+            columns={["Name","Role","Center","Status","Email","Joined"]}
+            data={filtered.map(u=>[u.name,u.role,u.center,u.status,u.email,u.joinDate])}
+            fileName="user_management"
+            accent="violet"
+          />
+          <button onClick={() => navigate("/admin/user-management/new")} className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-violet-500 text-white font-medium hover:bg-violet-400 transition">
+            <UserPlus size={16} />
+            Add User
+          </button>
+        </div>
       </div>
 
       {/* ================= ROLE SUMMARY CARDS ================= */}

@@ -76,7 +76,7 @@ const TrainerSidebar = () => {
 
   return (
     <aside
-      className={`h-screen sticky top-0 flex flex-col
+      className={`h-screen sticky top-0 hidden md:flex flex-col
       bg-[#111827] text-white/80
       border-r border-slate-700
       transition-all duration-300

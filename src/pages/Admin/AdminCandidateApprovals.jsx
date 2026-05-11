@@ -1,5 +1,6 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
+import ExportPDFButton from "../../components/common/ExportPDFButton";
 import { useState, useMemo } from "react";
 import { CheckCircle, XCircle, Eye, FileText, X } from "lucide-react";
 
@@ -65,9 +66,18 @@ export default function AdminCandidateApprovals() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-100">Candidate Approvals</h1>
-        <p className="text-sm text-white/60 mt-1">Approve or enroll candidates mobilized by mobilizers</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-100">Candidate Approvals</h1>
+          <p className="text-sm text-white/60 mt-1">Approve or enroll candidates mobilized by mobilizers</p>
+        </div>
+        <ExportPDFButton
+          title="Candidate Approvals"
+          columns={["Name","Mobilizer","Job Role","Center","Status","Phone"]}
+          data={filtered.map(c=>[c.name,c.mobilizer,c.jobrole,c.center,c.status,c.phone])}
+          fileName="candidate_approvals"
+          accent="violet"
+        />
       </div>
 
       {/* Stats */}

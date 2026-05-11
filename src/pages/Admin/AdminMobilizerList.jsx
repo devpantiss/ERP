@@ -1,4 +1,5 @@
 import Pagination from "../../components/common/Pagination";
+import ExportPDFButton from "../../components/common/ExportPDFButton";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, Eye, TrendingUp, MapPin, BarChart3, UserCheck } from "lucide-react";
@@ -49,6 +50,13 @@ export default function AdminMobilizerList() {
           <h1 className="text-2xl font-semibold text-slate-100">Mobilizer Management</h1>
           <p className="text-sm text-white/60 mt-1">View and monitor all mobilizers under your center</p>
         </div>
+        <ExportPDFButton
+          title="Mobilizer List"
+          columns={["Name","Center","Candidates Mobilized","Events","Attendance","Status"]}
+          data={filtered.map(m=>[m.name,m.center,m.candidatesMobilized,m.eventsCompleted,`${m.attendanceRate}%`,m.status])}
+          fileName="mobilizer_list"
+          accent="violet"
+        />
       </div>
 
       {/* Summary */}
