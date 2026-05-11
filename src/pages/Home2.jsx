@@ -1015,8 +1015,8 @@ export default function Home2() {
         >
           {/* ── Header bar ── */}
           <div
+            className="hidden lg:flex"
             style={{
-              display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               padding: "18px 32px",
