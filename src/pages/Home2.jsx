@@ -87,7 +87,7 @@ const easeInOutCubic = (t) =>
 const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
 // ─── Input component ─────────────────────────────────────────────────────────
-function AuthInput({ label, type = "text", icon: Icon, value, onChange, accentHex, accentRgb }) {
+function AuthInput({ label, type = "text", icon: Icon, value, onChange, accentHex, accentRgb, onFocusChange }) {
   const [focused, setFocused] = useState(false);
   const raised = focused || value.length > 0;
 
@@ -149,8 +149,14 @@ function AuthInput({ label, type = "text", icon: Icon, value, onChange, accentHe
         required
         autoComplete="off"
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onFocus={() => {
+          setFocused(true);
+          onFocusChange?.(true);
+        }}
+        onBlur={() => {
+          setFocused(false);
+          onFocusChange?.(false);
+        }}
         style={{
           display: "block",
           width: "100%",
@@ -158,7 +164,7 @@ function AuthInput({ label, type = "text", icon: Icon, value, onChange, accentHe
           border: "none",
           outline: "none",
           padding: "22px 16px 8px 44px",
-          fontSize: 15,
+          fontSize: 16,
           fontFamily: "'Inter', sans-serif",
           fontWeight: 400,
           color: "#fff",
@@ -199,6 +205,11 @@ export default function Home2() {
   const transRef      = useRef({ active: false, t: 0, dir: 1 }); // transition state
   const rafTransRef   = useRef(null);   // RAF id for transition animation
   const prevSceneRef  = useRef(-1);     // tracks last known scene index
+  const authInputFocusedRef = useRef(false);
+  const viewportRef = useRef({
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+    height: typeof window !== "undefined" ? window.innerHeight : 0,
+  });
 
   // State
   const [sceneIdx, setSceneIdx]   = useState(0);
@@ -422,6 +433,7 @@ export default function Home2() {
     if (imgs[0]?.complete) draw();
 
     const fireLogin = (on) => {
+      if (!on && authInputFocusedRef.current) return;
       if (on === loginFlagRef.current) return;
       loginFlagRef.current = on;
       setShowLogin(on);
@@ -449,7 +461,18 @@ export default function Home2() {
       },
     });
 
-    const onResize = () => { setSize(); draw(); ScrollTrigger.refresh(); };
+    const onResize = () => {
+      const nextViewport = { width: window.innerWidth, height: window.innerHeight };
+      const widthChanged = Math.abs(nextViewport.width - viewportRef.current.width) > 2;
+      const heightChanged = Math.abs(nextViewport.height - viewportRef.current.height) > 2;
+      viewportRef.current = nextViewport;
+
+      if (authInputFocusedRef.current && heightChanged && !widthChanged) return;
+
+      setSize();
+      draw();
+      ScrollTrigger.refresh();
+    };
     window.addEventListener("resize", onResize);
 
     return () => {
@@ -1213,6 +1236,7 @@ export default function Home2() {
                     onChange={setId}
                     accentHex={acHex}
                     accentRgb={acRgb}
+                    onFocusChange={(focused) => { authInputFocusedRef.current = focused; }}
                   />
                   <AuthInput
                     label="Password"
@@ -1222,6 +1246,7 @@ export default function Home2() {
                     onChange={setPw}
                     accentHex={acHex}
                     accentRgb={acRgb}
+                    onFocusChange={(focused) => { authInputFocusedRef.current = focused; }}
                   />
 
                   {err && (
