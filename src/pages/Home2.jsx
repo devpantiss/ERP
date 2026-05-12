@@ -6,6 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 // ─── Fonts ───────────────────────────────────────────────────────────────────
 if (typeof document !== "undefined" && !document.getElementById("__psu_fonts")) {
@@ -199,6 +200,9 @@ export default function Home2() {
   const imagesRef    = useRef([]);
   const frameRef     = useRef({ value: 0 });
   const loginFlagRef = useRef(false);
+  const loginLockedRef = useRef(false);
+  const lenisRef = useRef(null);
+  const scrollTweenRef = useRef(null);
   const rafLoginRef   = useRef(null);
   const rafSceneRef   = useRef(null);
   const loginTRef     = useRef(0);
@@ -273,9 +277,14 @@ export default function Home2() {
       smoothWheel: true,
       touchMultiplier: 1.5,
     });
+    lenisRef.current = lenis;
     const loop  = (t) => { lenis.raf(t); requestAnimationFrame(loop); };
     const id    = requestAnimationFrame(loop);
-    return () => { cancelAnimationFrame(id); lenis.destroy(); };
+    return () => {
+      cancelAnimationFrame(id);
+      lenis.destroy();
+      lenisRef.current = null;
+    };
   }, []);
 
   // ── Canvas + GSAP scroll ───────────────────────────────────────────────────
@@ -433,8 +442,18 @@ export default function Home2() {
     if (imgs[0]?.complete) draw();
 
     const fireLogin = (on) => {
+      if (loginLockedRef.current && !on) return;
       if (!on && authInputFocusedRef.current) return;
       if (on === loginFlagRef.current) return;
+
+      if (on) {
+        loginLockedRef.current = true;
+        lenisRef.current?.stop?.();
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+        scrollTweenRef.current?.scrollTrigger?.disable(false);
+      }
+
       loginFlagRef.current = on;
       setShowLogin(on);
     };
@@ -460,6 +479,7 @@ export default function Home2() {
         onLeaveBack: () => fireLogin(false),
       },
     });
+    scrollTweenRef.current = tween;
 
     const onResize = () => {
       const nextViewport = { width: window.innerWidth, height: window.innerHeight };
@@ -477,6 +497,7 @@ export default function Home2() {
 
     return () => {
       tween.kill();
+      scrollTweenRef.current = null;
       ScrollTrigger.getAll().forEach((t) => t.kill());
       window.removeEventListener("resize", onResize);
       if (rafSceneRef.current) cancelAnimationFrame(rafSceneRef.current);
