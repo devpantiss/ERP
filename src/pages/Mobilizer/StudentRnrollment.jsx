@@ -1,7 +1,9 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
+import TableExportActions from "../../components/common/TableExportActions";
 import { useMemo, useState } from "react";
 import CandidateEnrollmentStepper from "../../components/Mobilizer/CandidateEnrollmentStepper";
+import jsPDF from "jspdf";
 
 /* ===================== CONSTANTS ===================== */
 
@@ -14,11 +16,118 @@ const samplePDF =
 
 const sampleImage = (i) => `https://i.pravatar.cc/400?img=${(i % 70) + 1}`;
 
+function ensureAdmitCard(candidate) {
+  return candidate.admitCard || {
+    id: `ADM-${new Date().getFullYear()}-${String(candidate.id).padStart(4, "0")}`,
+    issuedOn: new Date().toISOString().split("T")[0],
+    reportingTime: "09:30 AM",
+    venue: candidate.center,
+  };
+}
+
+function downloadAdmitCardPdf(candidate) {
+  const admitCard = ensureAdmitCard(candidate);
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 42;
+  const contentWidth = pageWidth - margin * 2;
+  const cardTop = 44;
+
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, 0, pageWidth, doc.internal.pageSize.getHeight(), "F");
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(1);
+  doc.roundedRect(margin, cardTop, contentWidth, 700, 10, 10, "S");
+
+  doc.setFillColor(15, 23, 42);
+  doc.roundedRect(margin, cardTop, contentWidth, 92, 10, 10, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.text("TRAINING CENTER ADMIT CARD", margin + 24, cardTop + 38);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Candidate Enrollment & Reporting Pass", margin + 24, cardTop + 60);
+  doc.setFont("helvetica", "bold");
+  doc.text(admitCard.id, pageWidth - margin - 24, cardTop + 38, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.text(`Issued: ${admitCard.issuedOn}`, pageWidth - margin - 24, cardTop + 60, { align: "right" });
+
+  let y = cardTop + 128;
+  doc.setTextColor(15, 23, 42);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text(candidate.name || "Candidate", margin + 24, y);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Phone: ${candidate.phone || "-"}`, margin + 24, y + 20);
+  doc.text(`Aadhaar: ${candidate.aadhaar || "-"}`, margin + 24, y + 36);
+
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin + 24, y + 58, pageWidth - margin - 24, y + 58);
+  y += 88;
+
+  const rows = [
+    ["Training Center", candidate.center],
+    ["Reporting Venue", admitCard.venue],
+    ["Reporting Time", admitCard.reportingTime],
+    ["Job Role", candidate.jobrole],
+    ["School", candidate.school],
+    ["Date of Birth", candidate.dob],
+    ["Gender", candidate.gender],
+    ["Qualification", candidate.qualification],
+    ["Enrollment Date", candidate.enrollmentDate],
+    ["Address", candidate.address],
+  ];
+
+  rows.forEach(([label, value], index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = margin + 24 + col * (contentWidth / 2);
+    const rowY = y + row * 58;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100, 116, 139);
+    doc.text(label, x, rowY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(15, 23, 42);
+    doc.text(String(value || "-"), x, rowY + 18, { maxWidth: contentWidth / 2 - 42 });
+  });
+
+  y += 330;
+  doc.setFillColor(255, 251, 235);
+  doc.setDrawColor(251, 191, 36);
+  doc.roundedRect(margin + 24, y, contentWidth - 48, 72, 8, 8, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(120, 53, 15);
+  doc.text("Reporting Instructions", margin + 42, y + 24);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.text("Carry this admit card, Aadhaar, and original qualification documents at the training center.", margin + 42, y + 44, {
+    maxWidth: contentWidth - 84,
+  });
+
+  y += 122;
+  doc.setDrawColor(203, 213, 225);
+  doc.line(margin + 24, y, margin + 190, y);
+  doc.line(pageWidth - margin - 190, y, pageWidth - margin - 24, y);
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Candidate Signature", margin + 24, y + 16);
+  doc.text("Mobilizer / Center Seal", pageWidth - margin - 190, y + 16);
+
+  doc.save(`${admitCard.id}-${candidate.name || "candidate"}.pdf`);
+}
+
 /* ===================== DUMMY DATA ===================== */
 
 const CANDIDATES = Array.from({ length: 40 }, (_, i) => ({
   id: i + 1,
   name: `Candidate ${i + 1}`,
+  phone: `98765${String(10000 + i).slice(-5)}`,
   school: SCHOOLS[i % SCHOOLS.length],
   center: CENTERS[i % CENTERS.length],
   jobrole: JOBROLES[i % JOBROLES.length],
@@ -35,11 +144,13 @@ const CANDIDATES = Array.from({ length: 40 }, (_, i) => ({
   licenceFile: samplePDF,
   verified: i % 3 === 0,
   enrolled: i % 2 === 0,
+  admitCard: null,
 }));
 
 /* ===================== COMPONENT ===================== */
 
 export default function CandidatesTableDark() {
+  const [data, setData] = useState(CANDIDATES);
   const [search, setSearch] = useState("");
   const [school, setSchool] = useState("");
   const [center, setCenter] = useState("");
@@ -48,12 +159,67 @@ export default function CandidatesTableDark() {
   const [status, setStatus] = useState("");
 
   const [previewFile, setPreviewFile] = useState(null);
+  const [admitCardCandidate, setAdmitCardCandidate] = useState(null);
   const [showEnrollmentForm, setShowEnrollmentForm] = useState(false);
+
+  const createAdmitCard = (candidate) => ({
+    ...ensureAdmitCard(candidate),
+  });
+
+  const handleGenerateAdmitCard = (candidateId) => {
+    setData((prev) =>
+      prev.map((candidate) =>
+        candidate.id === candidateId
+          ? { ...candidate, admitCard: candidate.admitCard || createAdmitCard(candidate) }
+          : candidate
+      )
+    );
+  };
+
+  const handleEnrollmentComplete = (enrollment) => {
+    const basic = enrollment.basic || {};
+    const roleProject = enrollment.roleProject || {};
+    const address = enrollment.address?.address || {};
+    const nextId = data.reduce((max, candidate) => Math.max(max, candidate.id), 0) + 1;
+    const image = enrollment.capture?.photo || sampleImage(nextId);
+    const dob = basic.dateOfBirth
+      ? new Date(basic.dateOfBirth).toISOString().split("T")[0]
+      : "";
+
+    const newCandidate = {
+      id: nextId,
+      name: basic.fullName || `Candidate ${nextId}`,
+      phone: basic.phoneNumber || "",
+      school: roleProject.school || "Not Assigned",
+      center: roleProject.center || "Not Assigned",
+      jobrole: roleProject.role || "Not Assigned",
+      address: [address.house, address.street, address.city, address.district, address.state, address.pincode]
+        .filter(Boolean)
+        .join(", "),
+      dob,
+      gender: basic.gender || "",
+      aadhaar: basic.aadharNumber ? `XXXX-XXXX-${String(basic.aadharNumber).slice(-4)}` : "",
+      qualification: basic.qualificationLevel || "",
+      experience: basic.experienceYears ? `${basic.experienceYears} Years` : "0 Years",
+      enrollmentDate: new Date().toISOString().split("T")[0],
+      image,
+      aadhaarFile: samplePDF,
+      qualificationFile: samplePDF,
+      licenceFile: samplePDF,
+      verified: true,
+      enrolled: true,
+      admitCard: null,
+    };
+
+    newCandidate.admitCard = createAdmitCard(newCandidate);
+    setData((prev) => [newCandidate, ...prev]);
+    setCurrentPage(1);
+  };
 
   /* ===================== FILTER ===================== */
 
   const filteredData = useMemo(() => {
-    return CANDIDATES.filter(
+    return data.filter(
       (c) =>
         (!search || c.name.toLowerCase().includes(search.toLowerCase())) &&
         (!school || c.school === school) &&
@@ -63,7 +229,7 @@ export default function CandidatesTableDark() {
         (!status ||
           (status === "enrolled" ? c.enrolled : !c.enrolled))
     );
-  }, [search, school, center, jobrole, month, status]);
+  }, [data, search, school, center, jobrole, month, status]);
 
   /* ===================== STATS ===================== */
 
@@ -79,6 +245,39 @@ export default function CandidatesTableDark() {
     return filteredData?.slice(start, start + itemsPerPage) || [];
   }, [filteredData, currentPage]);
   const totalPages = Math.ceil((filteredData?.length || 0) / itemsPerPage);
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Candidate" },
+      { key: "phone", header: "Phone" },
+      { key: "school", header: "School" },
+      { key: "center", header: "Center" },
+      { key: "jobrole", header: "Job Role" },
+      { key: "address", header: "Address" },
+      { key: "dob", header: "DOB", type: "date" },
+      { key: "gender", header: "Gender" },
+      { key: "aadhaar", header: "Aadhaar" },
+      { key: "qualification", header: "Qualification" },
+      { key: "experience", header: "Experience" },
+      { key: "enrollmentDate", header: "Enrollment Date", type: "date" },
+      {
+        key: "verifiedStatus",
+        header: "Verification",
+        exportValue: (candidate) => (candidate.verified ? "Verified" : "Not Verified"),
+      },
+      {
+        key: "enrollmentStatus",
+        header: "Enrollment Status",
+        exportValue: (candidate) => (candidate.enrolled ? "Enrolled" : "Not Enrolled"),
+      },
+      {
+        key: "admitCardStatus",
+        header: "Admit Card",
+        exportValue: (candidate) => candidate.admitCard?.id || "Not Generated",
+      },
+    ],
+    []
+  );
+  const canExport = true;
 
   return (
     <>
@@ -165,8 +364,19 @@ export default function CandidatesTableDark() {
               Reset
             </button>
 
-            {/* ACTION */}
-            <div className="ml-auto">
+            {/* ACTIONS */}
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              <TableExportActions
+                moduleName="Candidate Enrollment"
+                fileName="candidate_enrollment"
+                columns={exportColumns}
+                rows={filteredData}
+                canExport={canExport}
+                company={{
+                  name: "Pantiss ERP",
+                  logo: "/activity.png",
+                }}
+              />
               <button
                 onClick={() => setShowEnrollmentForm(true)}
                 className="px-4 py-2 text-sm rounded-md
@@ -228,12 +438,13 @@ export default function CandidatesTableDark() {
 
           <div className="overflow-x-auto">
 
-            <table className="min-w-[1700px] w-full text-sm">
+                <table className="min-w-[1900px] w-full text-sm">
 
               <thead className="bg-[#020617]/90 backdrop-blur sticky top-0 border-b border-yellow-400/20">
                 <tr className="text-white/80 text-xs uppercase tracking-wider">
-                  <th className="px-4 py-3 text-left min-w-[220px]">Candidate</th>
-                  <th className="px-4 py-3 text-left min-w-[160px]">School</th>
+	                  <th className="px-4 py-3 text-left min-w-[220px]">Candidate</th>
+	                  <th className="px-4 py-3 text-left min-w-[140px]">Phone</th>
+	                  <th className="px-4 py-3 text-left min-w-[160px]">School</th>
                   <th className="px-4 py-3 text-left min-w-[160px]">Center</th>
                   <th className="px-4 py-3 text-left min-w-[140px]">Job Role</th>
                   <th className="px-4 py-3 text-left min-w-[200px]">Address</th>
@@ -242,8 +453,9 @@ export default function CandidatesTableDark() {
                   <th className="px-4 py-3 text-left min-w-[160px]">Aadhaar</th>
                   <th className="px-4 py-3 text-left min-w-[160px]">Qualification</th>
                   <th className="px-4 py-3 text-left min-w-[120px]">Experience</th>
-                  <th className="px-4 py-3 text-left min-w-[140px]">Docs</th>
-                  <th className="px-4 py-3 text-left min-w-[150px]">Status</th>
+	                  <th className="px-4 py-3 text-left min-w-[140px]">Docs</th>
+	                  <th className="px-4 py-3 text-left min-w-[170px]">Admit Card</th>
+	                  <th className="px-4 py-3 text-left min-w-[150px]">Status</th>
                 </tr>
               </thead>
 
@@ -267,7 +479,8 @@ export default function CandidatesTableDark() {
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 whitespace-nowrap">{c.school}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{c.phone || "—"}</td>
+	                    <td className="px-4 py-3 whitespace-nowrap">{c.school}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{c.center}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{c.jobrole}</td>
                     <td className="px-4 py-3">{c.address}</td>
@@ -277,15 +490,41 @@ export default function CandidatesTableDark() {
                     <td className="px-4 py-3 whitespace-nowrap">{c.qualification}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{c.experience}</td>
 
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
+	                    <td className="px-4 py-3">
+	                      <div className="flex gap-2">
                         <DocThumb file={c.aadhaarFile} setPreview={setPreviewFile} label="A" />
                         <DocThumb file={c.qualificationFile} setPreview={setPreviewFile} label="Q" />
                         <DocThumb file={c.licenceFile} setPreview={setPreviewFile} label="L" />
-                      </div>
-                    </td>
+	                      </div>
+	                    </td>
 
                     <td className="px-4 py-3">
+                      {c.admitCard ? (
+                        <div className="flex flex-col gap-1.5">
+                          <button
+                            onClick={() => setAdmitCardCandidate(c)}
+                            className="px-3 py-1.5 text-xs rounded-md border border-emerald-400/30 bg-emerald-400/10 text-emerald-300 hover:bg-emerald-400/15"
+                          >
+                            View {c.admitCard.id}
+                          </button>
+                          <button
+                            onClick={() => downloadAdmitCardPdf(c)}
+                            className="px-3 py-1.5 text-xs rounded-md border border-sky-400/30 bg-sky-400/10 text-sky-300 hover:bg-sky-400/15"
+                          >
+                            Download PDF
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleGenerateAdmitCard(c.id)}
+                          className="px-3 py-1.5 text-xs rounded-md border border-yellow-400/30 text-yellow-300 hover:bg-yellow-400/10"
+                        >
+                          Generate
+                        </button>
+                      )}
+                    </td>
+
+	                    <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
                         <StatusBadge
                           label={c.verified ? "Verified" : "Not Verified"}
@@ -313,9 +552,15 @@ export default function CandidatesTableDark() {
       {previewFile && (
         <FileModal file={previewFile} onClose={() => setPreviewFile(null)} />
       )}
+      {admitCardCandidate && (
+        <AdmitCardModal candidate={admitCardCandidate} onClose={() => setAdmitCardCandidate(null)} />
+      )}
       {/* ================= ENROLLMENT FORM MODAL ================= */}
       {showEnrollmentForm && (
-        <CandidateEnrollmentStepper onClose={() => setShowEnrollmentForm(false)} />
+        <CandidateEnrollmentStepper
+          onClose={() => setShowEnrollmentForm(false)}
+          onComplete={handleEnrollmentComplete}
+        />
       )}
 
     </>
@@ -387,6 +632,86 @@ function Chip({ label, onRemove }) {
       <button onClick={onRemove} className="text-yellow-400 hover:text-white">
         ✕
       </button>
+    </div>
+  );
+}
+
+function AdmitCardModal({ candidate, onClose }) {
+  const admitCard = ensureAdmitCard(candidate);
+
+  return (
+    <SlidePanel open={true} onClose={onClose} title="Student Admit Card" width="lg">
+      <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-50 text-slate-950 shadow-2xl">
+        <div className="bg-slate-950 px-6 py-5 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-yellow-300">Training Center Admit Card</p>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight">{candidate.name}</h2>
+              <p className="mt-1 text-sm text-slate-300">Candidate Enrollment & Reporting Pass</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-400">Admit Card No.</p>
+              <p className="mt-1 font-mono text-sm font-semibold text-yellow-200">{admitCard.id}</p>
+              <p className="mt-2 text-xs text-slate-400">Issued: {admitCard.issuedOn}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6">
+        <div className="flex items-start justify-between border-b border-slate-200 pb-5">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Candidate Details</p>
+            <p className="mt-2 text-sm text-slate-600">Phone: {candidate.phone || "—"}</p>
+            <p className="mt-1 text-sm text-slate-600">Aadhaar: {candidate.aadhaar || "—"}</p>
+          </div>
+          <img src={candidate.image} className="h-24 w-24 rounded-xl border border-slate-200 object-cover shadow-sm" />
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <AdmitInfo label="Phone" value={candidate.phone} />
+          <AdmitInfo label="Date of Birth" value={candidate.dob} />
+          <AdmitInfo label="School" value={candidate.school} />
+          <AdmitInfo label="Training Center" value={candidate.center} />
+          <AdmitInfo label="Job Role" value={candidate.jobrole} />
+          <AdmitInfo label="Reporting Time" value={admitCard.reportingTime} />
+          <AdmitInfo label="Venue" value={admitCard.venue} />
+          <AdmitInfo label="Issued On" value={admitCard.issuedOn} />
+        </div>
+
+        <div className="mt-6 rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-900">
+          Candidate must carry Aadhaar and original qualification documents during reporting.
+        </div>
+
+        <div className="mt-8 grid grid-cols-2 gap-10 text-xs text-slate-500">
+          <div className="border-t border-slate-300 pt-2">Candidate Signature</div>
+          <div className="border-t border-slate-300 pt-2 text-right">Mobilizer / Center Seal</div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button
+            onClick={() => downloadAdmitCardPdf(candidate)}
+            className="rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+          >
+            Download PDF
+          </button>
+          <button
+            onClick={() => downloadAdmitCardPdf(candidate)}
+            className="rounded-md bg-yellow-400 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-yellow-300"
+          >
+            Print Admit Card
+          </button>
+        </div>
+        </div>
+      </div>
+    </SlidePanel>
+  );
+}
+
+function AdmitInfo({ label, value }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-3">
+      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-slate-950">{value || "—"}</p>
     </div>
   );
 }

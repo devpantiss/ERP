@@ -1,5 +1,5 @@
 import Pagination from "../../components/common/Pagination";
-import ExportPDFButton from "../../components/common/ExportPDFButton";
+import TableExportActions from "../../components/common/TableExportActions";
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
@@ -22,6 +22,8 @@ const tooltipStyle = {  border: "1px solid #334155", borderRadius: "8px", color:
 
 export default function AdminTrainerAttendance() {
   const [centerFilter, setCenterFilter] = useState("All");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [exportScope, setExportScope] = useState("all");
   const centers = ["All", ...new Set(TRAINERS.map((t) => t.center))];
 
   const filtered = useMemo(() => {
@@ -38,6 +40,50 @@ export default function AdminTrainerAttendance() {
     return filtered?.slice(start, start + itemsPerPage) || [];
   }, [filtered, currentPage]);
   const totalPages = Math.ceil((filtered?.length || 0) / itemsPerPage);
+  const selectedRows = useMemo(
+    () => filtered.filter((trainer) => selectedIds.includes(trainer.id)),
+    [filtered, selectedIds]
+  );
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Name" },
+      { key: "center", header: "Center" },
+      { key: "presentDays", header: "Present", type: "number" },
+      {
+        key: "absent",
+        header: "Absent",
+        type: "number",
+        exportValue: (trainer) => trainer.totalDays - trainer.presentDays,
+      },
+      { key: "lateDays", header: "Late", type: "number" },
+      {
+        key: "attendanceRate",
+        header: "Rate",
+        exportValue: (trainer) => `${Math.round((trainer.presentDays / trainer.totalDays) * 100)}%`,
+      },
+    ],
+    []
+  );
+  const allCurrentPageSelected = paginatedData.length > 0 && paginatedData.every((trainer) => selectedIds.includes(trainer.id));
+
+  function toggleTrainerSelection(id) {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((selectedId) => selectedId !== id) : [...current, id]
+    );
+  }
+
+  function toggleCurrentPageSelection() {
+    const pageIds = paginatedData.map((trainer) => trainer.id);
+    setSelectedIds((current) => {
+      if (pageIds.every((id) => current.includes(id))) {
+        return current.filter((id) => !pageIds.includes(id));
+      }
+
+      return [...new Set([...current, ...pageIds])];
+    });
+  }
+
+  const canExport = true;
 
   return (
     <div className="space-y-6">
@@ -46,12 +92,20 @@ export default function AdminTrainerAttendance() {
           <h1 className="text-2xl font-semibold text-slate-100">Trainer Attendance</h1>
           <p className="text-sm text-white/60 mt-1">Monitor attendance across all trainers</p>
         </div>
-        <ExportPDFButton
-          title="Trainer Attendance"
-          columns={["Name","Center","Present","Absent","Late","Rate"]}
-          data={filtered.map(t=>[t.name,t.center,t.presentDays,t.totalDays-t.presentDays,t.lateDays,`${Math.round((t.presentDays/t.totalDays)*100)}%`])}
+        <TableExportActions
+          moduleName="Trainer Attendance"
           fileName="trainer_attendance"
-          accent="violet"
+          columns={exportColumns}
+          rows={filtered}
+          selectedRows={selectedRows}
+          exportScope={exportScope}
+          onScopeChange={setExportScope}
+          showSelectedToggle
+          canExport={canExport}
+          company={{
+            name: "Pantiss ERP",
+            logo: "/activity.png",
+          }}
         />
       </div>
 
@@ -102,6 +156,15 @@ export default function AdminTrainerAttendance() {
         <table className="w-full text-sm">
           <thead className="bg-[#0b1220] text-white/60">
             <tr>
+              <th className="p-4 text-left">
+                <input
+                  type="checkbox"
+                  checked={allCurrentPageSelected}
+                  onChange={toggleCurrentPageSelection}
+                  className="h-4 w-4 rounded border-slate-600 bg-transparent accent-violet-500"
+                  aria-label="Select current page"
+                />
+              </th>
               <th className="p-4 text-left">Trainer</th>
               <th className="p-4 text-left">Center</th>
               <th className="p-4 text-center">Present</th>
@@ -115,6 +178,15 @@ export default function AdminTrainerAttendance() {
               const rate = Math.round((t.presentDays / t.totalDays) * 100);
               return (
                 <tr key={t.id} className="border-t border-slate-700/50 hover:bg-transparent/30 transition">
+                  <td className="p-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(t.id)}
+                      onChange={() => toggleTrainerSelection(t.id)}
+                      className="h-4 w-4 rounded border-slate-600 bg-transparent accent-violet-500"
+                      aria-label={`Select ${t.name}`}
+                    />
+                  </td>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       <img src={t.avatar} className="w-8 h-8 rounded-lg border border-slate-700" />

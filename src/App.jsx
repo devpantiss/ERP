@@ -1,6 +1,6 @@
 import "./App.css";
 import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Routes, Route } from "react-router-dom";
 import "react-day-picker/dist/style.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,6 +12,7 @@ import TrainerLayout from "./components/Layout/TrainerLayout";
 import PlacementLayout from "./components/Layout/PlacementLayout";
 import AdminLayout from "./components/Layout/AdminLayout";
 import SuperAdminLayout from "./components/Layout/SuperAdminLayout";
+import ClientLayout from "./components/Layout/ClientLayout";
 import Loader from "./components/common/Loader";
 
 // ─── All pages — lazy loaded (Vite auto-chunks each) ────────────────────────
@@ -19,6 +20,17 @@ import Loader from "./components/common/Loader";
 // Public
 const Home2 = lazy(() => import("./pages/Home2"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
+const ClientLogin = lazy(() => import("./pages/Client/ClientLogin"));
+const ClientProtectedRoute = lazy(() => import("./pages/Client/ClientProtectedRoute"));
+const ClientDashboard = lazy(() => import("./pages/Client/ClientDashboard"));
+const ClientProjects = lazy(() => import("./pages/Client/ClientProjects"));
+const ClientPerformance = lazy(() => import("./pages/Client/ClientPerformance"));
+const ClientSuccessStory = lazy(() => import("./pages/Client/ClientSuccessStory"));
+const ClientProjectDetail = lazy(() =>
+  import("./pages/Client/ClientProjects").then((module) => ({
+    default: module.ClientProjectDetail,
+  }))
+);
 
 // Mobilizer
 const MobilizerDashboard = lazy(() => import("./pages/Mobilizer/MobilizerDashboard"));
@@ -31,6 +43,7 @@ const MobilizerRevenue = lazy(() => import("./pages/Mobilizer/MobilizerRevenue")
 // Shared pages (HR Entitlement + Grievance)
 const SalaryDashboard = lazy(() => import("./pages/shared/SalaryDashboard"));
 const ReimbursementPortal = lazy(() => import("./pages/shared/ReimbursementPortal"));
+const LeaveManagement = lazy(() => import("./pages/shared/LeaveManagement"));
 const GrievancePortal = lazy(() => import("./pages/shared/GrievancePortal"));
 const SharedAttendancePage = lazy(() => import("./pages/shared/AttendancePage"));
 
@@ -38,7 +51,6 @@ const SharedAttendancePage = lazy(() => import("./pages/shared/AttendancePage"))
 const TrainerDashboard = lazy(() => import("./pages/Trainer/TrainerDashboard"));
 const TrainerAttendance = lazy(() => import("./pages/Trainer/TrainerAttendance"));
 const TrainerExposureVisits = lazy(() => import("./pages/Trainer/TrainerExposureVisits"));
-const TrainerInternalAssessments = lazy(() => import("./pages/Trainer/TrainerInternalAssessments"));
 const TrainerStudyModules = lazy(() => import("./pages/Trainer/TrainerStudyModules"));
 const TrainerProfile = lazy(() => import("./pages/Trainer/TrainerProfile"));
 const TrainerLab = lazy(() => import("./pages/Trainer/TrainerLab"));
@@ -78,6 +90,8 @@ const AdminTrainerList = lazy(() => import("./pages/Admin/AdminTrainerList"));
 const AdminSalaryApprovals = lazy(() => import("./pages/Admin/AdminSalaryApprovals"));
 const AdminProcurement = lazy(() => import("./pages/Admin/AdminProcurement"));
 const AdminApprovals = lazy(() => import("./pages/Admin/AdminApprovals"));
+const AdminLeaveApprovals = lazy(() => import("./pages/Admin/AdminLeaveApprovals"));
+const AdminTourApprovals = lazy(() => import("./pages/Admin/AdminTourApprovals"));
 const AdminTrainerDashboard = lazy(() => import("./pages/Admin/AdminTrainerDashboard"));
 const AdminExposureVisitApprovals = lazy(() => import("./pages/Admin/AdminExposureVisitApprovals"));
 const AdminModuleProgress = lazy(() => import("./pages/Admin/AdminModuleProgress"));
@@ -112,6 +126,7 @@ const SuperAdminTrainingTracking = lazy(() => import("./pages/SuperAdmin/SuperAd
 const SuperAdminExposureVisits = lazy(() => import("./pages/SuperAdmin/SuperAdminExposureVisits"));
 const SuperAdminEmployeeManagement = lazy(() => import("./pages/SuperAdmin/SuperAdminEmployeeManagement"));
 const SuperAdminGrievancePortal = lazy(() => import("./pages/SuperAdmin/SuperAdminGrievancePortal"));
+const SuperAdminLeaveMonitor = lazy(() => import("./pages/SuperAdmin/SuperAdminLeaveMonitor"));
 
 // ─── Suspense fallback ───────────────────────────────────────────────────────
 const PageFallback = (
@@ -130,8 +145,21 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<Home2 />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/client-login" element={<ClientLogin />} />
           <Route path="/live/:sessionId" element={<TrainerLiveFeedViewer />} />
           <Route path="/trainer/live/:sessionId" element={<TrainerLiveFeedViewer />} />
+
+          {/* Client Portal Routes */}
+          <Route element={<ClientProtectedRoute />}>
+            <Route path="/client" element={<ClientLayout />}>
+              <Route index element={<Navigate to="/client/dashboard" replace />} />
+              <Route path="dashboard" element={<ClientDashboard />} />
+              <Route path="projects" element={<ClientProjects />} />
+              <Route path="projects/:projectId" element={<ClientProjectDetail />} />
+              <Route path="performance" element={<ClientPerformance />} />
+              <Route path="success-story" element={<ClientSuccessStory />} />
+            </Route>
+          </Route>
 
           {/* Mobilizer Layout Routes */}
           <Route path="/mobilizer" element={<MobilizerLayout />}>
@@ -148,6 +176,7 @@ function App() {
 
             {/* HR Entitlement */}
             <Route path="hr/attendance" element={<MobilizerAttendance />} />
+            <Route path="hr/leave" element={<LeaveManagement />} />
             <Route path="hr/salary" element={<SalaryDashboard />} />
             <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
 
@@ -162,7 +191,6 @@ function App() {
             <Route path="dashboard" element={<TrainerDashboard />} />
             <Route path="attendance" element={<TrainerAttendance />} />
             <Route path="exposure-visits" element={<TrainerExposureVisits />} />
-            <Route path="internal-assessment" element={<TrainerInternalAssessments />} />
             <Route path="study-modules" element={<TrainerStudyModules />} />
             <Route path="profile" element={<TrainerProfile />} />
             <Route path="labs" element={<TrainerLab />} />
@@ -174,6 +202,7 @@ function App() {
             <Route path="teaching-management" element={<TrainerAttendance />} />
 
             {/* HR Entitlement (no attendance for Trainer) */}
+            <Route path="hr/leave" element={<LeaveManagement />} />
             <Route path="hr/salary" element={<SalaryDashboard />} />
             <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
 
@@ -195,6 +224,7 @@ function App() {
 
             {/* HR Entitlement */}
             <Route path="hr/attendance" element={<SharedAttendancePage />} />
+            <Route path="hr/leave" element={<LeaveManagement />} />
             <Route path="hr/salary" element={<SalaryDashboard />} />
             <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
 
@@ -222,7 +252,16 @@ function App() {
             />
             <Route path="live-feed" element={<AdminTrainerLiveFeed />} />
             <Route path="project-details-reports" element={<AdminProjectManagement />} />
+            <Route path="hr/attendance" element={<AdminTrainerAttendance />} />
+            <Route path="hr/leave" element={<LeaveManagement />} />
+            <Route path="hr/salary" element={<SalaryDashboard />} />
+            <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
             <Route path="approvals" element={<AdminApprovals />} />
+            <Route path="approvals/operations" element={<AdminApprovals />} />
+            <Route path="approvals/tour" element={<AdminTourApprovals />} />
+            <Route path="approvals/leave" element={<AdminLeaveApprovals />} />
+            <Route path="approvals/salary" element={<AdminSalaryApprovals />} />
+            <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
 
             {/* Legacy admin routes kept for compatibility */}
             <Route path="user-management" element={<AdminUserManagement />} />
@@ -285,6 +324,7 @@ function App() {
             <Route path="training-tracking" element={<SuperAdminTrainingTracking />} />
             <Route path="exposure-visits" element={<SuperAdminExposureVisits />} />
             <Route path="employee-management" element={<SuperAdminEmployeeManagement />} />
+            <Route path="leave-monitor" element={<SuperAdminLeaveMonitor />} />
             <Route path="grievance-tracker" element={<SuperAdminGrievancePortal />} />
 
             {/* Settings */}

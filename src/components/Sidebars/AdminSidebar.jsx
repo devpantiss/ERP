@@ -1,13 +1,17 @@
 import { memo, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   Briefcase,
+  CalendarCheck,
+  CalendarDays,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileCheck,
+  HandCoins,
   LayoutDashboard,
   LogOut,
+  MapPinned,
   MessageSquareWarning,
   Radio,
   Receipt,
@@ -33,11 +37,6 @@ const MENU_ITEMS = [
     key: "financial-management",
     children: [
       {
-        label: "Salary Approvals",
-        path: "/admin/financial-management/salary-approvals",
-        icon: Wallet,
-      },
-      {
         label: "Invoices Raised",
         path: "/admin/financial-management/invoices-raised",
         icon: Receipt,
@@ -46,6 +45,33 @@ const MENU_ITEMS = [
         label: "Procurement",
         path: "/admin/financial-management/procurement",
         icon: ShoppingCart,
+      },
+    ],
+  },
+  {
+    label: "HR Entitlement",
+    icon: CalendarCheck,
+    key: "hr-entitlement",
+    children: [
+      {
+        label: "Attendance",
+        path: "/admin/hr/attendance",
+        icon: CalendarCheck,
+      },
+      {
+        label: "Leave Management",
+        path: "/admin/hr/leave",
+        icon: CalendarDays,
+      },
+      {
+        label: "Salary",
+        path: "/admin/hr/salary",
+        icon: Wallet,
+      },
+      {
+        label: "Reimbursement",
+        path: "/admin/hr/reimbursement",
+        icon: HandCoins,
       },
     ],
   },
@@ -61,8 +87,30 @@ const MENU_ITEMS = [
   },
   {
     label: "Approvals",
-    path: "/admin/approvals",
     icon: FileCheck,
+    key: "approvals",
+    children: [
+      {
+        label: "Tour Approvals",
+        path: "/admin/approvals/tour",
+        icon: MapPinned,
+      },
+      {
+        label: "Leave Approvals",
+        path: "/admin/approvals/leave",
+        icon: CalendarDays,
+      },
+      {
+        label: "Salary Approvals",
+        path: "/admin/approvals/salary",
+        icon: Wallet,
+      },
+      {
+        label: "Operations Approvals",
+        path: "/admin/approvals/operations",
+        icon: FileCheck,
+      },
+    ],
   },
   {
     label: "Grievance Portal",
@@ -72,8 +120,9 @@ const MENU_ITEMS = [
 ];
 
 function AdminSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [openGroups, setOpenGroups] = useState(["financial-management"]);
+  const [collapsed, setCollapsed] = useState(true);
+  const [openGroups, setOpenGroups] = useState([]);
+  const location = useLocation();
 
   const toggleGroup = (groupKey) => {
     setOpenGroups((current) =>
@@ -85,18 +134,20 @@ function AdminSidebar() {
 
   return (
     <aside
-      className={`admin-future-sidebar sticky top-0 hidden md:flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 transition-all duration-300 ${
-        collapsed ? "w-20" : "w-72"
-      }`}
+      className="sticky top-0 z-50 hidden h-screen w-20 shrink-0 md:block"
     >
+      <div
+        data-collapsed={collapsed}
+        className="perf-sidebar admin-future-sidebar flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 shadow-2xl shadow-black/20 [--sidebar-expanded-width:18rem]"
+      >
       <div className="admin-future-sidebar__brand flex h-16 items-center justify-between border-b border-slate-700 px-4">
-        {!collapsed && (
-          <span className="text-lg font-semibold tracking-tight text-violet-400">
+          <span className="perf-sidebar-label text-lg font-semibold tracking-tight text-violet-400">
             Admin Hub
           </span>
-        )}
         <button
-          onClick={() => setCollapsed((current) => !current)}
+          onClick={() => {
+            setCollapsed((current) => !current);
+          }}
           className="admin-future-icon-button rounded-md p-2 text-white/60 transition hover:bg-slate-700 hover:text-white"
           aria-label={collapsed ? "Expand admin sidebar" : "Collapse admin sidebar"}
         >
@@ -122,12 +173,13 @@ function AdminSidebar() {
                 }
               >
                 <Icon size={17} className="shrink-0" />
-                {!collapsed && <span className="truncate">{item.label}</span>}
+                <span className="perf-sidebar-label truncate">{item.label}</span>
               </NavLink>
             );
           }
 
-          const isOpen = openGroups.includes(item.key);
+          const hasActiveChild = item.children.some((child) => location.pathname === child.path);
+          const isOpen = openGroups.includes(item.key) || hasActiveChild;
 
           return (
             <div key={item.key} className="space-y-1">
@@ -145,19 +197,17 @@ function AdminSidebar() {
                 }`}
               >
                 <Icon size={17} className="shrink-0" />
-                {!collapsed && (
                   <>
-                    <span className="flex-1 text-left">{item.label}</span>
+                    <span className="perf-sidebar-label flex-1 text-left">{item.label}</span>
                     <ChevronDown
                       size={15}
-                      className={`transition ${isOpen ? "rotate-180" : ""}`}
+                      className={`perf-sidebar-label transition ${isOpen ? "rotate-180" : ""}`}
                     />
                   </>
-                )}
               </button>
 
-              {!collapsed && isOpen && (
-                <div className="ml-4 space-y-1 border-l border-slate-700/70 pl-4">
+              {isOpen && (
+                <div className="perf-sidebar-panel ml-4 space-y-1 border-l border-slate-700/70 pl-4">
                   {item.children.map((child) => {
                     const ChildIcon = child.icon;
                     return (
@@ -190,15 +240,14 @@ function AdminSidebar() {
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
         >
           <LogOut size={17} />
-          {!collapsed && <span>Log Out</span>}
+          <span className="perf-sidebar-label">Log Out</span>
         </Link>
 
-        {!collapsed && (
-          <div className="px-3 text-xs text-slate-500">
+          <div className="perf-sidebar-label px-3 text-xs text-slate-500">
             <p className="font-medium text-white/60">Kovon Platform</p>
             <p>Admin Console</p>
           </div>
-        )}
+      </div>
       </div>
     </aside>
   );

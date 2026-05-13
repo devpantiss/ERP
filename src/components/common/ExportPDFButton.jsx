@@ -1,7 +1,7 @@
-import { memo } from "react";
-import { FileDown } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { memo, useState } from "react";
+import { FileDown, Loader2 } from "lucide-react";
+import { toast } from "react-toastify";
+import { exportTableToPdf } from "../../utils/export/tableExportUtils";
 
 /**
  * ExportPDFButton — reusable PDF export for any data table.
@@ -30,52 +30,46 @@ function ExportPDFButton({
   accent = "violet",
 }) {
   const style = ACCENT_MAP[accent] || ACCENT_MAP.violet;
+  const [loading, setLoading] = useState(false);
 
-  const handleExport = () => {
-    const doc = new jsPDF({ orientation: data[0]?.length > 6 ? "landscape" : "portrait" });
+  const handleExport = async () => {
+    try {
+      setLoading(true);
+      const exportColumns = columns.map((column, index) => ({
+        key: String(index),
+        header: column,
+      }));
+      const rows = data.map((row) =>
+        row.reduce((record, value, index) => {
+          record[index] = value;
+          return record;
+        }, {})
+      );
 
-    // Title
-    doc.setFontSize(16);
-    doc.setTextColor(30, 30, 30);
-    doc.text(title, 14, 18);
-
-    // Subtitle
-    doc.setFontSize(9);
-    doc.setTextColor(120, 120, 120);
-    doc.text(`Exported on ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}  •  ${data.length} records`, 14, 25);
-
-    autoTable(doc, {
-      startY: 30,
-      head: [columns],
-      body: data,
-      styles: {
-        fontSize: 8.5,
-        cellPadding: 3.5,
-        lineColor: [220, 220, 220],
-        lineWidth: 0.1,
-        textColor: [40, 40, 40],
-      },
-      headStyles: {
-        fillColor: style.head,
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fontSize: 8.5,
-      },
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
-      },
-      margin: { left: 14, right: 14 },
-    });
-
-    doc.save(`${fileName}.pdf`);
+      await exportTableToPdf({
+        title,
+        columns: exportColumns,
+        rows,
+        moduleName: title,
+        fileName,
+        accentColor: style.head,
+      });
+      toast.success("PDF export downloaded.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to export PDF.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <button
       onClick={handleExport}
-      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-150 ${style.btn}`}
+      disabled={loading}
+      className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60 ${style.btn}`}
     >
-      <FileDown size={15} />
+      {loading ? <Loader2 size={15} className="animate-spin" /> : <FileDown size={15} />}
       Export PDF
     </button>
   );

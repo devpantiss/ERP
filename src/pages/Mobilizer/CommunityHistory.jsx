@@ -1,10 +1,8 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
+import TableExportActions from "../../components/common/TableExportActions";
 import { useState, useMemo } from "react";
 import CommunityEventStepper from "../../components/Mobilizer/CommunityDriveStepper";
-import * as XLSX from "xlsx";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 /* ===================== CONSTANT DATA ===================== */
 
@@ -193,31 +191,37 @@ export default function CommunityHistory() {
     return filteredEvents.slice(start, start + itemsPerPage);
   }, [filteredEvents, currentPage]);
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-
-  /* ===================== EXPORT ===================== */
-
-  const exportExcel = () => {
-    const rows = filteredEvents.map((e) => ({
-      Name: e.name, Project: e.project, Block: e.block,
-      GP: e.gp, Date: e.date, Participants: e.participants,
-      Location: e.location, Status: e.status,
-    }));
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "CommunityEvents");
-    XLSX.writeFile(wb, "community_events.xlsx");
-  };
-
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    autoTable(doc, {
-      head: [["Name", "Project", "Block", "GP", "Date", "Participants", "Status"]],
-      body: filteredEvents.map((e) => [
-        e.name, e.project, e.block, e.gp, e.date, e.participants, e.status,
-      ]),
-    });
-    doc.save("community_events.pdf");
-  };
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Name" },
+      { key: "project", header: "Project" },
+      { key: "block", header: "Block" },
+      { key: "gp", header: "GP" },
+      { key: "date", header: "Date", type: "date" },
+      { key: "participants", header: "Participants", type: "number" },
+      { key: "location", header: "Location" },
+      { key: "status", header: "Status" },
+      {
+        key: "imageStatus",
+        header: "Image",
+        exportValue: (event) => (event.image ? "Uploaded" : "Not Uploaded"),
+      },
+      {
+        key: "videoStatus",
+        header: "Video",
+        exportValue: (event) => (event.video ? "Uploaded" : "Not Uploaded"),
+      },
+      {
+        key: "geo",
+        header: "GPS",
+        exportValue: (event) =>
+          event.lat && event.lng ? `${event.lat.toFixed(5)}, ${event.lng.toFixed(5)}` : "Not Captured",
+      },
+      { key: "timestamp", header: "Uploaded At" },
+    ],
+    []
+  );
+  const canExport = true;
 
   return (
     <>
@@ -234,21 +238,18 @@ export default function CommunityHistory() {
             </p>
           </div>
 
-          <div className="ml-auto flex gap-2">
-            <button
-              onClick={exportExcel}
-              className="px-4 py-2 text-sm rounded-lg border border-yellow-400/30
-              text-yellow-400 hover:bg-yellow-400/10 transition font-medium"
-            >
-              Export Excel
-            </button>
-            <button
-              onClick={exportPDF}
-              className="px-4 py-2 text-sm rounded-lg border border-yellow-400/30
-              text-yellow-400 hover:bg-yellow-400/10 transition font-medium"
-            >
-              Export PDF
-            </button>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <TableExportActions
+              moduleName="Community Events"
+              fileName="community_events"
+              columns={exportColumns}
+              rows={filteredEvents}
+              canExport={canExport}
+              company={{
+                name: "Pantiss ERP",
+                logo: "/activity.png",
+              }}
+            />
             <button
               onClick={() => setShowEventForm(true)}
               className="px-4 py-2 text-sm rounded-lg
@@ -478,6 +479,5 @@ function UploadButton({ disabled, onFile, label }) {
     </label>
   );
 }
-
 
 

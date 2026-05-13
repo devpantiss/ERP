@@ -5,6 +5,7 @@ import Lottie from "lottie-react";
 import {
   FaCalendarAlt,
   FaIdCard,
+  FaPhone,
   FaUser,
   FaBriefcase,
   FaUpload,
@@ -17,6 +18,7 @@ export default function Step3({ value = {}, onChange, onValidChange }) {
 
   const [formData, setFormData] = useState({
     fullName: value.fullName || "",
+    phoneNumber: value.phoneNumber || "",
     dateOfBirth: value.dateOfBirth || null,
     gender: value.gender || "",
     aadharNumber: value.aadharNumber || "",
@@ -92,6 +94,7 @@ export default function Step3({ value = {}, onChange, onValidChange }) {
     onValidChange(
       Boolean(
         formData.fullName &&
+          /^\d{10}$/.test(formData.phoneNumber) &&
           formData.dateOfBirth &&
           formData.gender &&
           formData.aadharNumber &&
@@ -126,6 +129,15 @@ export default function Step3({ value = {}, onChange, onValidChange }) {
           value={formData.fullName}
           onChange={handleInputChange}
           placeholder="As per Aadhaar"
+        />
+
+        <Field
+          icon={<FaPhone />}
+          label="Phone Number"
+          name="phoneNumber"
+          value={formData.phoneNumber}
+          onChange={handleInputChange}
+          placeholder="10-digit mobile number"
         />
 
         {/* DOB + GENDER */}

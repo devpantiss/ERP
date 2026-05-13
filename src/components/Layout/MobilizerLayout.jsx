@@ -7,6 +7,7 @@ import {
   CalendarCheck2,
   Briefcase,
   UserCheck,
+  CalendarDays,
   IndianRupee,
   Receipt,
   MessageSquareWarning,
@@ -16,8 +17,8 @@ import {
 /* ─── Dock config ─── */
 const DOCK_ITEMS = [
   { label: "Dashboard", shortLabel: "Home", path: "/mobilizer/dashboard", icon: LayoutDashboard },
-  { label: "Enrollment", shortLabel: "Enroll", path: "/mobilizer/student-enrollment", icon: Users },
   { label: "Community", path: "/mobilizer/community-engagement", icon: CalendarCheck2 },
+  { label: "Enrollment", shortLabel: "Enroll", path: "/mobilizer/student-enrollment", icon: Users },
 ];
 
 const DRAWER_ITEMS = [
@@ -26,6 +27,7 @@ const DRAWER_ITEMS = [
     icon: Briefcase,
     children: [
       { label: "Attendance", path: "/mobilizer/hr/attendance", icon: UserCheck },
+      { label: "Leave Management", path: "/mobilizer/hr/leave", icon: CalendarDays },
       { label: "Salary", path: "/mobilizer/hr/salary", icon: IndianRupee },
       { label: "Reimbursement", path: "/mobilizer/hr/reimbursement", icon: Receipt },
     ],

@@ -17,6 +17,7 @@ import {
   LogOut,
   Lock,
   Activity,
+  CalendarDays,
   Camera,
   Megaphone,
   MessageSquareWarning,
@@ -35,6 +36,7 @@ const SECTIONS = [
       { label: "Dashboard", path: "/super-admin/dashboard", icon: LayoutDashboard },
       { label: "Candidate Details", path: "/super-admin/candidate-details", icon: Users },
       { label: "Employee Management", path: "/super-admin/employee-management", icon: UserCog },
+      { label: "Leave Monitor", path: "/super-admin/leave-monitor", icon: CalendarDays },
       { heading: "Training" },
       { label: "Training Tracking", path: "/super-admin/training-tracking", icon: Activity },
       { label: "Exposure Visits", path: "/super-admin/exposure-visits", icon: Camera },
@@ -84,7 +86,7 @@ const SECTIONS = [
 /* ================= COMPONENT ================= */
 
 const SuperAdminSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [openSections, setOpenSections] = useState(["operations"]);
 
   const toggleSection = (key) => {
@@ -95,22 +97,22 @@ const SuperAdminSidebar = () => {
 
   return (
     <aside
-      className={`h-screen sticky top-0 hidden md:flex flex-col
+      data-collapsed={collapsed}
+      className="perf-sidebar h-screen sticky top-0 hidden md:flex flex-col
       bg-[#0f172a] text-white/80
       border-r border-slate-700/50
-      transition-all duration-300 z-50
-      ${collapsed ? "w-20" : "w-64"}`}
+      z-50 [--sidebar-expanded-width:16rem]"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-16 border-b border-slate-700/50">
-        {!collapsed && (
-          <span className="text-lg font-bold tracking-tight text-red-500 flex items-center gap-2">
+          <span className="perf-sidebar-label text-lg font-bold tracking-tight text-red-500 flex items-center gap-2">
             <ShieldAlert size={20} className="text-red-500" />
             Super Admin
           </span>
-        )}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => {
+            setCollapsed(!collapsed);
+          }}
           className="p-2 rounded-md text-white/60 hover:text-white hover:bg-slate-700 transition"
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -143,20 +145,18 @@ const SuperAdminSidebar = () => {
                 }`}
               >
                 <SectionIcon size={16} className="shrink-0" />
-                {!collapsed && (
                   <>
-                    <span className="flex-1 text-left">{section.title}</span>
+                    <span className="perf-sidebar-label flex-1 text-left">{section.title}</span>
                     <ChevronDown
                       size={14}
-                      className={`shrink-0 transition-transform duration-200 ${
+                      className={`perf-sidebar-label shrink-0 transition-transform duration-200 ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
                   </>
-                )}
               </button>
 
-              {!collapsed && (
+              <div className="perf-sidebar-panel">
                 <div
                   className={`overflow-hidden transition-all duration-300 ease-in-out ${
                     isOpen ? "max-h-[500px] opacity-100 mt-1" : "max-h-0 opacity-0"
@@ -200,7 +200,7 @@ const SuperAdminSidebar = () => {
                     )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
@@ -215,14 +215,12 @@ const SuperAdminSidebar = () => {
           hover:text-red-400 transition"
         >
           <LogOut size={18} />
-          {!collapsed && <span>Exit to Portal</span>}
+          <span className="perf-sidebar-label">Exit to Portal</span>
         </Link>
-        {!collapsed && (
-          <div className="px-3 text-[10px] text-slate-500">
+          <div className="perf-sidebar-label px-3 text-[10px] text-slate-500">
             <p className="font-bold text-red-600/80 uppercase">Super Admin</p>
             <p>Master Console v3.0</p>
           </div>
-        )}
       </div>
     </aside>
   );

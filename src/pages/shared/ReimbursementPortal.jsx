@@ -7,9 +7,7 @@ import {
   X,
   Upload,
   Trash2,
-  MapPin,
   Calendar,
-  FileText,
   CreditCard,
   Banknote,
   Image,
@@ -18,7 +16,6 @@ import {
   AlertCircle,
   Send,
   ChevronDown,
-  Eye,
   StickyNote,
 } from "lucide-react";
 
@@ -51,51 +48,47 @@ const ACCENT_MAP = {
 const INITIAL_CLAIMS = [
   {
     id: "RMB-001",
-    tourName: "Angul Mining Colony Site Visit",
-    destination: "Angul, Odisha",
+    claimTitle: "Angul Mining Colony Site Visit",
     dateRange: "2026-03-10 → 2026-03-12",
     totalAmount: 4500,
     status: "Approved",
     submittedOn: "2026-03-13",
-    tourNote: "Visited 3 mining colonies for candidate mobilization. Met village heads.",
+    claimNote: "Visited 3 mining colonies for candidate mobilization. Met village heads.",
     bills: [
-      { desc: "Bus fare (Bhubaneswar → Angul)", amount: 450, mode: "Cash" },
-      { desc: "Hotel stay (2 nights)", amount: 2400, mode: "Online" },
-      { desc: "Food & refreshments", amount: 650, mode: "Cash" },
-      { desc: "Auto fare (local travel)", amount: 300, mode: "Cash" },
-      { desc: "Printing & stationery", amount: 700, mode: "Online" },
+      { date: "2026-03-10", desc: "Bus fare (Bhubaneswar → Angul)", amount: 450, mode: "Cash" },
+      { date: "2026-03-10", desc: "Hotel stay (2 nights)", amount: 2400, mode: "Online" },
+      { date: "2026-03-11", desc: "Food & refreshments", amount: 650, mode: "Cash" },
+      { date: "2026-03-11", desc: "Auto fare (local travel)", amount: 300, mode: "Cash" },
+      { date: "2026-03-12", desc: "Printing & stationery", amount: 700, mode: "Online" },
     ],
   },
   {
     id: "RMB-002",
-    tourName: "Jharsuguda Skill Workshop",
-    destination: "Jharsuguda, Odisha",
-    dateRange: "2026-02-20 → 2026-02-22",
+    claimTitle: "Training Workshop Supplies",
+    dateRange: "2026-02-20",
     totalAmount: 5200,
     status: "Paid",
     submittedOn: "2026-02-23",
-    tourNote: "Conducted 2-day awareness camp about skilling programs.",
+    claimNote: "Training charts, marker sets, handouts, venue support, and refreshments for participants.",
     bills: [
-      { desc: "Train travel", amount: 1200, mode: "Online" },
-      { desc: "Accommodation", amount: 2000, mode: "Online" },
-      { desc: "Food", amount: 800, mode: "Cash" },
-      { desc: "Venue rental", amount: 1200, mode: "Online" },
+      { date: "2026-02-20", desc: "Printed training material", amount: 1200, mode: "Online" },
+      { date: "2026-02-20", desc: "Workshop kit supplies", amount: 2000, mode: "Online" },
+      { date: "2026-02-20", desc: "Refreshments", amount: 800, mode: "Cash" },
+      { date: "2026-02-20", desc: "Venue rental", amount: 1200, mode: "Online" },
     ],
   },
   {
     id: "RMB-003",
-    tourName: "Talcher Community Survey",
-    destination: "Talcher, Odisha",
-    dateRange: "2026-01-15 → 2026-01-16",
+    claimTitle: "Monthly Mobile and Internet Expense",
+    dateRange: "2026-01-31",
     totalAmount: 2800,
     status: "Pending",
     submittedOn: "2026-01-17",
-    tourNote: "Surveyed 5 villages for training center feasibility.",
+    claimNote: "Mobile data and calling expenses used for candidate follow-up and field coordination.",
     bills: [
-      { desc: "Bus fare", amount: 350, mode: "Cash" },
-      { desc: "Meals", amount: 450, mode: "Cash" },
-      { desc: "Accommodation", amount: 1500, mode: "Online" },
-      { desc: "Printing surveys", amount: 500, mode: "Cash" },
+      { date: "2026-01-31", desc: "Monthly data recharge", amount: 999, mode: "Online" },
+      { date: "2026-01-31", desc: "Calling pack", amount: 599, mode: "Online" },
+      { date: "2026-01-31", desc: "Work SIM top-up", amount: 1202, mode: "Online" },
     ],
   },
 ];
@@ -114,20 +107,17 @@ export default function ReimbursementPortal() {
   const [expandedClaim, setExpandedClaim] = useState(null);
 
   // Form state
-  const [tourName, setTourName] = useState("");
-  const [destination, setDestination] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [tourNote, setTourNote] = useState("");
-  const [bills, setBills] = useState([{ desc: "", amount: "", mode: "Cash", billFile: null, paymentScreenshot: null }]);
+  const [claimTitle, setClaimTitle] = useState("");
+  const [claimNote, setClaimNote] = useState("");
+  const [bills, setBills] = useState([{ date: "", desc: "", amount: "", mode: "Cash", billFile: null, paymentScreenshot: null }]);
 
   const resetForm = () => {
-    setTourName(""); setDestination(""); setStartDate(""); setEndDate(""); setTourNote("");
-    setBills([{ desc: "", amount: "", mode: "Cash", billFile: null, paymentScreenshot: null }]);
+    setClaimTitle(""); setClaimNote("");
+    setBills([{ date: "", desc: "", amount: "", mode: "Cash", billFile: null, paymentScreenshot: null }]);
     setShowForm(false);
   };
 
-  const addBill = () => setBills([...bills, { desc: "", amount: "", mode: "Cash", billFile: null, paymentScreenshot: null }]);
+  const addBill = () => setBills([...bills, { date: "", desc: "", amount: "", mode: "Cash", billFile: null, paymentScreenshot: null }]);
   const removeBill = (idx) => setBills(bills.filter((_, i) => i !== idx));
   const updateBill = (idx, field, value) => {
     const updated = [...bills];
@@ -137,16 +127,19 @@ export default function ReimbursementPortal() {
 
   const handleSubmit = () => {
     const totalAmount = bills.reduce((sum, b) => sum + (parseFloat(b.amount) || 0), 0);
+    const billDates = bills.map((bill) => bill.date).filter(Boolean).sort();
+    const dateRange = billDates.length > 1 && billDates[0] !== billDates[billDates.length - 1]
+      ? `${billDates[0]} → ${billDates[billDates.length - 1]}`
+      : billDates[0] || "—";
     const newClaim = {
       id: `RMB-${String(claims.length + 4).padStart(3, "0")}`,
-      tourName,
-      destination,
-      dateRange: `${startDate} → ${endDate}`,
+      claimTitle,
+      dateRange,
       totalAmount,
       status: "Pending",
       submittedOn: new Date().toISOString().split("T")[0],
-      tourNote,
-      bills: bills.map(b => ({ desc: b.desc, amount: parseFloat(b.amount) || 0, mode: b.mode })),
+      claimNote,
+      bills: bills.map(b => ({ date: b.date, desc: b.desc, amount: parseFloat(b.amount) || 0, mode: b.mode })),
     };
     setClaims([newClaim, ...claims]);
     resetForm();
@@ -172,7 +165,7 @@ export default function ReimbursementPortal() {
           <div>
             <p className={`text-xs tracking-widest ${a.text} uppercase mb-2 font-medium`}>HR Entitlement</p>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">Reimbursement Portal</h1>
-            <p className="text-sm text-white/50 mt-1">Apply for tour reimbursements, upload bills & track claim status</p>
+            <p className="text-sm text-white/50 mt-1">Apply for any reimbursable expense, upload bills & track claim status</p>
           </div>
           <button
             onClick={() => setShowForm(true)}
@@ -206,12 +199,12 @@ export default function ReimbursementPortal() {
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-xl ${a.bg} flex items-center justify-center border ${a.border}`}>
-                      <MapPin size={20} className={a.text} />
+                      <Receipt size={20} className={a.text} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-white">{claim.tourName}</p>
+                      <p className="text-sm font-semibold text-white">{claim.claimTitle}</p>
                       <div className="flex items-center gap-3 mt-1 text-xs text-white/50">
-                        <span className="flex items-center gap-1"><MapPin size={11} />{claim.destination}</span>
+                        <span className="flex items-center gap-1"><Receipt size={11} />{claim.bills.length} bill{claim.bills.length === 1 ? "" : "s"}</span>
                         <span className="flex items-center gap-1"><Calendar size={11} />{claim.dateRange}</span>
                       </div>
                     </div>
@@ -228,13 +221,13 @@ export default function ReimbursementPortal() {
                 {/* Expanded details */}
                 {isExpanded && (
                   <div className="border-t border-white/[0.05] px-6 py-5 space-y-4">
-                    {/* Tour Note */}
-                    {claim.tourNote && (
+                    {/* Claim Note */}
+                    {claim.claimNote && (
                       <div className="bg-white/[0.02] rounded-xl p-4 border border-white/[0.04]">
                         <p className="text-xs text-white/50 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                          <StickyNote size={12} /> Tour Note
+                          <StickyNote size={12} /> Claim Note
                         </p>
-                        <p className="text-sm text-white/80">{claim.tourNote}</p>
+                        <p className="text-sm text-white/80">{claim.claimNote}</p>
                       </div>
                     )}
 
@@ -248,6 +241,7 @@ export default function ReimbursementPortal() {
                           <thead className="text-white/50 bg-white/[0.02]">
                             <tr>
                               <th className="px-4 py-3 text-left font-medium">#</th>
+                              <th className="px-4 py-3 text-left font-medium">Date</th>
                               <th className="px-4 py-3 text-left font-medium">Description</th>
                               <th className="px-4 py-3 text-left font-medium">Amount</th>
                               <th className="px-4 py-3 text-left font-medium">Payment Mode</th>
@@ -257,6 +251,7 @@ export default function ReimbursementPortal() {
                             {claim.bills.map((bill, i) => (
                               <tr key={i} className="hover:bg-white/[0.02]">
                                 <td className="px-4 py-3 text-white/40">{i + 1}</td>
+                                <td className="px-4 py-3 text-white/60">{bill.date || "—"}</td>
                                 <td className="px-4 py-3 text-white/80">{bill.desc}</td>
                                 <td className={`px-4 py-3 font-semibold ${a.text}`}>₹{bill.amount.toLocaleString("en-IN")}</td>
                                 <td className="px-4 py-3">
@@ -290,46 +285,17 @@ export default function ReimbursementPortal() {
       <SlidePanel open={showForm} onClose={() => setShowForm(false)} title="New Reimbursement Claim" width="lg">
           <div className="space-y-6">
 
-            {/* Tour Info */}
+            {/* Claim Info */}
             <div className="space-y-4">
-              <p className="text-xs text-white/50 uppercase tracking-wide font-medium">Tour Details</p>
+              <p className="text-xs text-white/50 uppercase tracking-wide font-medium">Claim Details</p>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs text-white/60 mb-1.5 block">Tour Name *</label>
+                  <label className="text-xs text-white/60 mb-1.5 block">Claim Title *</label>
                   <input
-                    value={tourName}
-                    onChange={(e) => setTourName(e.target.value)}
-                    placeholder="e.g. Angul Mining Visit"
+                    value={claimTitle}
+                    onChange={(e) => setClaimTitle(e.target.value)}
+                    placeholder="e.g. Medical bill, mobile recharge, field travel"
                     className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white/90 focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/50 focus:outline-none placeholder:text-slate-600 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-white/60 mb-1.5 block">Destination *</label>
-                  <input
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="e.g. Angul, Odisha"
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white/90 focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/50 focus:outline-none placeholder:text-slate-600 transition-all"
-                  />
-                </div>
-              </div>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-white/60 mb-1.5 block">Start Date *</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white/90 focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/50 focus:outline-none transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs text-white/60 mb-1.5 block">End Date *</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white/90 focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/50 focus:outline-none transition-all"
                   />
                 </div>
               </div>
@@ -339,7 +305,7 @@ export default function ReimbursementPortal() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-white/50 uppercase tracking-wide font-medium">Bill Items</p>
-                <button onClick={addBill} className={`text-xs ${a.text} hover:underline flex items-center gap-1`}>
+                <button type="button" onClick={addBill} className={`text-xs ${a.text} hover:underline flex items-center gap-1`}>
                   <Plus size={14} /> Add Bill
                 </button>
               </div>
@@ -350,25 +316,40 @@ export default function ReimbursementPortal() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-white/40 font-medium">Bill #{idx + 1}</span>
                       {bills.length > 1 && (
-                        <button onClick={() => removeBill(idx)} className="text-red-400/70 hover:text-red-400 transition-colors">
+                        <button type="button" onClick={() => removeBill(idx)} className="text-red-400/70 hover:text-red-400 transition-colors">
                           <Trash2 size={14} />
                         </button>
                       )}
                     </div>
-                    <div className="grid sm:grid-cols-2 gap-3">
-                      <input
-                        value={bill.desc}
-                        onChange={(e) => updateBill(idx, "desc", e.target.value)}
-                        placeholder="Bill description"
-                        className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-yellow-400/50 focus:outline-none placeholder:text-slate-600 transition-all"
-                      />
-                      <input
-                        type="number"
-                        value={bill.amount}
-                        onChange={(e) => updateBill(idx, "amount", e.target.value)}
-                        placeholder="Amount (₹)"
-                        className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-yellow-400/50 focus:outline-none placeholder:text-slate-600 transition-all"
-                      />
+                    <div className="grid sm:grid-cols-3 gap-3">
+                      <label className="space-y-1.5">
+                        <span className="text-xs text-white/50">Bill Date *</span>
+                        <input
+                          type="date"
+                          value={bill.date}
+                          onChange={(e) => updateBill(idx, "date", e.target.value)}
+                          className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-yellow-400/50 focus:outline-none transition-all"
+                        />
+                      </label>
+                      <label className="space-y-1.5">
+                        <span className="text-xs text-white/50">Description *</span>
+                        <input
+                          value={bill.desc}
+                          onChange={(e) => updateBill(idx, "desc", e.target.value)}
+                          placeholder="Bill description"
+                          className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-yellow-400/50 focus:outline-none placeholder:text-slate-600 transition-all"
+                        />
+                      </label>
+                      <label className="space-y-1.5">
+                        <span className="text-xs text-white/50">Amount *</span>
+                        <input
+                          type="number"
+                          value={bill.amount}
+                          onChange={(e) => updateBill(idx, "amount", e.target.value)}
+                          placeholder="Amount (₹)"
+                          className="w-full bg-white/[0.03] border border-white/10 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-yellow-400/50 focus:outline-none placeholder:text-slate-600 transition-all"
+                        />
+                      </label>
                     </div>
 
                     {/* Payment Mode */}
@@ -376,12 +357,14 @@ export default function ReimbursementPortal() {
                       <label className="text-xs text-white/50">Payment Mode</label>
                       <div className="flex gap-3">
                         <button
+                          type="button"
                           onClick={() => updateBill(idx, "mode", "Cash")}
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium border transition-all ${bill.mode === "Cash" ? "bg-amber-500/15 border-amber-500/30 text-amber-400" : "bg-white/[0.02] border-white/10 text-white/50 hover:text-white/80"}`}
                         >
                           <Banknote size={14} /> Cash
                         </button>
                         <button
+                          type="button"
                           onClick={() => updateBill(idx, "mode", "Online")}
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-medium border transition-all ${bill.mode === "Online" ? "bg-sky-500/15 border-sky-500/30 text-sky-400" : "bg-white/[0.02] border-white/10 text-white/50 hover:text-white/80"}`}
                         >
@@ -419,14 +402,14 @@ export default function ReimbursementPortal() {
               </div>
             </div>
 
-            {/* Tour Note */}
+            {/* Claim Note */}
             <div>
-              <label className="text-xs text-white/60 mb-1.5 block">Tour Note *</label>
+              <label className="text-xs text-white/60 mb-1.5 block">Claim Note *</label>
               <textarea
-                value={tourNote}
-                onChange={(e) => setTourNote(e.target.value)}
+                value={claimNote}
+                onChange={(e) => setClaimNote(e.target.value)}
                 rows={3}
-                placeholder="Describe the purpose and activities during this tour..."
+                placeholder="Describe why this expense should be reimbursed..."
                 className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white/90 focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/50 focus:outline-none resize-none placeholder:text-slate-600 transition-all"
               />
             </div>
@@ -434,7 +417,7 @@ export default function ReimbursementPortal() {
             {/* Submit */}
             <button
               onClick={handleSubmit}
-              disabled={!tourName || !destination || !startDate || !endDate || bills.some(b => !b.desc || !b.amount)}
+              disabled={!claimTitle || bills.some(b => !b.date || !b.desc || !b.amount)}
               className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${a.btn} shadow-lg ${a.shadow}`}
             >
               <Send size={16} /> Submit Reimbursement Claim

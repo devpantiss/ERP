@@ -8,6 +8,7 @@ import {
   List,
   Briefcase,
   UserCheck,
+  CalendarDays,
   IndianRupee,
   Receipt,
   MessageSquareWarning,
@@ -18,17 +19,18 @@ import {
 const DOCK_ITEMS = [
   { label: "Dashboard", shortLabel: "Home", path: "/placement-officer/dashboard", icon: LayoutDashboard },
   { label: "Companies", path: "/placement-officer/company-database", icon: Building2 },
-  { label: "Drives", path: "/placement-officer/placement-drives", icon: CalendarCheck },
+  { label: "Openings", path: "/placement-officer/job-openings", icon: LayoutDashboard },
 ];
 
 const DRAWER_ITEMS = [
-  { label: "Placement-List", path: "/placement-officer/placements-list", icon: List },
-  { label: "Openings Dashboard", path: "/placement-officer/job-openings", icon: LayoutDashboard },
+  { label: "Placement Drives", path: "/placement-officer/placement-drives", icon: CalendarCheck },
+  { label: "Placement List", path: "/placement-officer/placements-list", icon: List },
   {
     label: "HR Entitlement",
     icon: Briefcase,
     children: [
       { label: "Attendance", path: "/placement-officer/hr/attendance", icon: UserCheck },
+      { label: "Leave Management", path: "/placement-officer/hr/leave", icon: CalendarDays },
       { label: "Salary", path: "/placement-officer/hr/salary", icon: IndianRupee },
       { label: "Reimbursement", path: "/placement-officer/hr/reimbursement", icon: Receipt },
     ],
@@ -46,35 +48,14 @@ const ACCENT = {
 
 const PlacementLayout = () => {
   return (
-    <div className="flex min-h-screen bg-[#030712] text-white relative">
+    <div className="flex min-h-screen bg-[#07111f] text-white relative">
 
       {/* ================= SIDEBAR ================= */}
       <PlacementSidebar />
 
       {/* ================= MAIN WRAPPER ================= */}
       <div className="relative flex-1 min-w-0 flex flex-col overflow-hidden">
-
-        {/* Background Ambient Mesh */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-900/15 blur-[120px]" />
-          <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-900/15 blur-[120px]" />
-          <div className="absolute top-[40%] left-[60%] w-[30%] h-[30%] rounded-full bg-sky-900/15 blur-[100px]" />
-        </div>
-
-
-        {/* ===== CYAN GRID BACKGROUND ===== */}
-        <div
-          className="absolute inset-0 pointer-events-none
-          bg-[linear-gradient(to_right,rgba(34,211,238,0.65)_1px,transparent_1px),
-              linear-gradient(to_bottom,rgba(34,211,238,0.65)_1px,transparent_1px)]
-          bg-size-[32px_32px]"
-        />
-
-        {/* ===== Ambient Cyan Glow ===== */}
-        <div
-          className="absolute -top-48 -right-48 w-[600px] h-[600px]
-          bg-cyan-400/10 blur-[200px] rounded-full pointer-events-none"
-        />
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.08),transparent_34%),linear-gradient(180deg,#07111f_0%,#09131f_46%,#060b13_100%)]" />
 
         {/* ================= CONTENT AREA ================= */}
         <main className="relative z-10 flex-1 min-w-0 pb-20 md:pb-0">

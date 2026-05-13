@@ -4,8 +4,8 @@ import {
   LayoutDashboard,
   UserCheck,
   MapPin,
-  ClipboardCheck,
   BarChart3,
+  CalendarDays,
   UserRoundPen,
   ChevronLeft,
   ChevronRight,
@@ -24,12 +24,12 @@ const TOP_MENU = [
   { label: "Dashboard", path: "/trainer/dashboard", icon: LayoutDashboard },
   { label: "Teaching Management", path: "/trainer/teaching-management", icon: GraduationCap },
   { label: "Exposure Visits", path: "/trainer/exposure-visits", icon: MapPin },
-  { label: "Internal Assessment", path: "/trainer/internal-assessment", icon: ClipboardCheck },
   { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
 ];
 
 /* HR Entitlement — NO Attendance for Trainer */
 const HR_MENU = [
+  { label: "Leave Management", path: "/trainer/hr/leave", icon: CalendarDays },
   { label: "Salary", path: "/trainer/hr/salary", icon: IndianRupee },
   { label: "Reimbursement", path: "/trainer/hr/reimbursement", icon: Receipt },
 ];
@@ -42,14 +42,17 @@ const BOTTOM_MENU = [
 /* ================= COMPONENT ================= */
 
 const TrainerSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [hrOpen, setHrOpen] = useState(false);
   const location = useLocation();
 
   const isHrActive = location.pathname.startsWith("/trainer/hr");
-  if (isHrActive && !hrOpen) setHrOpen(true);
+  const isHrOpen = hrOpen || isHrActive;
 
-  const NavItem = ({ label, path, icon: Icon }) => (
+  const NavItem = ({ label, path, icon }) => {
+    const IconComponent = icon;
+
+    return (
     <NavLink
       to={path}
       className={({ isActive }) =>
@@ -67,32 +70,36 @@ const TrainerSidebar = () => {
           {isActive && (
             <span className="absolute left-0 top-0 h-full w-1 bg-emerald-400 rounded-r-md" />
           )}
-          <Icon size={18} className="shrink-0" />
-          {!collapsed && <span>{label}</span>}
+          <IconComponent size={18} className="shrink-0" />
+          <span className="perf-sidebar-label">{label}</span>
         </>
       )}
     </NavLink>
-  );
+    );
+  };
 
   return (
     <aside
-      className={`h-screen sticky top-0 hidden md:flex flex-col
-      bg-[#111827] text-white/80
-      border-r border-slate-700
-      transition-all duration-300
-      ${collapsed ? "w-20" : "w-64"}`}
+      className="sticky top-0 z-50 hidden h-screen w-20 shrink-0 md:block"
     >
+      <div
+        data-collapsed={collapsed}
+        className="perf-sidebar h-screen flex flex-col
+        bg-[#111827] text-white/80
+        border-r border-slate-700 shadow-2xl shadow-black/20
+        [--sidebar-expanded-width:16rem]"
+      >
       {/* ================= HEADER ================= */}
       <div className="flex items-center justify-between px-4 h-16 border-b border-slate-700">
 
-        {!collapsed && (
-          <span className="text-lg font-semibold tracking-tight text-emerald-400">
+          <span className="perf-sidebar-label text-lg font-semibold tracking-tight text-emerald-400">
             Teach Hub
           </span>
-        )}
 
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => {
+            setCollapsed(!collapsed);
+          }}
           className="p-2 rounded-md text-white/60 hover:text-white hover:bg-slate-700 transition"
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -109,7 +116,7 @@ const TrainerSidebar = () => {
         {/* HR Entitlement — collapsible group (NO Attendance) */}
         <div className="pt-2">
           <button
-            onClick={() => !collapsed && setHrOpen(!hrOpen)}
+            onClick={() => setHrOpen(!hrOpen)}
             className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
               ${isHrActive
                 ? "bg-emerald-500/10 text-emerald-400"
@@ -120,19 +127,17 @@ const TrainerSidebar = () => {
               <span className="absolute left-0 top-0 h-full w-1 bg-emerald-400 rounded-r-md" />
             )}
             <Briefcase size={18} className="shrink-0" />
-            {!collapsed && (
               <>
-                <span className="flex-1 text-left">HR Entitlement</span>
+                <span className="perf-sidebar-label flex-1 text-left">HR Entitlement</span>
                 <ChevronDown
                   size={14}
-                  className={`transition-transform duration-200 ${hrOpen ? "rotate-180" : ""}`}
+                  className={`perf-sidebar-label transition-transform duration-200 ${isHrOpen ? "rotate-180" : ""}`}
                 />
               </>
-            )}
           </button>
 
-          {hrOpen && !collapsed && (
-            <div className="ml-4 pl-3 border-l border-emerald-500/15 mt-1 space-y-0.5">
+          {isHrOpen && (
+            <div className="perf-sidebar-panel ml-4 pl-3 border-l border-emerald-500/15 mt-1 space-y-0.5">
               {HR_MENU.map((item) => (
                 <NavLink
                   key={item.path}
@@ -174,17 +179,16 @@ const TrainerSidebar = () => {
           hover:text-red-300 transition"
         >
           <LogOut size={18} />
-          {!collapsed && <span>Log Out</span>}
+          <span className="perf-sidebar-label">Log Out</span>
         </Link>
 
         {/* BRAND */}
-        {!collapsed && (
-          <div className="px-3 text-xs text-slate-500">
+          <div className="perf-sidebar-label px-3 text-xs text-slate-500">
             <p className="font-medium text-white/60">Kovon Platform</p>
             <p>Trainer Console v1.0</p>
           </div>
-        )}
 
+      </div>
       </div>
     </aside>
   );

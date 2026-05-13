@@ -7,6 +7,7 @@ import {
   UserCog,
   FolderKanban,
   Activity,
+  CalendarDays,
   Camera,
   Building2,
   Megaphone,
@@ -42,6 +43,7 @@ const DRAWER_ITEMS = [
     ],
   },
   { label: "Grievance Tracker", path: "/super-admin/grievance-tracker", icon: MessageSquareWarning },
+  { label: "Leave Monitor", path: "/super-admin/leave-monitor", icon: CalendarDays },
   {
     label: "Finances",
     icon: Wallet,

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Activity,
   ArrowLeft,
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 import { PROJECT_REPORTS } from "./adminPortalData";
 import SlidePanel from "../../components/common/SlidePanel";
+import TableExportActions from "../../components/common/TableExportActions";
 
 const STAFF_LANES = [
   "Lead Trainer",
@@ -324,6 +326,82 @@ const getPlacementStatusMeta = (status) => {
   };
 };
 
+const PROJECT_GALLERY_ASSETS = [
+  {
+    src: "/images/client-gallery/1.png",
+    title: "Enrollment documentation",
+    category: "Enrollment",
+    stage: "Mobilization",
+  },
+  {
+    src: "/images/client-gallery/2.png",
+    title: "Classroom delivery",
+    category: "Training",
+    stage: "Learning",
+  },
+  {
+    src: "/images/client-gallery/3.png",
+    title: "Practical lab session",
+    category: "Training",
+    stage: "Assessment",
+  },
+  {
+    src: "/images/client-gallery/4.png",
+    title: "Candidate counselling",
+    category: "Enrollment",
+    stage: "Verification",
+  },
+  {
+    src: "/images/client-gallery/5.png",
+    title: "Employer connect",
+    category: "Placements",
+    stage: "Interview",
+  },
+  {
+    src: "/images/client-gallery/6.png",
+    title: "Certification review",
+    category: "Compliance",
+    stage: "Evidence",
+  },
+  {
+    src: "/images/client-gallery/7.png",
+    title: "Placement readiness",
+    category: "Placements",
+    stage: "Readiness",
+  },
+  {
+    src: "/images/client-gallery/9.png",
+    title: "Center operations",
+    category: "Compliance",
+    stage: "Monitoring",
+  },
+];
+
+const buildProjectGalleryItems = (project, center, selectedBatch) =>
+  PROJECT_GALLERY_ASSETS.map((asset, index) => ({
+    ...asset,
+    id: `${center.id}-${selectedBatch?.id || "all"}-gallery-${index}`,
+    projectName: project.name,
+    centerName: center.name,
+    batchLabel: selectedBatch?.label || "All batches",
+    location: center.location,
+    capturedBy:
+      index % 3 === 0
+        ? center.manager
+        : index % 3 === 1
+          ? "Training team"
+          : "MIS and placement team",
+    capturedOn: formatDate(
+      new Date(
+        2026,
+        (index + center.name.length) % 12,
+        4 + ((index * 3 + center.location.length) % 21)
+      )
+        .toISOString()
+        .slice(0, 10)
+    ),
+  }));
+
 const buildCandidateName = (center, batchIndex, learnerIndex) => {
   const seed =
     center.name.length * 5 +
@@ -510,6 +588,21 @@ const buildCenterSnapshot = (center, projectName) => {
           learnerIndex + 1
         ).padStart(3, "0")}`,
         jobRole: center.jobRoles[(learnerIndex + index) % center.jobRoles.length],
+        phone: `+91 98${String(70000000 + placementSeed + learnerIndex).slice(-8)}`,
+        mobilizer: ["Priya Mishra", "Vikram Singh", "Rajan Nayak", "Sunita Patra"][
+          (placementSeed + learnerIndex) % 4
+        ],
+        enrollmentDate: new Date(
+          Date.now() - (22 + learnerIndex + index * 3) * 24 * 60 * 60 * 1000
+        )
+          .toISOString()
+          .split("T")[0],
+        enrollmentStatus:
+          learnerIndex % 7 === 0
+            ? "Pending"
+            : learnerIndex % 11 === 0
+            ? "Rejected"
+            : "Approved",
         attendanceRate: attendanceScore,
         trainingProgress,
         trainingStatus,
@@ -1053,6 +1146,7 @@ export default function AdminProjectManagement() {
 
   const handleCenterSelect = (centerId) => {
     setSelectedCenterId(centerId);
+    setSelectedBatchId("");
   };
 
   const handleBack = () => {
@@ -2097,7 +2191,6 @@ function EnterpriseProjectDashboard({
   onResetCenter,
 }) {
   const mode = !selectedProject ? "Portfolio" : !activeCenter ? "Project" : "Center";
-  const visibleCandidates = selectedBatch?.candidateRecords.slice(0, 8) || [];
 
   return (
     <div className="enterprise-project-page space-y-6 text-white">
@@ -2132,17 +2225,10 @@ function EnterpriseProjectDashboard({
           </div>
         </div>
 
-        <EnterpriseFlowBar
-          selectedProject={selectedProject}
-          activeCenter={activeCenter}
-          onResetProject={onResetProject}
-          onResetCenter={onResetCenter}
-        />
       </section>
 
       {!selectedProject ? (
         <EnterprisePortfolioView
-          portfolio={portfolio}
           projects={projectSnapshots}
           onProjectSelect={onProjectSelect}
         />
@@ -2159,7 +2245,6 @@ function EnterpriseProjectDashboard({
           center={activeCenter}
           centers={rankedCenters}
           selectedBatch={selectedBatch}
-          visibleCandidates={visibleCandidates}
           onBack={onBack}
           onCenterSelect={onCenterSelect}
           onBatchSelect={onBatchSelect}
@@ -2169,86 +2254,9 @@ function EnterpriseProjectDashboard({
   );
 }
 
-function EnterpriseFlowBar({
-  selectedProject,
-  activeCenter,
-  onResetProject,
-  onResetCenter,
-}) {
-  const steps = [
-    { label: "Portfolio", value: "All projects", active: !selectedProject },
-    { label: "Project", value: selectedProject?.name || "Choose project", active: selectedProject && !activeCenter },
-    { label: "Center", value: activeCenter?.location || "Choose center", active: activeCenter },
-  ];
-
-  return (
-    <div className="mt-6 grid gap-3 border-t border-white/10 pt-5 md:grid-cols-3">
-      {steps.map((step, index) => (
-        <div
-          key={step.label}
-          className={`rounded-[18px] border px-4 py-3 ${
-            step.active
-              ? "border-violet-400/30 bg-violet-500/10"
-              : "border-white/10 bg-black/20"
-          }`}
-        >
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              {step.label}
-            </p>
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-xs text-slate-300">
-              {index + 1}
-            </span>
-          </div>
-          <p className="mt-2 truncate text-sm font-medium text-white">{step.value}</p>
-        </div>
-      ))}
-      {selectedProject ? (
-        <div className="md:col-span-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onResetProject}
-            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/[0.08]"
-          >
-            Reset project
-          </button>
-          {activeCenter ? (
-            <button
-              type="button"
-              onClick={onResetCenter}
-              className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/[0.08]"
-            >
-              Change center
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function EnterprisePortfolioView({ portfolio, projects, onProjectSelect }) {
+function EnterprisePortfolioView({ projects, onProjectSelect }) {
   return (
     <div className="space-y-6">
-      <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
-        <div className="flex flex-col gap-2 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
-              Portfolio Snapshot
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">
-              Operating overview
-            </h2>
-          </div>
-        </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <EnterpriseMetric label="Projects" value={portfolio.projects} caption={`${portfolio.activeProjects} active`} />
-          <EnterpriseMetric label="Centers" value={portfolio.centerCount} caption="Under delivery governance" />
-          <EnterpriseMetric label="Learners" value={formatNumber(portfolio.learners)} caption={`${formatNumber(portfolio.mappedCandidates)} mapped`} />
-          <EnterpriseMetric label="At Risk" value={portfolio.atRiskProjects} caption="Needs review" tone="amber" />
-        </div>
-      </section>
-
       <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
         <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
           <div>
@@ -2352,6 +2360,11 @@ function EnterpriseCenterView({
   onCenterSelect,
   onBatchSelect,
 }) {
+  const galleryItems = useMemo(
+    () => buildProjectGalleryItems(project, center, selectedBatch),
+    [project, center, selectedBatch]
+  );
+
   return (
     <div className="space-y-6">
       <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
@@ -2381,27 +2394,6 @@ function EnterpriseCenterView({
         </div>
       </section>
 
-      <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
-        <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h3 className="text-xl font-semibold text-white">Batch dashboard</h3>
-            <p className="mt-1 text-sm text-slate-400">
-              Select a batch to review candidate readiness and placement status.
-            </p>
-          </div>
-          {selectedBatch ? (
-            <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-200">
-              {selectedBatch.label}
-            </span>
-          ) : null}
-        </div>
-        <EnterpriseBatchTable
-          batches={center.batchSnapshots}
-          selectedBatch={selectedBatch}
-          onBatchSelect={onBatchSelect}
-        />
-      </section>
-
       {selectedBatch ? (
         <CandidateRosterTabs
           selectedBatch={selectedBatch}
@@ -2413,6 +2405,229 @@ function EnterpriseCenterView({
           onBatchSelect={onBatchSelect}
         />
       ) : null}
+
+      <ProjectGallerySection
+        items={galleryItems}
+        project={project}
+        center={center}
+        selectedBatch={selectedBatch}
+      />
+
+    </div>
+  );
+}
+
+function ProjectGallerySection({ items, project, center, selectedBatch }) {
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [previewItem, setPreviewItem] = useState(null);
+
+  const categories = useMemo(
+    () => ["All", ...Array.from(new Set(items.map((item) => item.category)))],
+    [items]
+  );
+  const visibleItems = useMemo(
+    () =>
+      activeCategory === "All"
+        ? items
+        : items.filter((item) => item.category === activeCategory),
+    [activeCategory, items]
+  );
+
+  return (
+    <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+      <div className="flex flex-col gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-200">
+            <Sparkles size={14} />
+            Project gallery
+          </div>
+          <h3 className="mt-3 text-xl font-semibold text-white">Report Evidence Gallery</h3>
+          <p className="mt-1 text-sm text-slate-400">
+            {project.name} • {center.name}
+            {selectedBatch ? ` • ${selectedBatch.label}` : ""}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setActiveCategory(category)}
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                activeCategory === category
+                  ? "border-violet-400/40 bg-violet-500 text-white"
+                  : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08]"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-5 grid auto-rows-[190px] gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {visibleItems.map((item, index) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setPreviewItem(item)}
+            className={`group relative overflow-hidden rounded-[20px] border border-white/10 bg-slate-950 text-left shadow-[0_18px_50px_rgba(2,6,23,0.28)] transition hover:-translate-y-0.5 hover:border-violet-400/40 ${
+              index === 0 ? "md:col-span-2 md:row-span-2" : ""
+            }`}
+          >
+            <img
+              src={item.src}
+              alt={`${item.title} for ${item.centerName}`}
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+            <span className="absolute left-3 top-3 rounded-full border border-black/20 bg-black/45 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+              {item.category}
+            </span>
+            <span className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-black/40 text-white opacity-0 backdrop-blur transition group-hover:opacity-100">
+              <Eye size={15} />
+            </span>
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-4">
+              <p className="text-sm font-semibold text-white">{item.title}</p>
+              <p className="mt-1 text-xs text-slate-300">
+                {item.stage} • {item.capturedOn}
+              </p>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      <GalleryImageModal item={previewItem} onClose={() => setPreviewItem(null)} />
+    </section>
+  );
+}
+
+function GalleryImageModal({ item, onClose }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!item) {
+      setVisible(false);
+      return undefined;
+    }
+
+    const frame = requestAnimationFrame(() => setVisible(true));
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [item, onClose]);
+
+  if (!item || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex justify-end" onClick={onClose}>
+      <div
+        className={`absolute inset-0 bg-black/45 backdrop-blur-[2px] transition-opacity duration-200 ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <div
+        className={`relative flex h-full w-full max-w-[560px] flex-col border-l border-violet-500/25 bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
+          visible ? "translate-x-0" : "translate-x-full"
+        }`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-[#0b1220] px-5 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-400/25 bg-violet-500/10 text-violet-200">
+              <Eye size={18} />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-white">{item.title}</p>
+              <p className="mt-0.5 truncate text-xs text-slate-400">
+                {item.projectName} • {item.centerName}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={item.src}
+              download
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-xs font-semibold text-slate-200 transition hover:border-violet-400/35 hover:bg-violet-500/15 hover:text-white"
+            >
+              <Download size={14} />
+              Download
+            </a>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-white/10 bg-white/[0.05] text-slate-400 transition hover:bg-white/[0.1] hover:text-white"
+              aria-label="Close gallery preview"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 border-b border-white/10 bg-[#0b1220] px-5 py-2.5">
+          <span className="rounded-md border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+            {item.category}
+          </span>
+          <span className="text-xs text-slate-600">•</span>
+          <span className="text-xs font-medium text-slate-400">{item.stage}</span>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#070b16]">
+          <div className="p-5">
+            <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-white/10 bg-black/25 p-3">
+              <img
+                src={item.src}
+                alt={`${item.title} preview`}
+                className="max-h-[52vh] w-auto max-w-full rounded-lg object-contain shadow-[0_18px_45px_rgba(0,0,0,0.35)]"
+              />
+            </div>
+          </div>
+
+          <div className="border-t border-white/10 bg-[#080d1a] p-5">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <GalleryMetaRow label="Captured on" value={item.capturedOn} />
+              <GalleryMetaRow label="Batch" value={item.batchLabel} />
+              <GalleryMetaRow label="Location" value={item.location} />
+              <GalleryMetaRow label="Captured by" value={item.capturedBy} />
+              <GalleryMetaRow label="Project" value={item.projectName} />
+              <GalleryMetaRow label="Center" value={item.centerName} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-white/10 bg-[#0b1220] px-5 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.1] hover:text-white"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function GalleryMetaRow({ label, value }) {
+  return (
+    <div className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 break-words text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }
@@ -2463,7 +2678,6 @@ function EnterpriseCenterTable({ centers, onCenterSelect }) {
     </div>
   );
 }
-
 function EnterpriseBatchTable({ batches, selectedBatch, onBatchSelect }) {
   return (
     <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
@@ -2528,13 +2742,23 @@ function CandidateRosterTabs({
     });
     return initial;
   });
+  const [enrollmentState, setEnrollmentState] = useState(() => {
+    const initial = {};
+    selectedBatch.candidateRecords.forEach((c) => {
+      initial[c.id] = c.enrollmentStatus;
+    });
+    return initial;
+  });
 
   useEffect(() => {
     const initial = {};
+    const enrollmentInitial = {};
     selectedBatch.candidateRecords.forEach((c) => {
       initial[c.id] = c.isVerified;
+      enrollmentInitial[c.id] = c.enrollmentStatus;
     });
     setVerificationState(initial);
+    setEnrollmentState(enrollmentInitial);
   }, [selectedBatch]);
 
   const toggleVerification = (candidateId) => {
@@ -2543,11 +2767,21 @@ function CandidateRosterTabs({
       [candidateId]: !prev[candidateId],
     }));
   };
+  const updateEnrollmentStatus = (candidateId, status) => {
+    setEnrollmentState((prev) => ({
+      ...prev,
+      [candidateId]: status,
+    }));
+  };
 
   const tabs = [
+    { key: "enrollment", label: "Enrollment", icon: FileText },
     { key: "training", label: "Training Detail", icon: BookOpen },
     { key: "placements", label: "Placements", icon: Briefcase },
   ];
+  const pendingEnrollments = selectedBatch.candidateRecords.filter(
+    (candidate) => enrollmentState[candidate.id] === "Pending"
+  ).length;
 
   return (
     <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
@@ -2561,8 +2795,8 @@ function CandidateRosterTabs({
         </div>
         <div className="grid grid-cols-3 gap-2 text-right">
           <EnterpriseMiniStat
-            label="Certified"
-            value={selectedBatch.certifiedCandidates}
+            label="Pending"
+            value={pendingEnrollments}
           />
           <EnterpriseMiniStat
             label="Placed"
@@ -2662,7 +2896,16 @@ function CandidateRosterTabs({
       </div>
 
       {/* Tab content */}
-      {activeTab === "training" ? (
+      {activeTab === "enrollment" ? (
+        <EnrollmentApprovalTable
+          candidates={selectedBatch.candidateRecords}
+          project={project}
+          center={center}
+          batchLabel={selectedBatch.label}
+          enrollmentState={enrollmentState}
+          onUpdateEnrollmentStatus={updateEnrollmentStatus}
+        />
+      ) : activeTab === "training" ? (
         <TrainingDetailTable
           candidates={selectedBatch.candidateRecords}
           project={project}
@@ -2681,9 +2924,134 @@ function CandidateRosterTabs({
   );
 }
 
+function TableToolbar({
+  children,
+  onClear,
+  onSearchChange,
+  resultCount,
+  searchPlaceholder,
+  searchTerm,
+}) {
+  return (
+    <div className="border-b border-white/10 bg-[#0b1220]/80 p-3">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <div className="relative min-w-[220px] flex-1 max-w-sm">
+            <Search
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+            />
+            <input
+              value={searchTerm}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-9 pr-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/40 focus:ring-1 focus:ring-violet-500/30"
+            />
+          </div>
+          {children}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            {formatNumber(resultCount)} rows
+          </span>
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-slate-400 transition hover:border-violet-400/30 hover:text-slate-200"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterSelect({ label, onChange, options, value }) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-10 min-w-[150px] rounded-xl border border-white/10 bg-[#111827] px-3 text-sm font-medium text-slate-200 outline-none transition hover:border-violet-400/30 focus:border-violet-400/40 focus:ring-1 focus:ring-violet-500/30"
+    >
+      <option value="">{label}</option>
+      {options.map((option) => {
+        const optionValue = typeof option === "string" ? option : option.value;
+        const optionLabel = typeof option === "string" ? option : option.label;
+        return (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        );
+      })}
+    </select>
+  );
+}
+
 function TrainingDetailTable({ candidates, project, batchLabel }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+
+  const roleOptions = useMemo(
+    () => Array.from(new Set(candidates.map((candidate) => candidate.jobRole))).sort(),
+    [candidates]
+  );
+  const filteredCandidates = useMemo(() => {
+    return candidates.filter((candidate) => {
+      const query = searchTerm.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        candidate.name.toLowerCase().includes(query) ||
+        candidate.candidateCode.toLowerCase().includes(query) ||
+        candidate.jobRole.toLowerCase().includes(query);
+      const matchesStatus = !statusFilter || candidate.trainingStatus === statusFilter;
+      const matchesRole = !roleFilter || candidate.jobRole === roleFilter;
+
+      return matchesSearch && matchesStatus && matchesRole;
+    });
+  }, [candidates, searchTerm, statusFilter, roleFilter]);
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Name" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "jobRole", header: "Job Role" },
+      { key: "trainingStatus", header: "Training Status" },
+      { key: "completedTrainingDays", header: "Completed Days", type: "number" },
+      { key: "totalTrainingDays", header: "Total Days", type: "number" },
+      { key: "trainingProgress", header: "Progress %", type: "number" },
+      { key: "totalTheoryHours", header: "Theory Hours", type: "number" },
+      { key: "totalPracticalHours", header: "Practical Hours", type: "number" },
+      { key: "attendanceRate", header: "Attendance %", type: "number" },
+    ],
+    [project.name, batchLabel]
+  );
+
   return (
     <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <TableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search training candidates..."
+        resultCount={filteredCandidates.length}
+        onClear={() => {
+          setSearchTerm("");
+          setStatusFilter("");
+          setRoleFilter("");
+        }}
+      >
+        <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={TRAINING_STATUS_ORDER} />
+        <FilterSelect label="Job Role" value={roleFilter} onChange={setRoleFilter} options={roleOptions} />
+        <TableExportActions
+          moduleName="Training Detail"
+          fileName="training_detail"
+          columns={exportColumns}
+          rows={filteredCandidates}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </TableToolbar>
       <div className="max-h-[560px] overflow-auto">
         <table className="w-full min-w-[960px] text-left text-sm">
           <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
@@ -2698,7 +3066,7 @@ function TrainingDetailTable({ candidates, project, batchLabel }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
-            {candidates.map((candidate) => (
+            {filteredCandidates.map((candidate) => (
               <tr
                 key={candidate.id}
                 className="align-top transition hover:bg-violet-500/[0.06]"
@@ -2758,6 +3126,168 @@ function TrainingDetailTable({ candidates, project, batchLabel }) {
         </table>
       </div>
     </div>
+  );
+}
+
+function EnrollmentApprovalTable({
+  candidates,
+  project,
+  center,
+  batchLabel,
+  enrollmentState,
+  onUpdateEnrollmentStatus,
+}) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+
+  const roleOptions = useMemo(
+    () => Array.from(new Set(candidates.map((candidate) => candidate.jobRole))).sort(),
+    [candidates]
+  );
+  const filteredCandidates = useMemo(() => {
+    return candidates.filter((candidate) => {
+      const status = enrollmentState[candidate.id] || candidate.enrollmentStatus;
+      const query = searchTerm.trim().toLowerCase();
+      const matchesSearch =
+        !query ||
+        candidate.name.toLowerCase().includes(query) ||
+        candidate.candidateCode.toLowerCase().includes(query) ||
+        candidate.phone.toLowerCase().includes(query) ||
+        candidate.mobilizer.toLowerCase().includes(query);
+      const matchesStatus = !statusFilter || status === statusFilter;
+      const matchesRole = !roleFilter || candidate.jobRole === roleFilter;
+
+      return matchesSearch && matchesStatus && matchesRole;
+    });
+  }, [candidates, enrollmentState, searchTerm, statusFilter, roleFilter]);
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Candidate" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "phone", header: "Phone" },
+      { key: "mobilizer", header: "Mobilizer" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "centerName", header: "Center", exportValue: () => center.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "jobRole", header: "Job Role" },
+      { key: "enrollmentDate", header: "Enrolled On", type: "date" },
+      {
+        key: "enrollmentStatus",
+        header: "Status",
+        exportValue: (candidate) => enrollmentState[candidate.id] || candidate.enrollmentStatus,
+      },
+    ],
+    [project.name, center.name, batchLabel, enrollmentState]
+  );
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <TableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search enrollment candidates..."
+        resultCount={filteredCandidates.length}
+        onClear={() => {
+          setSearchTerm("");
+          setStatusFilter("");
+          setRoleFilter("");
+        }}
+      >
+        <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={["Pending", "Approved", "Rejected"]} />
+        <FilterSelect label="Job Role" value={roleFilter} onChange={setRoleFilter} options={roleOptions} />
+        <TableExportActions
+          moduleName="Enrollment"
+          fileName="enrollment_report"
+          columns={exportColumns}
+          rows={filteredCandidates}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </TableToolbar>
+      <div className="max-h-[560px] overflow-auto">
+        <table className="w-full min-w-[1080px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Candidate</th>
+              <th className="px-4 py-3 font-medium">Mobilizer</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Center</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">Job Role</th>
+              <th className="px-4 py-3 font-medium">Enrolled On</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 text-right font-medium">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredCandidates.map((candidate) => {
+              const status = enrollmentState[candidate.id] || candidate.enrollmentStatus;
+              return (
+                <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-white">{candidate.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {candidate.candidateCode} • {candidate.phone}
+                    </p>
+                  </td>
+                  <td className="px-4 py-4 text-slate-300">{candidate.mobilizer}</td>
+                  <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                  <td className="px-4 py-4 text-slate-300">{center.name}</td>
+                  <td className="px-4 py-4">
+                    <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                      {batchLabel}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
+                  <td className="px-4 py-4 text-slate-300">{candidate.enrollmentDate}</td>
+                  <td className="px-4 py-4">
+                    <EnrollmentStatusBadge status={status} />
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    {status === "Pending" ? (
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onUpdateEnrollmentStatus(candidate.id, "Approved")}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+                        >
+                          <CheckCircle size={13} />
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onUpdateEnrollmentStatus(candidate.id, "Rejected")}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
+                        >
+                          <XCircle size={13} />
+                          Reject
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-500">Reviewed</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function EnrollmentStatusBadge({ status }) {
+  const styles = {
+    Approved: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
+    Rejected: "border-red-500/20 bg-red-500/10 text-red-300",
+    Pending: "border-amber-500/20 bg-amber-500/10 text-amber-300",
+  };
+
+  return (
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${styles[status] || styles.Pending}`}>
+      {status || "Pending"}
+    </span>
   );
 }
 
@@ -3063,6 +3593,10 @@ function PlacementsTable({
   onToggleVerification,
 }) {
   const [previewDoc, setPreviewDoc] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("");
+  const [verificationFilter, setVerificationFilter] = useState("");
+  const [docFilter, setDocFilter] = useState("");
 
   const openDocPreview = (candidate, type, label) => {
     setPreviewDoc({
@@ -3079,6 +3613,60 @@ function PlacementsTable({
 
   const placedCandidates = candidates.filter(
     (c) => c.placementStatus === "Placed"
+  );
+  const companyOptions = useMemo(
+    () => Array.from(new Set(placedCandidates.map((candidate) => candidate.company))).sort(),
+    [placedCandidates]
+  );
+  const filteredCandidates = useMemo(() => {
+    return placedCandidates.filter((candidate) => {
+      const query = searchTerm.trim().toLowerCase();
+      const isVerified = Boolean(verificationState[candidate.id]);
+      const hasAllDocs =
+        candidate.hasOfferLetter &&
+        candidate.hasM1 &&
+        candidate.hasM2 &&
+        candidate.hasM3 &&
+        candidate.hasBankStatement;
+      const matchesSearch =
+        !query ||
+        candidate.name.toLowerCase().includes(query) ||
+        candidate.candidateCode.toLowerCase().includes(query) ||
+        candidate.company.toLowerCase().includes(query) ||
+        candidate.designation.toLowerCase().includes(query);
+      const matchesCompany = !companyFilter || candidate.company === companyFilter;
+      const matchesVerification =
+        !verificationFilter ||
+        (verificationFilter === "Verified" ? isVerified : !isVerified);
+      const matchesDocs =
+        !docFilter ||
+        (docFilter === "complete" ? hasAllDocs : !hasAllDocs);
+
+      return matchesSearch && matchesCompany && matchesVerification && matchesDocs;
+    });
+  }, [placedCandidates, searchTerm, companyFilter, verificationFilter, docFilter, verificationState]);
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Student Name" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "company", header: "Company" },
+      { key: "designation", header: "Designation" },
+      { key: "salary", header: "Salary", type: "currency" },
+      { key: "joiningDate", header: "Joining Date", type: "date" },
+      { key: "offer", header: "Offer Letter", exportValue: (candidate) => candidate.hasOfferLetter ? "Available" : "Missing" },
+      { key: "m1", header: "M1", exportValue: (candidate) => candidate.hasM1 ? "Available" : "Missing" },
+      { key: "m2", header: "M2", exportValue: (candidate) => candidate.hasM2 ? "Available" : "Missing" },
+      { key: "m3", header: "M3", exportValue: (candidate) => candidate.hasM3 ? "Available" : "Missing" },
+      { key: "bank", header: "Bank Statement", exportValue: (candidate) => candidate.hasBankStatement ? "Available" : "Missing" },
+      {
+        key: "verification",
+        header: "Status",
+        exportValue: (candidate) => verificationState[candidate.id] ? "Verified" : "Pending",
+      },
+    ],
+    [project.name, batchLabel, verificationState]
   );
 
   if (!placedCandidates.length) {
@@ -3099,6 +3687,37 @@ function PlacementsTable({
   return (
     <>
       <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+        <TableToolbar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search placements..."
+          resultCount={filteredCandidates.length}
+          onClear={() => {
+            setSearchTerm("");
+            setCompanyFilter("");
+            setVerificationFilter("");
+            setDocFilter("");
+          }}
+        >
+          <FilterSelect label="Company" value={companyFilter} onChange={setCompanyFilter} options={companyOptions} />
+          <FilterSelect label="Verification" value={verificationFilter} onChange={setVerificationFilter} options={["Verified", "Pending"]} />
+          <FilterSelect
+            label="Docs"
+            value={docFilter}
+            onChange={setDocFilter}
+            options={[
+              { label: "Complete Docs", value: "complete" },
+              { label: "Missing Docs", value: "missing" },
+            ]}
+          />
+          <TableExportActions
+            moduleName="Placements"
+            fileName="placements_report"
+            columns={exportColumns}
+            rows={filteredCandidates}
+            company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+          />
+        </TableToolbar>
         <div className="max-h-[560px] overflow-auto">
           <table className="w-full min-w-[1280px] text-left text-sm">
             <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
@@ -3119,7 +3738,7 @@ function PlacementsTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {placedCandidates.map((candidate) => (
+              {filteredCandidates.map((candidate) => (
                 <tr
                   key={candidate.id}
                   className="align-top transition hover:bg-violet-500/[0.06]"
@@ -3245,9 +3864,9 @@ function EnterpriseMetric({ label, value, caption, tone = "violet" }) {
 
 function EnterpriseMiniStat({ label, value }) {
   return (
-    <div className="rounded-[14px] border border-white/10 bg-black/25 px-3 py-2">
+    <div className="min-w-0 rounded-[14px] border border-white/10 bg-black/25 px-3 py-2">
       <p className="text-[10px] uppercase tracking-[0.14em] text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-white">{value}</p>
+      <p className="mt-1 break-words text-sm font-semibold text-white">{value}</p>
     </div>
   );
 }

@@ -5,8 +5,8 @@ import {
   LayoutDashboard,
   GraduationCap,
   MapPin,
-  ClipboardCheck,
   BarChart3,
+  CalendarDays,
   Briefcase,
   IndianRupee,
   Receipt,
@@ -22,12 +22,12 @@ const DOCK_ITEMS = [
 ];
 
 const DRAWER_ITEMS = [
-  { label: "Internal Assessment", path: "/trainer/internal-assessment", icon: ClipboardCheck },
   { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
   {
     label: "HR Entitlement",
     icon: Briefcase,
     children: [
+      { label: "Leave Management", path: "/trainer/hr/leave", icon: CalendarDays },
       { label: "Salary", path: "/trainer/hr/salary", icon: IndianRupee },
       { label: "Reimbursement", path: "/trainer/hr/reimbursement", icon: Receipt },
     ],

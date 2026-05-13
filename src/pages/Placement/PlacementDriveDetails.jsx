@@ -87,6 +87,12 @@ function generateDrives() {
     status: i % 3 === 0 ? "Completed" : "Approved",
     geo: null,
     eventImages: [],
+    placedStudents: i % 3 === 0
+      ? [
+          { name: "Amit Kumar", company: "Tata Steel", role: "Trainee Operator", salary: "18000", joiningDate: "2026-03-01" },
+          { name: "Priya Sahoo", company: "JSW", role: "Production Associate", salary: "16500", joiningDate: "2026-03-05" },
+        ]
+      : [],
   }));
 }
 
@@ -102,6 +108,8 @@ export default function PlacementDrivesPage({ role = "placement" }) {
 
   const [images, setImages] = useState([]);
   const [geo, setGeo] = useState(null);
+  const [placedStudents, setPlacedStudents] = useState([]);
+  const [studentCount, setStudentCount] = useState("");
 
   const [viewerDrive, setViewerDrive] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -155,7 +163,16 @@ export default function PlacementDrivesPage({ role = "placement" }) {
   /* ================= EXPORT ================= */
 
   function exportExcel() {
-    const ws = XLSX.utils.json_to_sheet(filtered);
+    const ws = XLSX.utils.json_to_sheet(filtered.map(d => ({
+      Event: d.eventName,
+      Type: d.type,
+      Companies: d.companies.join(", "),
+      Location: d.driveLocation,
+      Date: d.date,
+      Status: d.status,
+      Images: d.eventImages.length,
+      "Placed Students": (d.placedStudents || []).length,
+    })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Placement");
     XLSX.writeFile(wb, "placement.xlsx");
@@ -165,7 +182,7 @@ export default function PlacementDrivesPage({ role = "placement" }) {
     const doc = new jsPDF();
 
     autoTable(doc, {
-      head: [["Event", "Type", "Companies", "Location", "Date", "Status"]],
+      head: [["Event", "Type", "Companies", "Location", "Date", "Status", "Images", "Placed"]],
       body: filtered.map(d => [
         d.eventName,
         d.type,
@@ -173,6 +190,8 @@ export default function PlacementDrivesPage({ role = "placement" }) {
         d.driveLocation,
         d.date,
         d.status,
+        d.eventImages.length,
+        (d.placedStudents || []).length,
       ]),
     });
 
@@ -184,6 +203,9 @@ export default function PlacementDrivesPage({ role = "placement" }) {
   function openUploadModal(drive) {
     setActiveDrive(drive);
     setImages([]);
+    setGeo(null);
+    setPlacedStudents([]);
+    setStudentCount("");
 
     navigator.geolocation.getCurrentPosition(async pos => {
       const lat = pos.coords.latitude;
@@ -197,12 +219,26 @@ export default function PlacementDrivesPage({ role = "placement" }) {
         placeName,
         uploadedAt: new Date(),
       });
+    }, () => {
+      setGeo({
+        lat: 0,
+        lng: 0,
+        placeName: "Location permission unavailable",
+        uploadedAt: new Date(),
+      });
     });
   }
 
   async function handleSubmit() {
+    const completionGeo = geo || {
+      lat: 0,
+      lng: 0,
+      placeName: "Location permission unavailable",
+      uploadedAt: new Date(),
+    };
+
     const watermarked = await Promise.all(
-      images.map(f => addWatermark(f, geo))
+      images.map(f => addWatermark(f, completionGeo))
     );
 
     setDrives(prev =>
@@ -211,8 +247,9 @@ export default function PlacementDrivesPage({ role = "placement" }) {
           ? {
               ...d,
               status: "Completed",
-              geo,
+              geo: completionGeo,
               eventImages: watermarked,
+              placedStudents,
             }
           : d
       )
@@ -226,194 +263,131 @@ export default function PlacementDrivesPage({ role = "placement" }) {
   
   return (
     <>
-      <section className="p-8 bg-[#111827] rounded-2xl border border-cyan-500/30">
-
-        {/* HEADER */}
-        <div className="flex justify-between mb-6">
-
-          <h2 className="text-2xl font-semibold text-slate-100">
-            Placement Drives
-          </h2>
-
-          <div className="flex gap-2">
-
-            <button onClick={exportExcel} className="btn">
-              Excel
-            </button>
-
-            <button onClick={exportPDF} className="btn">
-              PDF
-            </button>
-
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-4 py-2 bg-emerald-500 text-black font-medium rounded-md hover:bg-emerald-400 transition"
-            >
-              + Add Drive
-            </button>
-
+      <section className="space-y-6 rounded-xl border border-white/10 bg-[#0b1220]/95 p-5 shadow-2xl shadow-black/20 md:p-6">
+        <div className="flex flex-col gap-4 border-b border-white/10 pb-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Placement Operations</p>
+            <h2 className="mt-1 text-2xl font-semibold tracking-tight text-slate-50">Placement Drives</h2>
+            <p className="mt-1 text-sm text-slate-400">Manage approved drives, completion evidence, and placed-student outcomes.</p>
           </div>
 
+          <div className="flex flex-wrap gap-2">
+            <button onClick={exportExcel} className="btn">Export Excel</button>
+            <button onClick={exportPDF} className="btn">Export PDF</button>
+            <button onClick={() => setShowForm(true)} className="btn-primary">Add Drive</button>
+          </div>
         </div>
 
-        {/* SUMMARY */}
-        <div className="grid grid-cols-3 gap-6 mb-6">
-
+        <div className="grid gap-4 sm:grid-cols-3">
           <SummaryCard label="Total Drives" value={summary.total} />
           <SummaryCard label="Approved" value={summary.approved} />
           <SummaryCard label="Completed" value={summary.completed} />
-
         </div>
 
-        {/* FILTERS */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Filters</p>
+            <button
+              type="button"
+              onClick={() => {
+                setCompanyFilter("");
+                setLocationFilter("");
+                setDateFilter("");
+                setStatusFilter("");
+                setPage(1);
+              }}
+              className="text-xs font-medium text-cyan-300 hover:text-cyan-200"
+            >
+              Clear
+            </button>
+          </div>
 
-          <input
-            placeholder="Filter by Company"
-            value={companyFilter}
-            onChange={e => setCompanyFilter(e.target.value)}
-            className="input"
-          />
-
-          <input
-            placeholder="Filter by Location"
-            value={locationFilter}
-            onChange={e => setLocationFilter(e.target.value)}
-            className="input"
-          />
-
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={e => setDateFilter(e.target.value)}
-            className="input"
-          />
-
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className="input"
-          >
-            <option value="">All Status</option>
-            <option>Approved</option>
-            <option>Completed</option>
-          </select>
-
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <input placeholder="Company" value={companyFilter} onChange={e => setCompanyFilter(e.target.value)} className="input" />
+            <input placeholder="Location" value={locationFilter} onChange={e => setLocationFilter(e.target.value)} className="input" />
+            <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="input" />
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input">
+              <option value="">All Status</option>
+              <option>Approved</option>
+              <option>Completed</option>
+            </select>
+          </div>
         </div>
 
-        {/* TABLE */}
-        <div className="overflow-x-auto">
-
-          <table className="w-full text-sm">
-
-            <thead className="bg-[#020617] text-white/60">
-              <tr>
-                <th className="p-4 text-left">Event</th>
-                <th className="p-4">Type</th>
-                <th className="p-4">Companies</th>
-                <th className="p-4">Location</th>
-                <th className="p-4">Date</th>
-                <th className="p-4">Live Location</th>
-                <th className="p-4">Images</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-            {paginated.map(d => (
-                <tr key={d.id} className="border-t border-slate-700">
-
-                  <td className="p-4 font-medium text-slate-100">
-                    {d.eventName}
-                  </td>
-
-                  <td className="p-4">
-                    <TypeBadge type={d.type} />
-                  </td>
-
-                  <td className="p-4">
-                    {d.companies.join(", ")}
-                  </td>
-
-                  <td className="p-4">
-                    {d.driveLocation}
-                  </td>
-
-                  <td className="p-4">{d.date}</td>
-
-                  {/* LOCATION */}
-                  <td className="p-4">
-
-                    {d.geo && (
-                      <div className="space-y-1">
-
-                        <div className="text-xs text-cyan-400">
-                          {d.geo.placeName}
-                        </div>
-
-                        <a
-                          href={`https://www.google.com/maps?q=${d.geo.lat},${d.geo.lng}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <iframe
-                            width="140"
-                            height="90"
-                            src={`https://maps.google.com/maps?q=${d.geo.lat},${d.geo.lng}&z=15&output=embed`}
-                            className="rounded border border-slate-600"
-                          />
-                        </a>
-
-                      </div>
-                    )}
-
-                  </td>
-
-                  {/* IMAGES */}
-                  <td className="p-4">
-
-                    {d.eventImages.length > 0 ? (
-                      <button
-                        onClick={() => setViewerDrive(d)}
-                        className="btn-view"
-                      >
-                        View ({d.eventImages.length})
-                      </button>
-                    ) : (
-                      <span className="text-xs text-slate-500">
-                        No Images
-                      </span>
-                    )}
-
-                  </td>
-
-                  <td className="p-4">
-                    <StatusBadge status={d.status} />
-                  </td>
-
-                  <td className="p-4">
-
-                    {role === "placement" &&
-                      d.status === "Approved" && (
-                        <button
-                          onClick={() => openUploadModal(d)}
-                          className="btn"
-                        >
-                          Upload
-                        </button>
-                      )}
-
-                  </td>
-
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-[#08111f]">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1180px] text-sm">
+              <thead className="bg-white/[0.04] text-xs uppercase tracking-wide text-slate-400">
+                <tr>
+                  <th className="p-4 text-left font-medium">Event</th>
+                  <th className="p-4 text-left font-medium">Type</th>
+                  <th className="p-4 text-left font-medium">Companies</th>
+                  <th className="p-4 text-left font-medium">Location</th>
+                  <th className="p-4 text-left font-medium">Date</th>
+                  <th className="p-4 text-left font-medium">Live Location</th>
+                  <th className="p-4 text-left font-medium">Images</th>
+                  <th className="p-4 text-left font-medium">Placed Students</th>
+                  <th className="p-4 text-left font-medium">Status</th>
+                  <th className="p-4 text-left font-medium">Action</th>
                 </tr>
-              ))}
-            </tbody>
+              </thead>
 
-          </table>
+              <tbody>
+                {paginated.map(d => (
+                  <tr key={d.id} className="border-t border-white/10 text-slate-300 transition-colors hover:bg-white/[0.025]">
+                    <td className="p-4 font-medium text-slate-100">{d.eventName}</td>
+                    <td className="p-4"><TypeBadge type={d.type} /></td>
+                    <td className="p-4">{d.companies.join(", ")}</td>
+                    <td className="p-4">{d.driveLocation}</td>
+                    <td className="p-4">{d.date}</td>
+                    <td className="p-4">
+                      {d.geo ? (
+                        <div className="space-y-2">
+                          <div className="max-w-[160px] text-xs font-medium text-cyan-300">{d.geo.placeName}</div>
+                          <a href={`https://www.google.com/maps?q=${d.geo.lat},${d.geo.lng}`} target="_blank" rel="noreferrer">
+                            <iframe
+                              width="140"
+                              height="86"
+                              src={`https://maps.google.com/maps?q=${d.geo.lat},${d.geo.lng}&z=15&output=embed`}
+                              className="rounded-md border border-white/10"
+                            />
+                          </a>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-500">Pending</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {d.eventImages.length > 0 ? (
+                        <button onClick={() => setViewerDrive(d)} className="btn-view">View ({d.eventImages.length})</button>
+                      ) : (
+                        <span className="text-xs text-slate-500">No Images</span>
+                      )}
+                    </td>
+                    <td className="p-4">
+                      {(d.placedStudents || []).length > 0 ? (
+                        <button onClick={() => setViewerDrive(d)} className="btn-view">View ({(d.placedStudents || []).length})</button>
+                      ) : (
+                        <span className="text-xs text-slate-500">No List</span>
+                      )}
+                    </td>
+                    <td className="p-4"><StatusBadge status={d.status} /></td>
+                    <td className="p-4">
+                      {role === "placement" && d.status === "Approved" ? (
+                        <button onClick={() => openUploadModal(d)} className="btn">Complete Drive</button>
+                      ) : (
+                        <span className="text-xs text-slate-500">No action</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="border-t border-white/10 px-4 py-3">
             <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+          </div>
         </div>
-
       </section>
 
       {/* GALLERY MODAL */}
@@ -426,13 +400,17 @@ export default function PlacementDrivesPage({ role = "placement" }) {
 
       {/* UPLOAD MODAL */}
       {activeDrive && (
-        <UploadModal
-          drive={activeDrive}
-          images={images}
-          setImages={setImages}
-          onSubmit={handleSubmit}
-          onClose={() => setActiveDrive(null)}
-        />
+	        <UploadModal
+	          drive={activeDrive}
+            images={images}
+            setImages={setImages}
+            placedStudents={placedStudents}
+            setPlacedStudents={setPlacedStudents}
+            studentCount={studentCount}
+            setStudentCount={setStudentCount}
+            onSubmit={handleSubmit}
+            onClose={() => setActiveDrive(null)}
+          />
       )}
 
       {/* SlidePanel Form */}
@@ -441,37 +419,59 @@ export default function PlacementDrivesPage({ role = "placement" }) {
       )}
 
       <style>{`
-        .btn {
-          background:#020617;
-          border:1px solid #475569;
-          padding:6px 10px;
-          border-radius:6px;
-          color:white;
-        }
+	        .btn {
+	          background:rgba(15,23,42,0.92);
+	          border:1px solid rgba(148,163,184,0.22);
+	          padding:9px 12px;
+	          border-radius:8px;
+	          color:#e2e8f0;
+            font-size:12px;
+            font-weight:600;
+            transition:all 160ms ease;
+	        }
+          .btn:hover {
+            border-color:rgba(103,232,249,0.45);
+            color:white;
+            background:rgba(30,41,59,0.95);
+          }
 
-        .btn-primary {
-          background:#22c55e;
-          padding:6px 12px;
-          border-radius:6px;
-          color:black;
-        }
+	        .btn-primary {
+	          background:#06b6d4;
+	          padding:9px 14px;
+	          border-radius:8px;
+	          color:#04111f;
+            font-size:12px;
+            font-weight:700;
+            transition:all 160ms ease;
+	        }
+          .btn-primary:hover {
+            background:#22d3ee;
+          }
 
-        .btn-view {
-          background:rgba(59,130,246,0.2);
-          color:#60a5fa;
-          padding:4px 10px;
-          border-radius:6px;
-          font-size:12px;
-        }
+	        .btn-view {
+	          background:rgba(14,165,233,0.12);
+	          border:1px solid rgba(56,189,248,0.24);
+	          color:#67e8f9;
+	          padding:6px 10px;
+	          border-radius:999px;
+	          font-size:12px;
+            font-weight:600;
+	        }
 
-        .input {
-          background:#020617;
-          border:1px solid #475569;
-          padding:8px;
-          border-radius:6px;
-          color:white;
-        }
-      `}</style>
+	        .input {
+	          background:rgba(2,6,23,0.72);
+	          border:1px solid rgba(148,163,184,0.22);
+	          padding:10px 12px;
+	          border-radius:8px;
+	          color:#f8fafc;
+            font-size:14px;
+            outline:none;
+	        }
+          .input:focus {
+            border-color:rgba(34,211,238,0.58);
+            box-shadow:0 0 0 1px rgba(34,211,238,0.22);
+          }
+	      `}</style>
     </>
   );
 }
@@ -482,16 +482,16 @@ export default function PlacementDrivesPage({ role = "placement" }) {
 
 function SummaryCard({ label, value }) {
   return (
-    <div className="bg-[#020617] border border-slate-700 rounded-xl p-5">
-      <p className="text-xs text-white/60">{label}</p>
-      <p className="text-2xl text-cyan-400 mt-2">{value}</p>
+    <div className="rounded-xl border border-white/10 bg-white/[0.035] p-4 shadow-lg shadow-black/10">
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-50">{value}</p>
     </div>
   );
 }
 
 function TypeBadge({ type }) {
   return (
-    <span className="px-3 py-1 rounded-full text-xs bg-purple-500/20 text-purple-400">
+    <span className="inline-flex rounded-full border border-violet-400/20 bg-violet-400/10 px-3 py-1 text-xs font-medium text-violet-200">
       {type}
     </span>
   );
@@ -499,12 +499,12 @@ function TypeBadge({ type }) {
 
 function StatusBadge({ status }) {
   const styles = {
-    Approved: "bg-blue-500/20 text-blue-400",
-    Completed: "bg-emerald-500/20 text-emerald-400",
+    Approved: "border-sky-400/25 bg-sky-400/10 text-sky-200",
+    Completed: "border-emerald-400/25 bg-emerald-400/10 text-emerald-200",
   };
 
   return (
-    <span className={`px-3 py-1 rounded-full text-xs ${styles[status]}`}>
+    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${styles[status]}`}>
       {status}
     </span>
   );
@@ -516,12 +516,12 @@ function GalleryModal({ drive, onClose }) {
   return (
     <SlidePanel open={true} onClose={onClose} title={drive.eventName} width="xl">
         {drive.geo && (
-          <div className="text-xs text-cyan-400 mb-4">
-            📍 {drive.geo.placeName} • {new Date(drive.geo.uploadedAt).toLocaleString()}
+          <div className="mb-4 rounded-lg border border-cyan-400/15 bg-cyan-400/5 px-3 py-2 text-xs font-medium text-cyan-200">
+            {drive.geo.placeName} • {new Date(drive.geo.uploadedAt).toLocaleString()}
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {drive.geo && (
             <iframe
               width="100%"
@@ -531,10 +531,49 @@ function GalleryModal({ drive, onClose }) {
             />
           )}
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {drive.eventImages.map((img, i) => (
-              <img key={i} src={img.url} className="rounded-lg object-cover w-full" alt="" />
-            ))}
+          <div>
+            <p className="text-xs uppercase tracking-wide text-white/50 mb-3">Event Images</p>
+            {drive.eventImages.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {drive.eventImages.map((img, i) => (
+                  <img key={i} src={img.url} className="rounded-lg object-cover w-full" alt="" />
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No images uploaded.</p>
+            )}
+          </div>
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-white/50 mb-3">Placed Students</p>
+            {(drive.placedStudents || []).length > 0 ? (
+              <div className="overflow-x-auto border border-slate-700 rounded-lg">
+                <table className="w-full text-sm">
+	                  <thead className="bg-[#020617] text-white/60">
+	                    <tr>
+	                      <th className="p-3 text-left">Student</th>
+	                      <th className="p-3 text-left">Placed Company</th>
+	                      <th className="p-3 text-left">Job Role</th>
+	                      <th className="p-3 text-left">Salary</th>
+	                      <th className="p-3 text-left">Joining Date</th>
+	                    </tr>
+	                  </thead>
+	                  <tbody>
+	                    {(drive.placedStudents || []).map((student, i) => (
+	                      <tr key={`${student.name}-${i}`} className="border-t border-slate-700">
+	                        <td className="p-3 text-slate-100">{student.name}</td>
+	                        <td className="p-3 text-slate-300">{student.company || "—"}</td>
+	                        <td className="p-3 text-slate-300">{student.role || "—"}</td>
+	                        <td className="p-3 text-slate-300">{student.salary ? `₹${Number(student.salary).toLocaleString("en-IN")}` : "—"}</td>
+	                        <td className="p-3 text-slate-300">{student.joiningDate || "—"}</td>
+	                      </tr>
+	                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">No placed-student list uploaded.</p>
+            )}
           </div>
         </div>
     </SlidePanel>
@@ -543,16 +582,54 @@ function GalleryModal({ drive, onClose }) {
 
 /* ================= UPLOAD MODAL ================= */
 
-function UploadModal({ drive, images, setImages, onSubmit, onClose }) {
+function UploadModal({
+  drive,
+  images,
+  setImages,
+  placedStudents,
+  setPlacedStudents,
+  studentCount,
+  setStudentCount,
+  onSubmit,
+  onClose,
+}) {
   function handleFiles(e) {
     setImages(Array.from(e.target.files).slice(0, 5));
   }
 
+	  function handleStudentCount(value) {
+	    const count = Math.max(0, Math.min(Number(value) || 0, 100));
+	    setStudentCount(value);
+	    setPlacedStudents(Array.from({ length: count }, (_, i) => (
+	      placedStudents[i] || { name: "", company: "", role: "", salary: "", joiningDate: "" }
+	    )));
+	  }
+
+  function updateStudent(index, field, value) {
+    setPlacedStudents(prev => prev.map((student, i) => (
+      i === index ? { ...student, [field]: value } : student
+    )));
+  }
+
+	  const studentRowsComplete = placedStudents.length > 0 && placedStudents.every(student =>
+	    student.name.trim() &&
+	    student.company.trim() &&
+	    student.role.trim() &&
+	    String(student.salary).trim() &&
+	    student.joiningDate.trim()
+	  );
+  const canSubmit = images.length > 0 && studentRowsComplete;
+
   return (
-    <SlidePanel open={true} onClose={onClose} title={`Upload Event Images — ${drive.eventName}`} width="lg">
-        <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-600 rounded-xl p-8 cursor-pointer hover:border-cyan-400 transition">
-          <div className="text-cyan-400 text-3xl mb-2">📤</div>
-          <div className="text-white/80 text-sm">Click or Drag & Drop Images</div>
+    <SlidePanel open={true} onClose={onClose} title={`Complete Drive — ${drive.eventName}`} width="lg">
+        <p className="text-sm text-white/60 mb-4">
+          Upload event images and add the placed-student outcomes before marking this drive completed.
+        </p>
+
+        <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-slate-600 bg-white/[0.02] p-8 transition hover:border-cyan-400/70 hover:bg-cyan-400/[0.03]">
+          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-cyan-300">Upload Evidence</div>
+          <div className="text-white/80 text-sm">Click to upload multiple drive images</div>
+          <div className="text-white/40 text-xs mt-1">Up to 5 images</div>
           <input type="file" multiple hidden accept="image/*" onChange={handleFiles} />
         </label>
 
@@ -562,9 +639,80 @@ function UploadModal({ drive, images, setImages, onSubmit, onClose }) {
           ))}
         </div>
 
+        <div className="mt-6 space-y-3">
+          <label className="block text-xs uppercase tracking-wide text-white/50">
+            Placed Students
+          </label>
+          <div>
+            <label className="text-xs text-white/60 mb-1.5 block">
+              How many students were placed? *
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              value={studentCount}
+              onChange={e => handleStudentCount(e.target.value)}
+              placeholder="Enter number of placed students"
+              className="input w-full"
+            />
+          </div>
+
+          {placedStudents.length > 0 && (
+            <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.02]">
+              <div className="bg-[#020617] px-3 py-2 text-xs text-emerald-400">
+                Add details for {placedStudents.length} placed student{placedStudents.length === 1 ? "" : "s"}
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {placedStudents.map((student, i) => (
+                  <div key={i} className="border-t border-white/10 p-3 space-y-3">
+                    <div className="text-xs font-medium text-white/50">Student #{i + 1}</div>
+	                    <div className="grid sm:grid-cols-2 gap-3">
+	                      <input
+	                        value={student.name}
+                        onChange={e => updateStudent(i, "name", e.target.value)}
+	                        placeholder="Student Name *"
+	                        className="input"
+	                      />
+	                      <input
+	                        value={student.company}
+	                        onChange={e => updateStudent(i, "company", e.target.value)}
+                        placeholder="Placed Company *"
+                        className="input"
+                      />
+                      <input
+                        value={student.role}
+                        onChange={e => updateStudent(i, "role", e.target.value)}
+	                        placeholder="Job Role *"
+	                        className="input"
+	                      />
+	                      <input
+	                        type="number"
+	                        min="0"
+	                        value={student.salary}
+	                        onChange={e => updateStudent(i, "salary", e.target.value)}
+	                        placeholder="Salary *"
+	                        className="input"
+	                      />
+	                      <input
+	                        type="date"
+	                        value={student.joiningDate}
+	                        onChange={e => updateStudent(i, "joiningDate", e.target.value)}
+	                        className="input"
+	                      />
+	                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="btn">Cancel</button>
-          <button onClick={onSubmit} className="btn-primary">Submit</button>
+          <button onClick={onSubmit} disabled={!canSubmit} className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed">
+            Mark Completed
+          </button>
         </div>
     </SlidePanel>
   );

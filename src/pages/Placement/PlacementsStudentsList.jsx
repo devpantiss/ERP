@@ -1,7 +1,7 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
-import React, { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import TableExportActions from "../../components/common/TableExportActions";
+import { useState, useMemo } from "react";
 import {
   FaPlus,
   FaUsers,
@@ -11,11 +11,7 @@ import {
   FaSearch,
   FaUpload,
   FaEye,
-  FaTimes,
   FaClock,
-  FaChevronLeft,
-  FaChevronRight,
-  FaMapMarkerAlt,
 } from "react-icons/fa";
 import PlacementStudentDetailsStepperPage from "./PlacementStudentDetailsStepper";
 
@@ -37,37 +33,56 @@ const generateData = () =>
     docs: {},
   }));
 
+const getStatus = (row) => {
+  if (row.docs.offer && row.docs.bank) return "Verified";
+  return "Pending";
+};
+
 /* ================= MAIN COMPONENT ================= */
 
 export default function CandidatePlacementSheetEnterpriseDark() {
-  const navigate = useNavigate();
-
   const [data, setData] = useState(generateData());
   const [previewFile, setPreviewFile] = useState(null);
   const [progress, setProgress] = useState({});
   const [page, setPage] = useState(1);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [projectFilter, setProjectFilter] = useState("");
+  const [batchFilter, setBatchFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   const pageSize = 20;
 
+  const filteredData = useMemo(() => {
+    return data.filter((row) => {
+      const matchesSearch =
+        !searchTerm ||
+        row.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        row.designation.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesProject = !projectFilter || row.project === projectFilter;
+      const matchesBatch = !batchFilter || row.batch === batchFilter;
+
+      return matchesSearch && matchesProject && matchesBatch;
+    });
+  }, [data, searchTerm, projectFilter, batchFilter]);
+
   /* ================= PAGINATION ================= */
 
-  const totalPages = Math.ceil(data.length / pageSize);
+  const totalPages = Math.ceil(filteredData.length / pageSize);
 
-  const paginatedData = data.slice(
+  const paginatedData = filteredData.slice(
     (page - 1) * pageSize,
     page * pageSize
   );
 
   /* ================= STATS ================= */
 
-  const total = data.length;
-  const placed = data.filter((d) => d.company).length;
+  const total = filteredData.length;
+  const placed = filteredData.filter((d) => d.company).length;
   const avgSalary =
-    data.reduce((acc, curr) => acc + (curr.salary || 0), 0) /
-    (data.length || 1);
+    filteredData.reduce((acc, curr) => acc + (curr.salary || 0), 0) /
+    (filteredData.length || 1);
 
   /* ================= FILE UPLOAD ================= */
 
@@ -102,12 +117,49 @@ export default function CandidatePlacementSheetEnterpriseDark() {
     }, 150);
   };
 
-  /* ================= STATUS ================= */
-
-  const getStatus = (row) => {
-    if (row.docs.offer && row.docs.bank) return "Verified";
-    return "Pending";
-  };
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Candidate" },
+      { key: "project", header: "Project" },
+      { key: "batch", header: "Batch" },
+      { key: "company", header: "Company" },
+      { key: "designation", header: "Designation" },
+      { key: "salary", header: "Salary", type: "currency" },
+      { key: "joiningDate", header: "Joining Date", type: "date" },
+      {
+        key: "status",
+        header: "Status",
+        exportValue: (row) => getStatus(row),
+      },
+      {
+        key: "offerDoc",
+        header: "Offer",
+        exportValue: (row) => (row.docs.offer ? "Uploaded" : "Pending"),
+      },
+      {
+        key: "m1Doc",
+        header: "M1",
+        exportValue: (row) => (row.docs.m1 ? "Uploaded" : "Pending"),
+      },
+      {
+        key: "m2Doc",
+        header: "M2",
+        exportValue: (row) => (row.docs.m2 ? "Uploaded" : "Pending"),
+      },
+      {
+        key: "m3Doc",
+        header: "M3",
+        exportValue: (row) => (row.docs.m3 ? "Uploaded" : "Pending"),
+      },
+      {
+        key: "bankDoc",
+        header: "Bank",
+        exportValue: (row) => (row.docs.bank ? "Uploaded" : "Pending"),
+      },
+    ],
+    []
+  );
+  const canExport = true;
 
   /* ================= RENDER ================= */
 
@@ -144,7 +196,15 @@ export default function CandidatePlacementSheetEnterpriseDark() {
               FILTER CANDIDATES
             </h3>
 
-            <button className="text-xs text-white/60 hover:text-cyan-400">
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setProjectFilter("");
+                setBatchFilter("");
+                setPage(1);
+              }}
+              className="text-xs text-white/60 hover:text-cyan-400"
+            >
               Clear Filters
             </button>
           </div>
@@ -163,6 +223,11 @@ export default function CandidatePlacementSheetEnterpriseDark() {
 
                 <input
                   placeholder="Candidate name..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPage(1);
+                  }}
                   className="w-full bg-[#020617] border border-gray-700 rounded-lg pl-9 pr-3 py-2 text-sm
                   focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none"
                 />
@@ -174,12 +239,18 @@ export default function CandidatePlacementSheetEnterpriseDark() {
             <div className="space-y-1">
               <label className="text-xs text-white/60">Project</label>
 
-              <select className="w-full bg-[#020617] border border-gray-700 rounded-lg p-2 text-sm">
-                <option>All Projects</option>
-                <option>Mining</option>
-                <option>Shipping</option>
-                <option>Construction</option>
-                <option>Power</option>
+              <select
+                value={projectFilter}
+                onChange={(e) => {
+                  setProjectFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full bg-[#020617] border border-gray-700 rounded-lg p-2 text-sm"
+              >
+                <option value="">All Projects</option>
+                {projects.map((project) => (
+                  <option key={project} value={project}>{project}</option>
+                ))}
               </select>
             </div>
 
@@ -188,11 +259,18 @@ export default function CandidatePlacementSheetEnterpriseDark() {
             <div className="space-y-1">
               <label className="text-xs text-white/60">Batch</label>
 
-              <select className="w-full bg-[#020617] border border-gray-700 rounded-lg p-2 text-sm">
-                <option>All Batches</option>
-                <option>B001</option>
-                <option>B002</option>
-                <option>B003</option>
+              <select
+                value={batchFilter}
+                onChange={(e) => {
+                  setBatchFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full bg-[#020617] border border-gray-700 rounded-lg p-2 text-sm"
+              >
+                <option value="">All Batches</option>
+                {Array.from(new Set(data.map((row) => row.batch))).map((batch) => (
+                  <option key={batch} value={batch}>{batch}</option>
+                ))}
               </select>
             </div>
 
@@ -205,9 +283,22 @@ export default function CandidatePlacementSheetEnterpriseDark() {
 
           <div className="w-full lg:w-auto">
 
-            <button
-              onClick={() => setShowForm(true)}
-              className="
+            <div className="flex flex-col gap-2">
+              <TableExportActions
+                moduleName="Placement List"
+                fileName="placement_list"
+                columns={exportColumns}
+                rows={filteredData}
+                canExport={canExport}
+                company={{
+                  name: "Pantiss ERP",
+                  logo: "/activity.png",
+                }}
+              />
+
+              <button
+                onClick={() => setShowForm(true)}
+                className="
               w-full lg:w-auto
               bg-cyan-500 hover:bg-cyan-400
               text-black
@@ -218,10 +309,11 @@ export default function CandidatePlacementSheetEnterpriseDark() {
               shadow-lg
               transition
               "
-            >
-              <FaPlus />
-              Enter Candidate Details
-            </button>
+              >
+                <FaPlus />
+                Enter Candidate Details
+              </button>
+            </div>
 
             <p className="text-xs text-gray-500 mt-2 lg:text-right">
               Add new placement record

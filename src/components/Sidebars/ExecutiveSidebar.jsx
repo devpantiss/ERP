@@ -110,7 +110,7 @@ const SECTIONS = [
 /* ================= COMPONENT ================= */
 
 const ExecutiveSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [openSections, setOpenSections] = useState(["intelligence"]);
 
   const toggleSection = (key) => {
@@ -121,22 +121,22 @@ const ExecutiveSidebar = () => {
 
   return (
     <aside
-      className={`h-screen sticky top-0 hidden md:flex flex-col
+      data-collapsed={collapsed}
+      className="perf-sidebar h-screen sticky top-0 hidden md:flex flex-col
       bg-[#0f172a] text-white/80
       border-r border-slate-700/50
-      transition-all duration-300 z-50
-      ${collapsed ? "w-20" : "w-64"}`}
+      z-50 [--sidebar-expanded-width:16rem]"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-16 border-b border-slate-700/50">
-        {!collapsed && (
-          <span className="text-lg font-bold tracking-tight text-amber-500 flex items-center gap-2">
+          <span className="perf-sidebar-label text-lg font-bold tracking-tight text-amber-500 flex items-center gap-2">
             <Gem size={20} className="text-amber-500" />
             Executive Console
           </span>
-        )}
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => {
+            setCollapsed(!collapsed);
+          }}
           className="p-2 rounded-md text-white/60 hover:text-white hover:bg-slate-700 transition"
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -169,55 +169,57 @@ const ExecutiveSidebar = () => {
                 }`}
               >
                 <SectionIcon size={16} className="shrink-0" />
-                {!collapsed && (
                   <>
-                    <span className="flex-1 text-left">{section.title}</span>
+                    <span className="perf-sidebar-label flex-1 text-left">{section.title}</span>
                     <ChevronDown
                       size={14}
-                      className={`shrink-0 transition-transform duration-200 ${
+                      className={`perf-sidebar-label shrink-0 transition-transform duration-200 ${
                         isOpen ? "rotate-180" : ""
                       }`}
                     />
                   </>
-                )}
               </button>
 
-              {!collapsed && (
+              <div className="perf-sidebar-panel">
                 <div
                   className={`overflow-hidden transition-all duration-300 ease-in-out ${
                     isOpen ? "max-h-[500px] opacity-100 mt-1" : "max-h-0 opacity-0"
                   }`}
                 >
                   <div className="ml-3 pl-3 border-l border-slate-700/50 space-y-1">
-                    {section.items.map(({ label, path, icon: Icon }) => (
-                      <NavLink
-                        key={path}
-                        to={path}
-                        end={path === "/executive"}
-                        className={({ isActive }) =>
-                          `relative w-full flex items-center gap-3 px-3 py-2 rounded-lg
-                          text-sm font-medium transition-all duration-200
-                          ${
-                            isActive
-                              ? "bg-amber-500/10 text-amber-500 font-bold"
-                              : "text-white/60 hover:bg-transparent hover:text-white"
-                          }`
-                        }
-                      >
-                        {({ isActive }) => (
-                          <>
-                            {isActive && (
-                              <span className="absolute left-0 top-0 h-full w-0.5 bg-amber-500 rounded-r-md" />
-                            )}
-                            <Icon size={14} className="shrink-0" />
-                            <span className="truncate">{label}</span>
-                          </>
-                        )}
-                      </NavLink>
-                    ))}
+                    {section.items.map(({ label, path, icon }) => {
+                      const IconComponent = icon;
+
+                      return (
+                        <NavLink
+                          key={path}
+                          to={path}
+                          end={path === "/executive"}
+                          className={({ isActive }) =>
+                            `relative w-full flex items-center gap-3 px-3 py-2 rounded-lg
+                            text-sm font-medium transition-all duration-200
+                            ${
+                              isActive
+                                ? "bg-amber-500/10 text-amber-500 font-bold"
+                                : "text-white/60 hover:bg-transparent hover:text-white"
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              {isActive && (
+                                <span className="absolute left-0 top-0 h-full w-0.5 bg-amber-500 rounded-r-md" />
+                              )}
+                              <IconComponent size={14} className="shrink-0" />
+                              <span className="truncate">{label}</span>
+                            </>
+                          )}
+                        </NavLink>
+                      );
+                    })}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           );
         })}
@@ -232,14 +234,12 @@ const ExecutiveSidebar = () => {
           hover:text-red-400 transition"
         >
           <LogOut size={18} />
-          {!collapsed && <span>Exit to Portal</span>}
+          <span className="perf-sidebar-label">Exit to Portal</span>
         </Link>
-        {!collapsed && (
-          <div className="px-3 text-[10px] text-slate-500">
+          <div className="perf-sidebar-label px-3 text-[10px] text-slate-500">
             <p className="font-bold text-amber-600/80 uppercase">Enterprise Standard</p>
             <p>Master Console v2.0-Alpha</p>
           </div>
-        )}
       </div>
     </aside>
   );

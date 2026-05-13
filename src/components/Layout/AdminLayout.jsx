@@ -2,22 +2,25 @@ import { Outlet } from "react-router-dom";
 import AdminSidebar from "../Sidebars/AdminSidebar";
 import MobileBottomDock from "../common/MobileBottomDock";
 import {
+  CalendarCheck,
+  CalendarDays,
   LayoutDashboard,
   Users,
   FileCheck,
+  HandCoins,
   Wallet,
   Receipt,
   ShoppingCart,
   Radio,
   Briefcase,
   MessageSquareWarning,
+  MapPinned,
 } from "lucide-react";
 
 /* ─── Dock config ─── */
 const DOCK_ITEMS = [
   { label: "Dashboard", shortLabel: "Home", path: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Employees", path: "/admin/employee-list", icon: Users },
-  { label: "Approvals", path: "/admin/approvals", icon: FileCheck },
 ];
 
 const DRAWER_ITEMS = [
@@ -25,9 +28,28 @@ const DRAWER_ITEMS = [
     label: "Financial Management",
     icon: Wallet,
     children: [
-      { label: "Salary Approvals", path: "/admin/financial-management/salary-approvals", icon: Wallet },
       { label: "Invoices Raised", path: "/admin/financial-management/invoices-raised", icon: Receipt },
       { label: "Procurement", path: "/admin/financial-management/procurement", icon: ShoppingCart },
+    ],
+  },
+  {
+    label: "HR Entitlement",
+    icon: CalendarCheck,
+    children: [
+      { label: "Attendance", path: "/admin/hr/attendance", icon: CalendarCheck },
+      { label: "Leave Management", path: "/admin/hr/leave", icon: CalendarDays },
+      { label: "Salary", path: "/admin/hr/salary", icon: Wallet },
+      { label: "Reimbursement", path: "/admin/hr/reimbursement", icon: HandCoins },
+    ],
+  },
+  {
+    label: "Approvals",
+    icon: FileCheck,
+    children: [
+      { label: "Tour Approvals", path: "/admin/approvals/tour", icon: MapPinned },
+      { label: "Leave Approvals", path: "/admin/approvals/leave", icon: CalendarDays },
+      { label: "Salary Approvals", path: "/admin/approvals/salary", icon: Wallet },
+      { label: "Operations Approvals", path: "/admin/approvals/operations", icon: FileCheck },
     ],
   },
   { label: "Live Feed", path: "/admin/live-feed", icon: Radio },

@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronDown,
   UserCheck,
+  CalendarDays,
   LogOut,
   IndianRupee,
   Briefcase,
@@ -20,12 +21,13 @@ import {
 
 const TOP_MENU = [
   { label: "Dashboard", path: "/mobilizer/dashboard", icon: LayoutDashboard },
-  { label: "Candidate Enrollment", path: "/mobilizer/student-enrollment", icon: Users },
   { label: "Community Engagement", path: "/mobilizer/community-engagement", icon: CalendarCheck2 },
+  { label: "Candidate Enrollment", path: "/mobilizer/student-enrollment", icon: Users },
 ];
 
 const HR_MENU = [
   { label: "Attendance", path: "/mobilizer/hr/attendance", icon: UserCheck },
+  { label: "Leave Management", path: "/mobilizer/hr/leave", icon: CalendarDays },
   { label: "Salary", path: "/mobilizer/hr/salary", icon: IndianRupee },
   { label: "Reimbursement", path: "/mobilizer/hr/reimbursement", icon: Receipt },
 ];
@@ -38,15 +40,17 @@ const BOTTOM_MENU = [
 /* ================= COMPONENT ================= */
 
 const MobilizerSidebar = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [hrOpen, setHrOpen] = useState(false);
   const location = useLocation();
 
-  // Auto-expand HR section if current route is inside it
   const isHrActive = location.pathname.startsWith("/mobilizer/hr");
-  if (isHrActive && !hrOpen) setHrOpen(true);
+  const isHrOpen = hrOpen || isHrActive;
 
-  const NavItem = ({ label, path, icon: Icon }) => (
+  const NavItem = ({ label, path, icon }) => {
+    const IconComponent = icon;
+
+    return (
     <NavLink
       to={path}
       className={({ isActive }) =>
@@ -59,32 +63,33 @@ const MobilizerSidebar = () => {
         }`
       }
     >
-      <Icon size={18} />
-      {!collapsed && <span>{label}</span>}
+      <IconComponent size={18} className="shrink-0" />
+      <span className="perf-sidebar-label">{label}</span>
     </NavLink>
-  );
+    );
+  };
 
   return (
     <aside
-      className={`h-screen sticky top-0 hidden md:flex flex-col
+      data-collapsed={collapsed}
+      className="perf-sidebar h-screen sticky top-0 hidden md:flex flex-col
       bg-[#020617] text-white/90
       border-r border-yellow-400/30
-      transition-all duration-300
-      ${collapsed ? "w-17" : "w-64"}`}
+      [--sidebar-expanded-width:16rem]"
     >
       {/* ================= HEADER ================= */}
       <div
         className="flex items-center justify-between px-4 h-16
         border-b border-yellow-400/20"
       >
-        {!collapsed && (
-          <span className="text-lg font-semibold tracking-wide text-yellow-400">
+          <span className="perf-sidebar-label text-lg font-semibold tracking-wide text-yellow-400">
             Mobilize Hub
           </span>
-        )}
 
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => {
+            setCollapsed(!collapsed);
+          }}
           className="p-2 rounded-lg
           text-white/80 hover:text-yellow-400
           hover:bg-white/5 transition"
@@ -103,7 +108,7 @@ const MobilizerSidebar = () => {
         {/* HR Entitlement — collapsible group */}
         <div className="pt-2">
           <button
-            onClick={() => !collapsed && setHrOpen(!hrOpen)}
+            onClick={() => setHrOpen(!hrOpen)}
             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
               ${isHrActive
                 ? "bg-yellow-400/10 text-yellow-400"
@@ -111,20 +116,18 @@ const MobilizerSidebar = () => {
               }`}
           >
             <Briefcase size={18} />
-            {!collapsed && (
               <>
-                <span className="flex-1 text-left">HR Entitlement</span>
+                <span className="perf-sidebar-label flex-1 text-left">HR Entitlement</span>
                 <ChevronDown
                   size={14}
-                  className={`transition-transform duration-200 ${hrOpen ? "rotate-180" : ""}`}
+                  className={`perf-sidebar-label transition-transform duration-200 ${isHrOpen ? "rotate-180" : ""}`}
                 />
               </>
-            )}
           </button>
 
           {/* Sub-items */}
-          {hrOpen && !collapsed && (
-            <div className="ml-4 pl-3 border-l border-yellow-400/15 mt-1 space-y-0.5">
+          {isHrOpen && (
+            <div className="perf-sidebar-panel ml-4 pl-3 border-l border-yellow-400/15 mt-1 space-y-0.5">
               {HR_MENU.map((item) => (
                 <NavLink
                   key={item.path}
@@ -166,15 +169,13 @@ const MobilizerSidebar = () => {
           hover:text-red-300 transition"
         >
           <LogOut size={18} />
-          {!collapsed && <span>Log Out</span>}
+          <span className="perf-sidebar-label">Log Out</span>
         </Link>
 
         {/* BRAND */}
-        {!collapsed && (
-          <div className="text-xs text-slate-500 px-3">
+          <div className="perf-sidebar-label text-xs text-slate-500 px-3">
             © Kovon Platform
           </div>
-        )}
 
       </div>
     </aside>

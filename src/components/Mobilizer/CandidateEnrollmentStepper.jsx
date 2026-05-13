@@ -4,7 +4,6 @@ import Step1 from "./Dashboard/EnrollmentSteps/Step1";
 import Step2 from "./Dashboard/EnrollmentSteps/Step2";
 import Step3 from "./Dashboard/EnrollmentSteps/Step3";
 import Step4 from "./Dashboard/EnrollmentSteps/Step4";
-import Step5 from "./Dashboard/EnrollmentSteps/Step5";
 
 const STEPS = [
   "Select Job Role & Project",
@@ -13,15 +12,14 @@ const STEPS = [
   "Live Photo & Location",
 ];
 
-export default function CandidateEnrollmentStepper({ onClose }) {
+export default function CandidateEnrollmentStepper({ onClose, onComplete }) {
   const [step, setStep] = useState(0);
   const [canProceed, setCanProceed] = useState(false);
 
   const [formData, setFormData] = useState({
     roleProject: { role: "", project: "" },
     address: { lat: null, lng: null },
-    basic: { name: "", dob: "", phone: "" },
-    professional: { qualification: "", role: "", project: "" },
+    basic: { fullName: "", dateOfBirth: null, phoneNumber: "" },
     capture: { photo: "", location: null },
   });
 
@@ -54,7 +52,7 @@ export default function CandidateEnrollmentStepper({ onClose }) {
             disabled={!canProceed}
             onClick={() => {
               if (step === STEPS.length - 1) {
-                // Submit logic here
+                onComplete?.(formData);
                 onClose();
               } else {
                 setCanProceed(false);
@@ -106,14 +104,6 @@ export default function CandidateEnrollmentStepper({ onClose }) {
 
           {step === 3 && (
             <Step4
-              value={formData.professional}
-              onChange={(v) => update("professional", v)}
-              onValidChange={setCanProceed}
-            />
-          )}
-
-          {step === 4 && (
-            <Step5
               value={formData.capture}
               onChange={(v) => update("capture", v)}
               onValidChange={setCanProceed}
