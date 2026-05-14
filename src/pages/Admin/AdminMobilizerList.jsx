@@ -19,16 +19,19 @@ export default function AdminMobilizerList() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [centerFilter, setCenterFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const centers = ["All", ...new Set(MOBILIZERS.map((m) => m.center))];
+  const statuses = ["All", ...new Set(MOBILIZERS.map((m) => m.status))];
 
   const filtered = useMemo(() => {
     return MOBILIZERS.filter((m) => {
       const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
       const matchCenter = centerFilter === "All" || m.center === centerFilter;
-      return matchSearch && matchCenter;
+      const matchStatus = statusFilter === "All" || m.status === statusFilter;
+      return matchSearch && matchCenter && matchStatus;
     });
-  }, [search, centerFilter]);
+  }, [search, centerFilter, statusFilter]);
 
   const totalMobilized = MOBILIZERS.reduce((s, m) => s + m.candidatesMobilized, 0);
   const totalEvents = MOBILIZERS.reduce((s, m) => s + m.eventsCompleted, 0);
@@ -79,16 +82,22 @@ export default function AdminMobilizerList() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
-        <input placeholder="Search mobilizer..." value={search} onChange={(e) => setSearch(e.target.value)}
+        <input placeholder="Search mobilizer..." value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90 focus:border-violet-400 outline-none" />
         <div className="flex gap-2">
           {centers.map((c) => (
-            <button key={c} onClick={() => setCenterFilter(c)}
+            <button key={c} onClick={() => { setCenterFilter(c); setCurrentPage(1); }}
               className={`px-3 py-1.5 text-sm rounded-lg transition ${centerFilter === c ? "bg-violet-500 text-white" : "bg-[#111827] text-white/60 border border-slate-700 hover:border-violet-500/30"}`}>
               {c}
             </button>
           ))}
         </div>
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+          className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
+          {statuses.map((status) => (
+            <option key={status} value={status}>{status === "All" ? "All Status" : status}</option>
+          ))}
+        </select>
       </div>
 
       {/* Table */}

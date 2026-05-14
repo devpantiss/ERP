@@ -10,6 +10,7 @@ import jsPDF from "jspdf";
 const SCHOOLS = ["Govt High School", "Model School", "ITI Jajpur"];
 const CENTERS = ["Jajpur Center", "Sukinda Center", "Dharmasala Center"];
 const JOBROLES = ["Welder", "Fitter", "Electrician"];
+const BATCHES = ["Batch 101", "Batch 102", "Batch 103", "Batch 104"];
 
 const samplePDF =
   "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
@@ -131,6 +132,7 @@ const CANDIDATES = Array.from({ length: 40 }, (_, i) => ({
   school: SCHOOLS[i % SCHOOLS.length],
   center: CENTERS[i % CENTERS.length],
   jobrole: JOBROLES[i % JOBROLES.length],
+  batch: BATCHES[i % BATCHES.length],
   address: "Binjharpur, Jajpur",
   dob: `199${i % 5}-0${(i % 8) + 1}-15`,
   gender: i % 2 === 0 ? "Male" : "Female",
@@ -155,6 +157,7 @@ export default function CandidatesTableDark() {
   const [school, setSchool] = useState("");
   const [center, setCenter] = useState("");
   const [jobrole, setJobrole] = useState("");
+  const [batch, setBatch] = useState("");
   const [month, setMonth] = useState("");
   const [status, setStatus] = useState("");
 
@@ -193,6 +196,7 @@ export default function CandidatesTableDark() {
       school: roleProject.school || "Not Assigned",
       center: roleProject.center || "Not Assigned",
       jobrole: roleProject.role || "Not Assigned",
+      batch: roleProject.batch || "Not Assigned",
       address: [address.house, address.street, address.city, address.district, address.state, address.pincode]
         .filter(Boolean)
         .join(", "),
@@ -225,11 +229,12 @@ export default function CandidatesTableDark() {
         (!school || c.school === school) &&
         (!center || c.center === center) &&
         (!jobrole || c.jobrole === jobrole) &&
+        (!batch || c.batch === batch) &&
         (!month || new Date(c.enrollmentDate).getMonth() + 1 === Number(month)) &&
         (!status ||
           (status === "enrolled" ? c.enrolled : !c.enrolled))
     );
-  }, [data, search, school, center, jobrole, month, status]);
+  }, [data, search, school, center, jobrole, batch, month, status]);
 
   /* ===================== STATS ===================== */
 
@@ -252,6 +257,7 @@ export default function CandidatesTableDark() {
       { key: "school", header: "School" },
       { key: "center", header: "Center" },
       { key: "jobrole", header: "Job Role" },
+      { key: "batch", header: "Batch" },
       { key: "address", header: "Address" },
       { key: "dob", header: "DOB", type: "date" },
       { key: "gender", header: "Gender" },
@@ -317,6 +323,7 @@ export default function CandidatesTableDark() {
             <Select options={SCHOOLS} value={school} setValue={setSchool} label="School" />
             <Select options={CENTERS} value={center} setValue={setCenter} label="Center" />
             <Select options={JOBROLES} value={jobrole} setValue={setJobrole} label="Job Role" />
+            <Select options={BATCHES} value={batch} setValue={setBatch} label="Batch" />
 
             {/* MONTH */}
             <select
@@ -354,6 +361,7 @@ export default function CandidatesTableDark() {
                 setSchool("");
                 setCenter("");
                 setJobrole("");
+                setBatch("");
                 setMonth("");
                 setStatus("");
               }}
@@ -409,6 +417,10 @@ export default function CandidatesTableDark() {
               <Chip label={`Role: ${jobrole}`} onRemove={() => setJobrole("")} />
             )}
 
+            {batch && (
+              <Chip label={`Batch: ${batch}`} onRemove={() => setBatch("")} />
+            )}
+
             {month && (
               <Chip
                 label={`Month: ${
@@ -447,6 +459,7 @@ export default function CandidatesTableDark() {
 	                  <th className="px-4 py-3 text-left min-w-[160px]">School</th>
                   <th className="px-4 py-3 text-left min-w-[160px]">Center</th>
                   <th className="px-4 py-3 text-left min-w-[140px]">Job Role</th>
+                  <th className="px-4 py-3 text-left min-w-[130px]">Batch</th>
                   <th className="px-4 py-3 text-left min-w-[200px]">Address</th>
                   <th className="px-4 py-3 text-left min-w-[120px]">DOB</th>
                   <th className="px-4 py-3 text-left min-w-[100px]">Gender</th>
@@ -480,9 +493,10 @@ export default function CandidatesTableDark() {
                     </td>
 
                     <td className="px-4 py-3 whitespace-nowrap">{c.phone || "—"}</td>
-	                    <td className="px-4 py-3 whitespace-nowrap">{c.school}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{c.school}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{c.center}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{c.jobrole}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{c.batch}</td>
                     <td className="px-4 py-3">{c.address}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{c.dob}</td>
                     <td className="px-4 py-3 whitespace-nowrap">{c.gender}</td>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Users, Search } from "lucide-react";
 import { SA_PROJECTS } from "./superAdminData";
 import {
@@ -21,27 +21,28 @@ export default function SuperAdminCandidateDetails() {
   const [centerId, setCenterId] = useState(null);
   const [batchId, setBatchId] = useState(null);
   const [search, setSearch] = useState("");
+  const [courseFilter, setCourseFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [placementFilter, setPlacementFilter] = useState("All");
 
   const project = SA_PROJECTS.find((p) => p.id === projectId);
   const center = project?.centers.find((c) => c.id === centerId);
   const batch = center?.batches.find((b) => b.id === batchId);
 
-  const candidates = useMemo(() => {
-    if (!batch) return [];
-    if (!search) return batch.candidates;
-    const q = search.toLowerCase();
-    return batch.candidates.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.id.toLowerCase().includes(q) ||
-        c.course.toLowerCase().includes(q)
-    );
-  }, [batch, search]);
+  const candidates = filterCandidates(batch?.candidates || [], {
+    search,
+    courseFilter,
+    statusFilter,
+    placementFilter,
+  });
+  const courseOptions = ["All", ...new Set((batch?.candidates || []).map((c) => c.course))];
+  const statusOptions = ["All", ...new Set((batch?.candidates || []).map((c) => c.status))];
+  const placementOptions = ["All", ...new Set((batch?.candidates || []).map((c) => c.placementStatus))];
 
   const pg = usePagination(candidates);
 
   // Reset page on search change
-  useEffect(() => { pg.setPage(1); }, [search]);
+  useEffect(() => { pg.setPage(1); }, [search, courseFilter, statusFilter, placementFilter]);
 
   const breadcrumb = ["All Projects"];
   if (project) breadcrumb.push(project.name);
@@ -102,7 +103,7 @@ export default function SuperAdminCandidateDetails() {
           <BackButton onClick={() => setCenterId(null)} label={`Back to ${project.name} centers`} />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {center.batches.map((b) => (
-              <BatchCard key={b.id} batch={b} onClick={() => { setBatchId(b.id); setSearch(""); pg.setPage(1); }} />
+              <BatchCard key={b.id} batch={b} onClick={() => { setBatchId(b.id); setSearch(""); setCourseFilter("All"); setStatusFilter("All"); setPlacementFilter("All"); pg.setPage(1); }} />
             ))}
           </div>
         </>
@@ -119,15 +120,20 @@ export default function SuperAdminCandidateDetails() {
               <p className="text-sm font-black text-white">
                 {candidates.length} <span className="font-bold text-slate-500">students</span>
               </p>
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Search students..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-64 rounded-xl border border-slate-700 bg-transparent/40 py-2.5 pl-9 pr-4 text-xs text-white/80 outline-none transition focus:border-red-500"
-                />
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Search students..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-64 rounded-xl border border-slate-700 bg-transparent/40 py-2.5 pl-9 pr-4 text-xs text-white/80 outline-none transition focus:border-red-500"
+                  />
+                </div>
+                <TableFilter value={courseFilter} onChange={setCourseFilter} options={courseOptions} allLabel="All Job Roles" />
+                <TableFilter value={statusFilter} onChange={setStatusFilter} options={statusOptions} allLabel="All Status" />
+                <TableFilter value={placementFilter} onChange={setPlacementFilter} options={placementOptions} allLabel="All Placement" />
               </div>
             </div>
 
@@ -197,5 +203,39 @@ export default function SuperAdminCandidateDetails() {
         </>
       )}
     </div>
+  );
+}
+
+function filterCandidates(candidates, filters) {
+  const q = filters.search.toLowerCase();
+  return candidates.filter((candidate) => {
+    const matchesSearch =
+      !q ||
+      candidate.name.toLowerCase().includes(q) ||
+      candidate.id.toLowerCase().includes(q) ||
+      candidate.course.toLowerCase().includes(q) ||
+      candidate.center.toLowerCase().includes(q) ||
+      candidate.batch.toLowerCase().includes(q);
+    const matchesCourse = filters.courseFilter === "All" || candidate.course === filters.courseFilter;
+    const matchesStatus = filters.statusFilter === "All" || candidate.status === filters.statusFilter;
+    const matchesPlacement =
+      filters.placementFilter === "All" || candidate.placementStatus === filters.placementFilter;
+    return matchesSearch && matchesCourse && matchesStatus && matchesPlacement;
+  });
+}
+
+function TableFilter({ value, onChange, options, allLabel }) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs text-white/80 outline-none transition focus:border-red-500"
+    >
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option === "All" ? allLabel : option}
+        </option>
+      ))}
+    </select>
   );
 }

@@ -5,6 +5,7 @@ import { FileText, CheckCircle, Clock, X, Eye, Upload, ZoomIn, ShieldCheck, Aler
 
 const PROJECTS = ["All", "PMKVY", "CSR - Tata Steel", "DDUGKY", "DMF Keonjhar"];
 const COMPANIES = ["All", "Tata Steel", "Adani", "L&T", "JSW", "Vedanta"];
+const CENTERS = ["All", "Angul", "Jharsuguda", "Kalahandi", "Keonjhar"];
 const DOC_FIELDS = [
   { key: "offer", label: "Offer Letter" },
   { key: "m1", label: "M1 Salary Slip" },
@@ -27,6 +28,7 @@ const buildStudents = () =>
     name: `Student ${i + 1}`,
     batch: `BATCH-${101 + (i % 5)}`,
     project: ["PMKVY", "CSR - Tata Steel", "DDUGKY", "DMF Keonjhar"][i % 4],
+    center: ["Angul", "Jharsuguda", "Kalahandi", "Keonjhar"][i % 4],
     company: ["Tata Steel", "Adani", "L&T", "JSW", "Vedanta"][i % 5],
     designation: ["Technician", "Operator", "Safety Officer", "Fitter"][i % 4],
     salary: 18000 + (i % 5) * 3000,
@@ -64,6 +66,7 @@ function DocPreviewModal({ student, onClose, onVerifyDoc, onVerifyAll }) {
   const activeDoc = student.docs[activeTab];
 
   return (
+    <>
       <SlidePanel open={true} onClose={onClose} title={`${student.name} — Document Verification`} width="xl">
 
         {/* Header */}
@@ -239,6 +242,12 @@ function DocPreviewModal({ student, onClose, onVerifyDoc, onVerifyAll }) {
           </div>
         </div>
       </SlidePanel>
+      {zoomedDoc && (
+        <SlidePanel open={true} onClose={() => setZoomedDoc(null)} title="Document Preview" width="xl">
+          <img src={zoomedDoc} alt="Document preview" className="max-h-[80vh] w-full rounded-xl object-contain" />
+        </SlidePanel>
+      )}
+    </>
   );
 }
 
@@ -248,25 +257,30 @@ export default function AdminPlacementTracker() {
   const [students, setStudents] = useState(buildStudents);
   const [batchFilter, setBatchFilter] = useState("All");
   const [projectFilter, setProjectFilter] = useState("All");
+  const [centerFilter, setCenterFilter] = useState("All");
   const [companyFilter, setCompanyFilter] = useState("All");
+  const [jobRoleFilter, setJobRoleFilter] = useState("All");
   const [verifyFilter, setVerifyFilter] = useState("All");
   const [previewStudent, setPreviewStudent] = useState(null);
 
   const batches = ["All", ...new Set(students.map((s) => s.batch))];
+  const jobRoles = ["All", ...new Set(students.map((s) => s.designation))];
 
   const filtered = useMemo(() => {
     return students.filter((s) => {
       const matchBatch = batchFilter === "All" || s.batch === batchFilter;
       const matchProject = projectFilter === "All" || s.project === projectFilter;
+      const matchCenter = centerFilter === "All" || s.center === centerFilter;
       const matchCompany = companyFilter === "All" || s.company === companyFilter;
+      const matchJobRole = jobRoleFilter === "All" || s.designation === jobRoleFilter;
       const status = getStudentStatus(s);
       const matchVerify =
         verifyFilter === "All" ||
         (verifyFilter === "Verified" && status === "verified") ||
         (verifyFilter === "Pending" && status !== "verified");
-      return matchBatch && matchProject && matchCompany && matchVerify;
+      return matchBatch && matchProject && matchCenter && matchCompany && matchJobRole && matchVerify;
     });
-  }, [students, batchFilter, projectFilter, companyFilter, verifyFilter]);
+  }, [students, batchFilter, projectFilter, centerFilter, companyFilter, jobRoleFilter, verifyFilter]);
 
   const totalPlaced = filtered.length;
   const totalVerified = filtered.filter((s) => getStudentStatus(s) === "verified").length;
@@ -343,21 +357,29 @@ export default function AdminPlacementTracker() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <select value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)}
+        <select value={batchFilter} onChange={(e) => { setBatchFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
           {batches.map((b) => <option key={b} value={b}>{b === "All" ? "All Batches" : b}</option>)}
         </select>
-        <select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)}
+        <select value={projectFilter} onChange={(e) => { setProjectFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
           {PROJECTS.map((p) => <option key={p} value={p}>{p === "All" ? "All Projects" : p}</option>)}
         </select>
-        <select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)}
+        <select value={centerFilter} onChange={(e) => { setCenterFilter(e.target.value); setCurrentPage(1); }}
+          className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
+          {CENTERS.map((c) => <option key={c} value={c}>{c === "All" ? "All Centers" : c}</option>)}
+        </select>
+        <select value={companyFilter} onChange={(e) => { setCompanyFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
           {COMPANIES.map((c) => <option key={c} value={c}>{c === "All" ? "All Companies" : c}</option>)}
         </select>
+        <select value={jobRoleFilter} onChange={(e) => { setJobRoleFilter(e.target.value); setCurrentPage(1); }}
+          className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
+          {jobRoles.map((role) => <option key={role} value={role}>{role === "All" ? "All Job Roles" : role}</option>)}
+        </select>
         <div className="flex gap-2">
           {["All", "Verified", "Pending"].map((v) => (
-            <button key={v} onClick={() => setVerifyFilter(v)}
+            <button key={v} onClick={() => { setVerifyFilter(v); setCurrentPage(1); }}
               className={`px-3 py-1.5 text-sm rounded-lg transition ${verifyFilter === v ? "bg-violet-500 text-white" : "bg-[#111827] text-white/60 border border-slate-700"}`}>
               {v}
             </button>
@@ -371,6 +393,7 @@ export default function AdminPlacementTracker() {
             <thead className="bg-[#0b1220] text-white/60 text-xs uppercase tracking-wider">
               <tr>
                 <th className="p-4 text-left">Student</th>
+                <th className="p-4 text-left">Center</th>
                 <th className="p-4 text-left">Batch</th>
                 <th className="p-4 text-left">Company</th>
                 <th className="p-4 text-left">Designation</th>
@@ -389,6 +412,7 @@ export default function AdminPlacementTracker() {
                 return (
                   <tr key={s.id} className="border-t border-slate-700/50 hover:bg-transparent/30 transition">
                     <td className="p-4 font-medium text-white/90">{s.name}</td>
+                    <td className="p-4 text-white/60">{s.center}</td>
                     <td className="p-4 text-white/60">{s.batch}</td>
                     <td className="p-4 text-white/80">{s.company}</td>
                     <td className="p-4 text-white/60">{s.designation}</td>

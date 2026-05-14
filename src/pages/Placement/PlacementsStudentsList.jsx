@@ -19,15 +19,18 @@ import PlacementStudentDetailsStepperPage from "./PlacementStudentDetailsStepper
 
 const projects = ["Mining", "Shipping", "Construction", "Power"];
 const companies = ["Tata Steel", "Adani", "L&T", "JSW", "Reliance", "Vedanta"];
+const centers = ["Angul", "Jajpur", "Keonjhar", "Kalahandi"];
+const jobRoles = ["Technician", "Operator", "Safety Officer", "Fitter"];
 
 const generateData = () =>
   Array.from({ length: 30 }, (_, i) => ({
     id: i + 1,
     name: `Candidate ${i + 1}`,
     project: projects[i % projects.length],
+    center: centers[i % centers.length],
     batch: `B00${(i % 5) + 1}`,
     company: companies[i % companies.length],
-    designation: "Technician",
+    designation: jobRoles[i % jobRoles.length],
     salary: 18000 + (i % 5) * 3000,
     joiningDate: "2026-01-15",
     docs: {},
@@ -48,7 +51,10 @@ export default function CandidatePlacementSheetEnterpriseDark() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [projectFilter, setProjectFilter] = useState("");
+  const [centerFilter, setCenterFilter] = useState("");
   const [batchFilter, setBatchFilter] = useState("");
+  const [jobRoleFilter, setJobRoleFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [showForm, setShowForm] = useState(false);
 
   const pageSize = 20;
@@ -61,11 +67,14 @@ export default function CandidatePlacementSheetEnterpriseDark() {
         row.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
         row.designation.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesProject = !projectFilter || row.project === projectFilter;
+      const matchesCenter = !centerFilter || row.center === centerFilter;
       const matchesBatch = !batchFilter || row.batch === batchFilter;
+      const matchesJobRole = !jobRoleFilter || row.designation === jobRoleFilter;
+      const matchesStatus = !statusFilter || getStatus(row) === statusFilter;
 
-      return matchesSearch && matchesProject && matchesBatch;
+      return matchesSearch && matchesProject && matchesCenter && matchesBatch && matchesJobRole && matchesStatus;
     });
-  }, [data, searchTerm, projectFilter, batchFilter]);
+  }, [data, searchTerm, projectFilter, centerFilter, batchFilter, jobRoleFilter, statusFilter]);
 
   /* ================= PAGINATION ================= */
 
@@ -121,6 +130,7 @@ export default function CandidatePlacementSheetEnterpriseDark() {
     () => [
       { key: "name", header: "Candidate" },
       { key: "project", header: "Project" },
+      { key: "center", header: "Center" },
       { key: "batch", header: "Batch" },
       { key: "company", header: "Company" },
       { key: "designation", header: "Designation" },
@@ -200,7 +210,10 @@ export default function CandidatePlacementSheetEnterpriseDark() {
               onClick={() => {
                 setSearchTerm("");
                 setProjectFilter("");
+                setCenterFilter("");
                 setBatchFilter("");
+                setJobRoleFilter("");
+                setStatusFilter("");
                 setPage(1);
               }}
               className="text-xs text-white/60 hover:text-cyan-400"
@@ -211,7 +224,7 @@ export default function CandidatePlacementSheetEnterpriseDark() {
 
           <div className="border-t border-white/[0.08] mb-5" />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
 
             {/* Search */}
 
@@ -234,6 +247,23 @@ export default function CandidatePlacementSheetEnterpriseDark() {
               </div>
             </div>
 
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Center</label>
+              <select
+                value={centerFilter}
+                onChange={(e) => {
+                  setCenterFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full bg-[#020617] border border-gray-700 rounded-lg p-2 text-sm"
+              >
+                <option value="">All Centers</option>
+                {centers.map((center) => (
+                  <option key={center} value={center}>{center}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Project */}
 
             <div className="space-y-1">
@@ -251,6 +281,39 @@ export default function CandidatePlacementSheetEnterpriseDark() {
                 {projects.map((project) => (
                   <option key={project} value={project}>{project}</option>
                 ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Job Role</label>
+              <select
+                value={jobRoleFilter}
+                onChange={(e) => {
+                  setJobRoleFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full bg-[#020617] border border-gray-700 rounded-lg p-2 text-sm"
+              >
+                <option value="">All Job Roles</option>
+                {jobRoles.map((role) => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-white/60">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full bg-[#020617] border border-gray-700 rounded-lg p-2 text-sm"
+              >
+                <option value="">All Status</option>
+                <option value="Verified">Verified</option>
+                <option value="Pending">Pending</option>
               </select>
             </div>
 
@@ -339,6 +402,7 @@ export default function CandidatePlacementSheetEnterpriseDark() {
 
                 <th className="px-4 py-3 text-left min-w-[180px]">Candidate</th>
                 <th className="px-4 py-3 text-left min-w-[140px]">Project</th>
+                <th className="px-4 py-3 text-left min-w-[120px]">Center</th>
                 <th className="px-4 py-3 text-left min-w-[120px]">Batch</th>
                 <th className="px-4 py-3 text-left min-w-[180px]">Company</th>
                 <th className="px-4 py-3 text-left min-w-[160px]">Designation</th>
@@ -366,6 +430,7 @@ export default function CandidatePlacementSheetEnterpriseDark() {
 
                   <td className="px-4 py-3 font-medium">{row.name}</td>
                   <td className="px-4 py-3">{row.project}</td>
+                  <td className="px-4 py-3">{row.center}</td>
                   <td className="px-4 py-3">{row.batch}</td>
                   <td className="px-4 py-3">{row.company}</td>
                   <td className="px-4 py-3">{row.designation}</td>

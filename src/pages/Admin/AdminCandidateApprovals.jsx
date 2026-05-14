@@ -29,19 +29,25 @@ export default function AdminCandidateApprovals() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [mobilizerFilter, setMobilizerFilter] = useState("All");
+  const [centerFilter, setCenterFilter] = useState("All");
+  const [jobRoleFilter, setJobRoleFilter] = useState("All");
   const [viewCandidate, setViewCandidate] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
 
   const mobilizers = ["All", ...new Set(CANDIDATES.map((c) => c.mobilizer))];
+  const centers = ["All", ...new Set(CANDIDATES.map((c) => c.center))];
+  const jobRoles = ["All", ...new Set(CANDIDATES.map((c) => c.jobrole))];
 
   const filtered = useMemo(() => {
     return candidates.filter((c) => {
       const matchSearch = c.name.toLowerCase().includes(search.toLowerCase());
       const matchStatus = statusFilter === "All" || c.status === statusFilter;
       const matchMob = mobilizerFilter === "All" || c.mobilizer === mobilizerFilter;
-      return matchSearch && matchStatus && matchMob;
+      const matchCenter = centerFilter === "All" || c.center === centerFilter;
+      const matchJobRole = jobRoleFilter === "All" || c.jobrole === jobRoleFilter;
+      return matchSearch && matchStatus && matchMob && matchCenter && matchJobRole;
     });
-  }, [candidates, search, statusFilter, mobilizerFilter]);
+  }, [candidates, search, statusFilter, mobilizerFilter, centerFilter, jobRoleFilter]);
 
   const updateStatus = (id, status) => {
     setCandidates((prev) => prev.map((c) => c.id === id ? { ...c, status } : c));
@@ -97,15 +103,23 @@ export default function AdminCandidateApprovals() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <input placeholder="Search candidate..." value={search} onChange={(e) => setSearch(e.target.value)}
+        <input placeholder="Search candidate..." value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-[200px] px-4 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90 focus:border-violet-400 outline-none" />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
           <option value="All">All Status</option><option>Pending</option><option>Approved</option><option>Rejected</option>
         </select>
-        <select value={mobilizerFilter} onChange={(e) => setMobilizerFilter(e.target.value)}
+        <select value={mobilizerFilter} onChange={(e) => { setMobilizerFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
           {mobilizers.map((m) => <option key={m} value={m}>{m === "All" ? "All Mobilizers" : m}</option>)}
+        </select>
+        <select value={centerFilter} onChange={(e) => { setCenterFilter(e.target.value); setCurrentPage(1); }}
+          className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
+          {centers.map((c) => <option key={c} value={c}>{c === "All" ? "All Centers" : c}</option>)}
+        </select>
+        <select value={jobRoleFilter} onChange={(e) => { setJobRoleFilter(e.target.value); setCurrentPage(1); }}
+          className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
+          {jobRoles.map((role) => <option key={role} value={role}>{role === "All" ? "All Job Roles" : role}</option>)}
         </select>
       </div>
 

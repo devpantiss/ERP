@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Megaphone, UserPlus, UserMinus, Users, Search, ChevronRight } from "lucide-react";
 import { SA_PROJECTS } from "./superAdminData";
 import {
@@ -12,66 +12,28 @@ const MOB_STATUS_BADGE = {
   Pending: "bg-amber-500/10 text-amber-400",
 };
 
+const formatPhone = (seed) =>
+  `+91 ${9870000000 + ((seed * 7919) % 9999999)}`.replace(/(\d{2})(\d{5})(\d{5})/, "$1 $2 $3");
+
 export default function SuperAdminMobilization() {
   const [projectId, setProjectId] = useState(null);
   const [centerId, setCenterId] = useState(null);
   const [search, setSearch] = useState("");
+  const [batchFilter, setBatchFilter] = useState("All");
+  const [courseFilter, setCourseFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
 
   const project = SA_PROJECTS.find((p) => p.id === projectId);
   const center = project?.centers.find((c) => c.id === centerId);
 
-  /* Build mobilized candidate list from batch candidates + extra synthetic rows */
-  const mobilizedList = useMemo(() => {
-    if (!center) return [];
-    const { mobilized, enrolled, dropoffs } = center.mobilization;
-    const batchCandidates = center.batches.flatMap((b) => b.candidates);
-
-    // Map real batch candidates as "Enrolled"
-    const list = batchCandidates.map((c, i) => ({
-      id: `MOB-${center.name.slice(0, 3).toUpperCase()}-${String(i + 1).padStart(3, "0")}`,
-      name: c.name,
-      center: center.name,
-      batch: c.batch,
-      course: c.course,
-      mobilizationDate: c.enrollmentDate,
-      mobStatus: c.status === "Dropped" ? "Dropped" : "Enrolled",
-      phone: `+91 ${9870000000 + Math.floor(Math.random() * 9999999)}`.replace(/(\d{2})(\d{5})(\d{5})/, "$1 $2 $3"),
-    }));
-
-    // Add extra "Pending" rows for the gap between mobilized and enrolled+dropped
-    const pending = mobilized - enrolled - dropoffs;
-    const EXTRA_NAMES = [
-      "Tapan Rout","Prakash Majhi","Kabita Das","Lopamudra Deo","Dinesh Pradhan",
-      "Rina Pattnaik","Aparna Sethy","Rahul Pradhan","Subrat Jena","Ranjita Mohanta",
-      "Monalisa Mohanty","Sneha Swain","Priyanka Behera","Nihar Ranjan","Pallavi Nayak",
-      "Sanjay Das","Aditya Sahu","Bikash Naik","Suresh Naik","Ritu Mohapatra",
-    ];
-    for (let i = 0; i < Math.max(0, pending); i++) {
-      list.push({
-        id: `MOB-${center.name.slice(0, 3).toUpperCase()}-P${String(i + 1).padStart(3, "0")}`,
-        name: EXTRA_NAMES[i % EXTRA_NAMES.length],
-        center: center.name,
-        batch: "—",
-        course: "—",
-        mobilizationDate: `2025-${String(3 + (i % 8)).padStart(2, "0")}-${String(1 + (i % 28)).padStart(2, "0")}`,
-        mobStatus: "Pending",
-        phone: `+91 ${9870000000 + Math.floor(Math.random() * 9999999)}`.replace(/(\d{2})(\d{5})(\d{5})/, "$1 $2 $3"),
-      });
-    }
-
-    return list;
-  }, [center]);
-
-  const filtered = useMemo(() => {
-    if (!search) return mobilizedList;
-    const q = search.toLowerCase();
-    return mobilizedList.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.mobStatus.toLowerCase().includes(q) || c.batch.toLowerCase().includes(q)
-    );
-  }, [mobilizedList, search]);
+  const mobilizedList = buildMobilizedList(center);
+  const filtered = filterMobilizedList(mobilizedList, { search, batchFilter, courseFilter, statusFilter });
+  const batchOptions = ["All", ...new Set(mobilizedList.map((c) => c.batch))];
+  const courseOptions = ["All", ...new Set(mobilizedList.map((c) => c.course))];
+  const statusOptions = ["All", ...new Set(mobilizedList.map((c) => c.mobStatus))];
 
   const pg = usePagination(filtered);
-  useEffect(() => { pg.setPage(1); }, [search, centerId]);
+  useEffect(() => { pg.setPage(1); }, [search, centerId, batchFilter, courseFilter, statusFilter]);
 
   const breadcrumb = ["All Projects"];
   if (project) breadcrumb.push(project.name);
@@ -143,7 +105,7 @@ export default function SuperAdminMobilization() {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => { setCenterId(c.id); setSearch(""); }}
+                  onClick={() => { setCenterId(c.id); setSearch(""); setBatchFilter("All"); setCourseFilter("All"); setStatusFilter("All"); }}
                   className="group w-full rounded-2xl border border-slate-700/50 bg-[#111827]/80 p-6 text-left backdrop-blur-sm transition-all hover:border-red-500/30 hover:bg-[#151e2f]"
                 >
                   <div className="mb-5 flex items-center gap-3">
@@ -232,15 +194,20 @@ export default function SuperAdminMobilization() {
               <p className="text-sm font-black text-white">
                 {filtered.length} <span className="font-bold text-slate-500">mobilized candidates</span>
               </p>
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="text"
-                  placeholder="Search by name, status..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-64 rounded-xl border border-slate-700 bg-transparent/40 py-2.5 pl-9 pr-4 text-xs text-white/80 outline-none transition focus:border-red-500"
-                />
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, status..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-64 rounded-xl border border-slate-700 bg-transparent/40 py-2.5 pl-9 pr-4 text-xs text-white/80 outline-none transition focus:border-red-500"
+                  />
+                </div>
+                <TableFilter value={batchFilter} onChange={setBatchFilter} options={batchOptions} allLabel="All Batches" />
+                <TableFilter value={courseFilter} onChange={setCourseFilter} options={courseOptions} allLabel="All Job Roles" />
+                <TableFilter value={statusFilter} onChange={setStatusFilter} options={statusOptions} allLabel="All Status" />
               </div>
             </div>
 
@@ -311,5 +278,78 @@ export default function SuperAdminMobilization() {
         </>
       )}
     </div>
+  );
+}
+
+function buildMobilizedList(center) {
+  if (!center) return [];
+  const { mobilized, enrolled, dropoffs } = center.mobilization;
+  const batchCandidates = center.batches.flatMap((batch) => batch.candidates);
+
+  const list = batchCandidates.map((candidate, index) => ({
+    id: `MOB-${center.name.slice(0, 3).toUpperCase()}-${String(index + 1).padStart(3, "0")}`,
+    name: candidate.name,
+    center: center.name,
+    batch: candidate.batch,
+    course: candidate.course,
+    mobilizationDate: candidate.enrollmentDate,
+    mobStatus: candidate.status === "Dropped" ? "Dropped" : "Enrolled",
+    phone: formatPhone(index + 1),
+  }));
+
+  const pending = mobilized - enrolled - dropoffs;
+  const extraNames = [
+    "Tapan Rout", "Prakash Majhi", "Kabita Das", "Lopamudra Deo", "Dinesh Pradhan",
+    "Rina Pattnaik", "Aparna Sethy", "Rahul Pradhan", "Subrat Jena", "Ranjita Mohanta",
+    "Monalisa Mohanty", "Sneha Swain", "Priyanka Behera", "Nihar Ranjan", "Pallavi Nayak",
+    "Sanjay Das", "Aditya Sahu", "Bikash Naik", "Suresh Naik", "Ritu Mohapatra",
+  ];
+
+  for (let index = 0; index < Math.max(0, pending); index++) {
+    list.push({
+      id: `MOB-${center.name.slice(0, 3).toUpperCase()}-P${String(index + 1).padStart(3, "0")}`,
+      name: extraNames[index % extraNames.length],
+      center: center.name,
+      batch: "—",
+      course: "—",
+      mobilizationDate: `2025-${String(3 + (index % 8)).padStart(2, "0")}-${String(1 + (index % 28)).padStart(2, "0")}`,
+      mobStatus: "Pending",
+      phone: formatPhone(batchCandidates.length + index + 1),
+    });
+  }
+
+  return list;
+}
+
+function filterMobilizedList(candidates, filters) {
+  const query = filters.search.toLowerCase();
+  return candidates.filter((candidate) => {
+    const matchesSearch =
+      !query ||
+      candidate.name.toLowerCase().includes(query) ||
+      candidate.mobStatus.toLowerCase().includes(query) ||
+      candidate.batch.toLowerCase().includes(query) ||
+      candidate.course.toLowerCase().includes(query) ||
+      candidate.center.toLowerCase().includes(query);
+    const matchesBatch = filters.batchFilter === "All" || candidate.batch === filters.batchFilter;
+    const matchesCourse = filters.courseFilter === "All" || candidate.course === filters.courseFilter;
+    const matchesStatus = filters.statusFilter === "All" || candidate.mobStatus === filters.statusFilter;
+    return matchesSearch && matchesBatch && matchesCourse && matchesStatus;
+  });
+}
+
+function TableFilter({ value, onChange, options, allLabel }) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs text-white/80 outline-none transition focus:border-red-500"
+    >
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option === "All" ? allLabel : option}
+        </option>
+      ))}
+    </select>
   );
 }
