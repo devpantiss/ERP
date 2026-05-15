@@ -4,6 +4,7 @@ import TableExportActions from "../../components/common/TableExportActions";
 import { useMemo, useState } from "react";
 import CandidateEnrollmentStepper from "../../components/Mobilizer/CandidateEnrollmentStepper";
 import jsPDF from "jspdf";
+import { saveSubmittedEnrollment } from "../../components/utils/enrollmentStorage";
 
 /* ===================== CONSTANTS ===================== */
 
@@ -189,6 +190,13 @@ export default function CandidatesTableDark() {
       ? new Date(basic.dateOfBirth).toISOString().split("T")[0]
       : "";
 
+    const documents = {
+      aadhaar: basic.aadharFile || null,
+      qualification: basic.qualificationCert || null,
+      experience: basic.experienceCert || null,
+      license: basic.licenseCert || null,
+    };
+
     const newCandidate = {
       id: nextId,
       name: basic.fullName || `Candidate ${nextId}`,
@@ -204,18 +212,27 @@ export default function CandidatesTableDark() {
       gender: basic.gender || "",
       aadhaar: basic.aadharNumber ? `XXXX-XXXX-${String(basic.aadharNumber).slice(-4)}` : "",
       qualification: basic.qualificationLevel || "",
+      qualificationTrade: basic.qualificationTrade || "",
+      qualificationInstitute: basic.qualificationInstitute || "",
+      qualificationYear: basic.qualificationYear || "",
       experience: basic.experienceYears ? `${basic.experienceYears} Years` : "0 Years",
+      currentlyEmployed: basic.currentlyEmployed || "",
       enrollmentDate: new Date().toISOString().split("T")[0],
       image,
-      aadhaarFile: samplePDF,
-      qualificationFile: samplePDF,
-      licenceFile: samplePDF,
+      liveLocation: enrollment.capture?.location || null,
+      geoLocation: enrollment.address ? { lat: enrollment.address.lat, lng: enrollment.address.lng } : null,
+      documents,
+      aadhaarFile: documents.aadhaar?.url || samplePDF,
+      qualificationFile: documents.qualification?.url || samplePDF,
+      licenceFile: documents.license?.url || samplePDF,
       verified: true,
-      enrolled: true,
+      enrolled: false,
+      status: "Pending",
       admitCard: null,
     };
 
     newCandidate.admitCard = createAdmitCard(newCandidate);
+    saveSubmittedEnrollment(newCandidate);
     setData((prev) => [newCandidate, ...prev]);
     setCurrentPage(1);
   };

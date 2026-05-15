@@ -43,6 +43,13 @@ export default function AdminTrainerDashboard() {
   const { id } = useParams();
   const navigate = useNavigate();
   const trainer = TRAINER_DATA[id] || TRAINER_DATA[1];
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return ATTENDANCE.slice(start, start + itemsPerPage);
+  }, [currentPage]);
+  const totalPages = Math.ceil(ATTENDANCE.length / itemsPerPage);
 
   return (
     <div className="space-y-6">
@@ -80,16 +87,8 @@ export default function AdminTrainerDashboard() {
         <div className="space-y-4">
           {MODULE_DATA.map((b) => {
             const pct = Math.round((b.completed / b.total) * 100);
-            
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return ATTENDANCE?.slice(start, start + itemsPerPage) || [];
-  }, [ATTENDANCE, currentPage]);
-  const totalPages = Math.ceil((ATTENDANCE?.length || 0) / itemsPerPage);
 
-  return (
+            return (
               <div key={b.batch}>
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-white/80">{b.batch}</span>

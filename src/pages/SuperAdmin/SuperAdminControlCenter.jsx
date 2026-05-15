@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ShieldAlert, Settings, Building2, FolderKanban, Users, Database, Globe, Activity, Rocket } from "lucide-react";
 
 /* ===================== MOCK DATA ===================== */

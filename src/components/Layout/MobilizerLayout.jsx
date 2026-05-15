@@ -12,6 +12,7 @@ import {
   Receipt,
   MessageSquareWarning,
   UserRoundPen,
+  MapPinned,
 } from "lucide-react";
 
 /* ─── Dock config ─── */
@@ -28,6 +29,7 @@ const DRAWER_ITEMS = [
     children: [
       { label: "Attendance", path: "/mobilizer/hr/attendance", icon: UserCheck },
       { label: "Leave Management", path: "/mobilizer/hr/leave", icon: CalendarDays },
+      { label: "Tour Application", path: "/mobilizer/hr/tour", icon: MapPinned },
       { label: "Salary", path: "/mobilizer/hr/salary", icon: IndianRupee },
       { label: "Reimbursement", path: "/mobilizer/hr/reimbursement", icon: Receipt },
     ],

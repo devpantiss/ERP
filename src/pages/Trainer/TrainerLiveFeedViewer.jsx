@@ -19,7 +19,6 @@ export default function TrainerLiveFeedViewer() {
   const { sessionId } = useParams();
   const videoRef = useRef(null);
   const peerRef = useRef(null);
-  const containerRef = useRef(null);
   const wrapperRef = useRef(null);
 
   const [status, setStatus] = useState("connecting");
@@ -30,8 +29,6 @@ export default function TrainerLiveFeedViewer() {
   const [showVolume, setShowVolume] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [quality, setQuality] = useState("HD");
-  const [buffering, setBuffering] = useState(false);
   const startTimeRef = useRef(null);
   const controlsTimerRef = useRef(null);
   const [signalBars, setSignalBars] = useState(4);
@@ -60,7 +57,11 @@ export default function TrainerLiveFeedViewer() {
     setElapsed(0);
 
     if (peerRef.current) {
-      try { peerRef.current.destroy(); } catch (_) {}
+      try {
+        peerRef.current.destroy();
+      } catch {
+        // Ignore cleanup errors from an already-destroyed peer.
+      }
       peerRef.current = null;
     }
 
@@ -89,7 +90,7 @@ export default function TrainerLiveFeedViewer() {
           gain.connect(dest);
           osc.start();
           localStream = dest.stream;
-        } catch (_) {
+        } catch {
           localStream = new MediaStream();
         }
       }
@@ -121,7 +122,6 @@ export default function TrainerLiveFeedViewer() {
           videoRef.current.play().catch((e) => console.warn("Autoplay blocked:", e));
         }
         setStatus("live");
-        setBuffering(false);
       });
 
       call.on("close", () => {
@@ -153,7 +153,13 @@ export default function TrainerLiveFeedViewer() {
   useEffect(() => {
     connect();
     return () => {
-      if (peerRef.current) { try { peerRef.current.destroy(); } catch (_) {} }
+      if (peerRef.current) {
+        try {
+          peerRef.current.destroy();
+        } catch {
+          // Ignore cleanup errors from an already-destroyed peer.
+        }
+      }
     };
   }, [connect]);
 

@@ -45,9 +45,6 @@ function InitiativeCard({ title, location, image }) {
 }
 
 export default function InitiativesSection() {
-  // Using the uploaded local image as placeholder for all cards — replace with per-card images.
-  const placeholder = "/mnt/data/Screenshot 2025-11-24 at 6.47.48 PM.png";
-
   const items = [
     { id: 1, title: "Deshpande Foundation India", location: "Hubballi, Karnataka, India", image: "https://www.deshpandefoundation.org/wp-content/uploads/2020/04/deshpande-foundation-india.jpg" },
     { id: 2, title: "Entrepreneurship for All", location: "Lowell, MA, USA", image: "https://www.deshpandefoundation.org/wp-content/uploads/2020/04/deshpande-foundation-entrepreneurship-for-all.jpg" },

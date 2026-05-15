@@ -1,5 +1,4 @@
 import { useState, useMemo, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import SlidePanel from "../../components/common/SlidePanel";
 import ExposureVisitEnterprisePro from "./ExposureVisitsStepper";
 
@@ -51,7 +50,6 @@ function generateVisits() {
 /* ===================== COMPONENT ===================== */
 
 export default function ExposureVisitReportTable() {
-  const navigate = useNavigate();
   const [visits, setVisits] = useState(generateVisits());
   const [previewImage, setPreviewImage] = useState(null);
   const fileRefs = useRef({});

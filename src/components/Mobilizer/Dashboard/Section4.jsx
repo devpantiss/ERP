@@ -113,12 +113,12 @@ export default function Section4() {
       </div>
 
       {/* ================= MODAL ================= */}
-      <SlidePanel open={!!showModal} onClose={() => setShowModal(false)} title="editMode ? Edit Bank Details : Bank Deta" width="md">
-            rounded-2xl w-full max-w-lg p-6 text-white/90">
-
-            <h3 className="text-lg font-semibold mb-4">
-              {editMode ? "Edit Bank Details" : "Bank Details"}
-            </h3>
+      <SlidePanel
+        open={!!showModal}
+        onClose={() => setShowModal(false)}
+        title={editMode ? "Edit Bank Details" : "Bank Details"}
+        width="md"
+      >
 
             {!editMode ? (
               <>

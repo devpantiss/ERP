@@ -5,6 +5,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  FileText,
   FolderKanban,
   LayoutDashboard,
   LogOut,
@@ -18,6 +19,7 @@ const NAV_ITEMS = [
   { label: "Dashboard", shortLabel: "Home", path: "/client/dashboard", icon: LayoutDashboard },
   { label: "Projects", path: "/client/projects", icon: FolderKanban },
   { label: "Performance", path: "/client/performance", icon: BarChart3 },
+  { label: "Reports", path: "/client/reports", icon: FileText },
   { label: "Success Story", shortLabel: "Story", path: "/client/success-story", icon: PlayCircle },
 ];
 

@@ -96,7 +96,7 @@ export default function CandidateEnrollmentStepper({ onClose, onComplete }) {
 
           {step === 2 && (
             <Step3
-              value={formData.basic}
+              value={{ ...formData.basic, role: formData.roleProject.role }}
               onChange={(v) => update("basic", v)}
               onValidChange={setCanProceed}
             />

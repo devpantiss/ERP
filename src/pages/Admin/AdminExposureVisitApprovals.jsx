@@ -51,6 +51,7 @@ function DocPreviewModal({ visit, onClose, onVerifyDoc, onVerifyAll }) {
   const activeDoc = visit.docs[activeTab];
 
   return (
+    <>
     <SlidePanel open={true} onClose={onClose} title={`${visit.trainer} — Visit Documents`} width="xl">
         <p className="text-xs text-white/60 mb-4">
           {visit.industry} • {visit.batch} • {visit.trade} • {visit.date}
@@ -176,6 +177,12 @@ function DocPreviewModal({ visit, onClose, onVerifyDoc, onVerifyAll }) {
           </div>
         </div>
     </SlidePanel>
+    {zoomedDoc && (
+      <SlidePanel open={true} onClose={() => setZoomedDoc(null)} title="Document Preview" width="xl">
+        <img src={zoomedDoc} alt="Document preview" className="max-h-[80vh] w-full rounded-xl object-contain" />
+      </SlidePanel>
+    )}
+    </>
   );
 }
 

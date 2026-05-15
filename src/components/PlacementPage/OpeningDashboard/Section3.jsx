@@ -51,14 +51,6 @@ const industryData = [
   { name: "Shipping", value: 50 },
 ];
 
-const recruiterData = [
-  { name: "Tata Steel", jobs: 120 },
-  { name: "Adani", jobs: 95 },
-  { name: "L&T", jobs: 88 },
-  { name: "JSW", jobs: 72 },
-  { name: "Reliance", jobs: 60 },
-];
-
 const salaryData = [
   { role: "Technician", salary: 22000 },
   { role: "Operator", salary: 26000 },
@@ -269,30 +261,6 @@ export default function Section3() {
         </Panel>
 
       </div>
-
-      {/* ================= TOP RECRUITERS ================= */}
-
-      {/* <Panel title="Top Recruiters">
-
-        <div className="space-y-3">
-
-          {recruiterData.map((r, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between bg-transparent/40 border border-gray-700 rounded-lg px-4 py-2"
-            >
-              <span className="text-sm text-white/90">{r.name}</span>
-
-              <div className="flex items-center gap-2 text-cyan-400">
-                <FaBriefcase />
-                {r.jobs}
-              </div>
-            </div>
-          ))}
-
-        </div>
-
-      </Panel> */}
 
     </section>
   );

@@ -67,8 +67,18 @@ export default function Step3({ value = {}, onChange, onValidChange }) {
 
   const handleFile = (key, file) => {
     if (!file) return;
-    setFormData((p) => ({ ...p, [key]: file }));
-    setPreviews((p) => ({ ...p, [key]: URL.createObjectURL(file) }));
+    const reader = new FileReader();
+    reader.onload = () => {
+      const uploadedFile = {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        url: reader.result,
+      };
+      setFormData((p) => ({ ...p, [key]: uploadedFile }));
+      setPreviews((p) => ({ ...p, [key]: uploadedFile.url }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const removeFile = (key) => {
@@ -78,7 +88,13 @@ export default function Step3({ value = {}, onChange, onValidChange }) {
 
   const calculateAge = (dob) => {
     if (!dob) return null;
-    return new Date(Date.now() - dob.getTime()).getUTCFullYear() - 1970;
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age -= 1;
+    }
+    return age;
   };
 
   /* ===================== SYNC & VALIDATION ===================== */
@@ -358,6 +374,8 @@ function Select({ label, name, value, onChange, options }) {
 }
 
 function Upload({ label, preview, onUpload, onRemove }) {
+  const isPdf = preview?.startsWith("data:application/pdf");
+
   return (
     <div>
       <label className="text-sm text-white/60 mb-2 block">{label}</label>
@@ -368,16 +386,23 @@ function Upload({ label, preview, onUpload, onRemove }) {
           <FaUpload className="mr-2" /> Upload
           <input
             type="file"
+            accept="image/*,application/pdf"
             hidden
             onChange={(e) => onUpload(e.target.files[0])}
           />
         </label>
       ) : (
         <div className="relative w-64">
-          <img
-            src={preview}
-            className="w-full h-36 object-cover rounded-lg border border-yellow-400"
-          />
+          {isPdf ? (
+            <div className="flex h-36 items-center justify-center rounded-lg border border-yellow-400 bg-yellow-400/5 text-sm text-yellow-200">
+              PDF uploaded
+            </div>
+          ) : (
+            <img
+              src={preview}
+              className="w-full h-36 object-cover rounded-lg border border-yellow-400"
+            />
+          )}
           <button
             onClick={onRemove}
             className="absolute top-2 right-2 bg-transparent/70 text-white p-1 rounded-full"

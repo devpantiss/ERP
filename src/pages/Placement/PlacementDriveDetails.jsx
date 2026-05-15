@@ -1,7 +1,6 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import PlacementDriveStepper from "./PlacementDriveStepper";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -101,8 +100,6 @@ function generateDrives() {
 ========================================================= */
 
 export default function PlacementDrivesPage({ role = "placement" }) {
-  const navigate = useNavigate();
-
   const [drives, setDrives] = useState(generateDrives());
   const [activeDrive, setActiveDrive] = useState(null);
 

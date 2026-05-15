@@ -26,6 +26,7 @@ const ClientDashboard = lazy(() => import("./pages/Client/ClientDashboard"));
 const ClientProjects = lazy(() => import("./pages/Client/ClientProjects"));
 const ClientPerformance = lazy(() => import("./pages/Client/ClientPerformance"));
 const ClientSuccessStory = lazy(() => import("./pages/Client/ClientSuccessStory"));
+const ClientReports = lazy(() => import("./pages/Client/ClientReports"));
 const ClientProjectDetail = lazy(() =>
   import("./pages/Client/ClientProjects").then((module) => ({
     default: module.ClientProjectDetail,
@@ -43,6 +44,7 @@ const MobilizerRevenue = lazy(() => import("./pages/Mobilizer/MobilizerRevenue")
 // Shared pages (HR Entitlement + Grievance)
 const SalaryDashboard = lazy(() => import("./pages/shared/SalaryDashboard"));
 const ReimbursementPortal = lazy(() => import("./pages/shared/ReimbursementPortal"));
+const TourApplication = lazy(() => import("./pages/shared/TourApplication"));
 const LeaveManagement = lazy(() => import("./pages/shared/LeaveManagement"));
 const GrievancePortal = lazy(() => import("./pages/shared/GrievancePortal"));
 const SharedAttendancePage = lazy(() => import("./pages/shared/AttendancePage"));
@@ -157,6 +159,7 @@ function App() {
               <Route path="projects" element={<ClientProjects />} />
               <Route path="projects/:projectId" element={<ClientProjectDetail />} />
               <Route path="performance" element={<ClientPerformance />} />
+              <Route path="reports" element={<ClientReports />} />
               <Route path="success-story" element={<ClientSuccessStory />} />
             </Route>
           </Route>
@@ -177,6 +180,7 @@ function App() {
             {/* HR Entitlement */}
             <Route path="hr/attendance" element={<MobilizerAttendance />} />
             <Route path="hr/leave" element={<LeaveManagement />} />
+            <Route path="hr/tour" element={<TourApplication />} />
             <Route path="hr/salary" element={<SalaryDashboard />} />
             <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
 
@@ -225,6 +229,7 @@ function App() {
             {/* HR Entitlement */}
             <Route path="hr/attendance" element={<SharedAttendancePage />} />
             <Route path="hr/leave" element={<LeaveManagement />} />
+            <Route path="hr/tour" element={<TourApplication />} />
             <Route path="hr/salary" element={<SalaryDashboard />} />
             <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
 

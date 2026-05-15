@@ -1,4 +1,5 @@
 const STORAGE_KEY = "candidate_enrollment";
+const SUBMITTED_ENROLLMENTS_KEY = "submitted_candidate_enrollments";
 
 export function getEnrollmentData() {
   try {
@@ -24,4 +25,27 @@ export function saveEnrollmentStep(stepKey, data) {
 
 export function clearEnrollmentData() {
   localStorage.removeItem(STORAGE_KEY);
+}
+
+export function getSubmittedEnrollments() {
+  try {
+    return JSON.parse(localStorage.getItem(SUBMITTED_ENROLLMENTS_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveSubmittedEnrollment(candidate) {
+  const existing = getSubmittedEnrollments();
+  const updated = [candidate, ...existing.filter((item) => item.id !== candidate.id)];
+  localStorage.setItem(SUBMITTED_ENROLLMENTS_KEY, JSON.stringify(updated));
+  return updated;
+}
+
+export function updateSubmittedEnrollmentStatus(id, status) {
+  const updated = getSubmittedEnrollments().map((candidate) =>
+    candidate.id === id ? { ...candidate, status } : candidate
+  );
+  localStorage.setItem(SUBMITTED_ENROLLMENTS_KEY, JSON.stringify(updated));
+  return updated;
 }

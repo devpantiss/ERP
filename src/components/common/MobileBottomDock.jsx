@@ -132,7 +132,7 @@ const MobileBottomDock = ({
 
             {/* Body */}
             <div className="mobile-drawer__body">
-              {drawerItems.map((item, idx) => {
+              {drawerItems.map((item) => {
                 // Section heading divider
                 if (item.heading) {
                   return (

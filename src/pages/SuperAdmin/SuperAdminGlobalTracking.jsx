@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Globe, Activity, MapPin, Building2, Users, CheckCircle2, Clock, AlertCircle, BarChart3, Layers, Zap } from "lucide-react";
 
 /* ===================== MOCK DATA ===================== */
@@ -21,8 +20,6 @@ const GLOBAL_MILESTONES = [
 /* ===================== COMPONENT ===================== */
 
 export default function SuperAdminGlobalTracking() {
-  const [selectedRegion, setSelectedRegion] = useState("All");
-
   return (
     <div className="space-y-6">
       {/* Header */}

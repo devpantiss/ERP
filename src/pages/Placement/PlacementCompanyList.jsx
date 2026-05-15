@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
-import { useNavigate } from "react-router-dom";
 import PlacementCompanyDatabaseStepper from "./PlacementCompanyDatabaseStepper";
 
 /* ================= SEGMENTS ================= */
@@ -50,8 +49,6 @@ function generateCompanies() {
 /* ================= COMPONENT ================= */
 
 export default function CompanyDatabase() {
-
-  const navigate = useNavigate();
   const fileRefs = useRef({});
 
   const [companies, setCompanies] = useState(generateCompanies());
@@ -107,8 +104,6 @@ export default function CompanyDatabase() {
           c.companyName.toLowerCase().includes(filters.search.toLowerCase()))
     );
   }, [companies, filters]);
-
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
 
   const paginatedData = filtered.slice(
     (page - 1) * PER_PAGE,

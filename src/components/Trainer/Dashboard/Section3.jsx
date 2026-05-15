@@ -11,7 +11,6 @@ import {
     Legend,
     ResponsiveContainer,
   } from "recharts";
-  import { useState } from "react";
   
   /* ===================== AUTO GENERATED DATA ===================== */
   
@@ -38,8 +37,6 @@ import {
   /* ===================== COMPONENT ===================== */
   
   export default function Section3() {
-    const [view] = useState("monthly");
-  
     return (
       <section className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-8">
   

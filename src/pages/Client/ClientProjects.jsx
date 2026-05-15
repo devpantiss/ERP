@@ -52,6 +52,7 @@ export function ClientProjectDetail() {
   const { projectId } = useParams();
   const client = getStoredClient();
   const project = getClientProjects(client.name).find((item) => item.id === projectId);
+  const [selectedCenterId, setSelectedCenterId] = useState("");
 
   if (!project) {
     return (
@@ -71,9 +72,8 @@ export function ClientProjectDetail() {
 
   const snapshot = buildClientProjectSnapshot(project);
   const summary = snapshot.summary;
-  const [selectedCenterId, setSelectedCenterId] = useState(snapshot.centers[0]?.id || "");
   const selectedCenter =
-    snapshot.centers.find((center) => center.id === selectedCenterId) ||
+    snapshot.centers.find((center) => center.id === (selectedCenterId || snapshot.centers[0]?.id)) ||
     snapshot.centers[0];
 
   return (

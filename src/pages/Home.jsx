@@ -633,7 +633,7 @@ export default function Home() {
 }
 
 /* ===================== INPUT ===================== */
-function Input({ label, icon, value, onChange, type = "text", color }) {
+function Input({ label, icon, value, onChange, type = "text" }) {
   return (
     <div>
       <label className="text-xs text-white/60 mb-1 block">{label}</label>

@@ -25,8 +25,7 @@ body {
 }
 
 .perf-sidebar[data-collapsed="false"],
-.perf-sidebar[data-collapsed="true"]:hover,
-.perf-sidebar[data-collapsed="true"]:focus-within {
+.perf-sidebar[data-collapsed="true"]:hover {
   width: var(--sidebar-expanded-width, 16rem);
 }
 
@@ -39,8 +38,7 @@ body {
 }
 
 .perf-sidebar[data-collapsed="false"] .perf-sidebar-label,
-.perf-sidebar[data-collapsed="true"]:hover .perf-sidebar-label,
-.perf-sidebar[data-collapsed="true"]:focus-within .perf-sidebar-label {
+.perf-sidebar[data-collapsed="true"]:hover .perf-sidebar-label {
   max-width: 14rem;
   opacity: 1;
 }
@@ -56,8 +54,7 @@ body {
   margin-top: 0;
 }
 
-.perf-sidebar[data-collapsed="true"]:hover .perf-sidebar-panel,
-.perf-sidebar[data-collapsed="true"]:focus-within .perf-sidebar-panel {
+.perf-sidebar[data-collapsed="true"]:hover .perf-sidebar-panel {
   max-height: 32rem;
   opacity: 1;
   pointer-events: auto;

@@ -32,6 +32,7 @@ import {
 import { PROJECT_REPORTS } from "./adminPortalData";
 import SlidePanel from "../../components/common/SlidePanel";
 import TableExportActions from "../../components/common/TableExportActions";
+import { getSubmittedEnrollments } from "../../components/utils/enrollmentStorage";
 
 const STAFF_LANES = [
   "Lead Trainer",
@@ -138,6 +139,18 @@ const DESIGNATIONS = [
   "Site Supervisor Trainee",
   "Customer Service Rep",
   "Retail Floor Executive",
+];
+
+const ENROLLMENT_SAMPLE_PDF =
+  "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+const enrollmentSampleImage = (seed) =>
+  `https://i.pravatar.cc/420?img=${(seed % 70) + 1}`;
+
+const ENROLLMENT_DOCUMENT_FIELDS = [
+  { key: "aadhaar", label: "Aadhaar Card" },
+  { key: "qualification", label: "Qualification Certificate" },
+  { key: "experience", label: "Experience Certificate" },
+  { key: "license", label: "Operator / Driving License" },
 ];
 
 const formatNumber = (value) => new Intl.NumberFormat("en-IN").format(value);
@@ -574,6 +587,50 @@ const buildCenterSnapshot = (center, projectName) => {
       const hasM3 = monthsWorked >= 3;
       const hasBankStatement = placementStatus === "Placed" && learnerIndex % 3 !== 2;
       const isVerified = placementStatus === "Placed" && learnerIndex % 4 !== 3;
+      const qualificationLevel = ["10th Pass", "12th Pass", "ITI", "Diploma", "Graduate"][
+        (placementSeed + learnerIndex) % 5
+      ];
+      const qualificationTrade = ["Electrical", "Fitter", "Welder", "Logistics", "Solar O&M"][
+        (placementSeed + learnerIndex) % 5
+      ];
+      const qualificationInstitute = [
+        "ITI Angul",
+        "Govt Polytechnic Odisha",
+        "CBSE Board",
+        "Skill Development Center",
+      ][(placementSeed + learnerIndex) % 4];
+      const qualificationYear = String(2019 + ((placementSeed + learnerIndex) % 6));
+      const aadharLastFour = String(2000 + ((placementSeed + learnerIndex) % 7800));
+      const isOperatorCandidate = center.jobRoles[
+        (learnerIndex + index) % center.jobRoles.length
+      ]?.toLowerCase().includes("operator");
+      const enrollmentDocuments = {
+        aadhaar: {
+          name: `${candidateName.replace(/\s+/g, "-").toLowerCase()}-aadhaar.pdf`,
+          type: "application/pdf",
+          url: ENROLLMENT_SAMPLE_PDF,
+        },
+        qualification: {
+          name: `${candidateName.replace(/\s+/g, "-").toLowerCase()}-qualification.jpg`,
+          type: "image/jpeg",
+          url: enrollmentSampleImage(placementSeed + learnerIndex + 12),
+        },
+        experience:
+          learnerIndex % 3 === 0
+            ? null
+            : {
+                name: `${candidateName.replace(/\s+/g, "-").toLowerCase()}-experience.pdf`,
+                type: "application/pdf",
+                url: ENROLLMENT_SAMPLE_PDF,
+              },
+        license: isOperatorCandidate
+          ? {
+              name: `${candidateName.replace(/\s+/g, "-").toLowerCase()}-license.jpg`,
+              type: "image/jpeg",
+              url: enrollmentSampleImage(placementSeed + learnerIndex + 28),
+            }
+          : null,
+      };
 
       return {
         id: `${center.id}-${parsed.id}-candidate-${learnerIndex + 1}`,
@@ -589,6 +646,24 @@ const buildCenterSnapshot = (center, projectName) => {
         ).padStart(3, "0")}`,
         jobRole: center.jobRoles[(learnerIndex + index) % center.jobRoles.length],
         phone: `+91 98${String(70000000 + placementSeed + learnerIndex).slice(-8)}`,
+        aadharNumber: `XXXX-XXXX-${aadharLastFour}`,
+        dateOfBirth: `199${learnerIndex % 6}-0${(learnerIndex % 8) + 1}-15`,
+        gender: learnerIndex % 2 === 0 ? "Male" : "Female",
+        qualificationLevel,
+        qualificationTrade,
+        qualificationInstitute,
+        qualificationYear,
+        experienceYears: String(learnerIndex % 5),
+        currentlyEmployed: learnerIndex % 4 === 0 ? "Yes" : "No",
+        address: `${12 + learnerIndex}, ${center.location} main road, Odisha`,
+        livePhoto: enrollmentSampleImage(placementSeed + learnerIndex),
+        liveLocation: {
+          lat: 20.2961 + learnerIndex / 1000,
+          lng: 85.8245 + index / 1000,
+          accuracy: 20 + (learnerIndex % 12),
+          place: `${center.location}, Odisha`,
+        },
+        enrollmentDocuments,
         mobilizer: ["Priya Mishra", "Vikram Singh", "Rajan Nayak", "Sunita Patra"][
           (placementSeed + learnerIndex) % 4
         ],
@@ -953,15 +1028,6 @@ export default function AdminProjectManagement() {
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedCenterId, setSelectedCenterId] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState("");
-  const [detailPanel, setDetailPanel] = useState({
-    isOpen: false,
-    title: "",
-    subtitle: "",
-    icon: FileText,
-    accentClass: "text-violet-300",
-    records: [],
-    searchQuery: "",
-  });
 
   const selectedProject = useMemo(
     () =>
@@ -1059,83 +1125,6 @@ export default function AdminProjectManagement() {
     };
   }, [projectSnapshots]);
 
-  const projectStatusMeta = getStatusMeta(selectedProject?.status || "");
-  const projectHealthMeta = getHealthMeta(selectedProject?.healthScore || 0);
-  const centerHealthMeta = getHealthMeta(activeCenter?.healthScore || 0);
-  const centerRiskMeta = getRiskMeta(activeCenter?.riskLabel || "Watch");
-
-  const detailRecords = useMemo(
-    () =>
-      detailPanel.records.filter((record) =>
-        [
-          record.title,
-          record.subtitle,
-          record.meta,
-          record.tag,
-          record.description,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(detailPanel.searchQuery.toLowerCase())
-      ),
-    [detailPanel.records, detailPanel.searchQuery]
-  );
-
-  const openDetailPanel = ({
-    title,
-    subtitle,
-    icon,
-    accentClass,
-    records,
-  }) => {
-    setDetailPanel({
-      isOpen: true,
-      title,
-      subtitle,
-      icon,
-      accentClass,
-      records,
-      searchQuery: "",
-    });
-  };
-
-  const closeDetailPanel = () => {
-    setDetailPanel((currentValue) => ({
-      ...currentValue,
-      isOpen: false,
-      searchQuery: "",
-    }));
-  };
-
-  const projectScorecard = selectedProject
-    ? [
-        {
-          label: "Enrollment Achievement",
-          value: selectedProject.avgEnrollmentAchievement,
-          accentClass: "text-violet-300",
-          barClass: "bg-violet-500",
-        },
-        {
-          label: "Assessment Pass Rate",
-          value: selectedProject.avgAssessmentRate,
-          accentClass: "text-violet-300",
-          barClass: "bg-violet-500",
-        },
-        {
-          label: "Placement Conversion",
-          value: selectedProject.avgPlacementRate,
-          accentClass: "text-emerald-300",
-          barClass: "bg-emerald-500",
-        },
-        {
-          label: "Retention After 90 Days",
-          value: selectedProject.avgRetentionRate,
-          accentClass: "text-amber-300",
-          barClass: "bg-amber-500",
-        },
-      ]
-    : [];
-
   const currentStep = !selectedProject ? 1 : !activeCenter ? 2 : 3;
 
   const handleProjectSelect = (projectId) => {
@@ -1163,8 +1152,6 @@ export default function AdminProjectManagement() {
     }
   };
 
-  const PanelIcon = detailPanel.icon;
-
   return (
     <EnterpriseProjectDashboard
       portfolio={portfolio}
@@ -1177,1003 +1164,9 @@ export default function AdminProjectManagement() {
       onCenterSelect={handleCenterSelect}
       onBatchSelect={setSelectedBatchId}
       onBack={handleBack}
-      onResetProject={() => {
-        setSelectedProjectId("");
-        setSelectedCenterId("");
-        setSelectedBatchId("");
-      }}
-      onResetCenter={() => {
-        setSelectedCenterId("");
-        setSelectedBatchId("");
-      }}
     />
   );
 
-  return (
-    <div className="admin-project-details space-y-8 text-white">
-      <header className="admin-project-hero rounded-[28px] border border-white/10 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.42)] lg:p-7">
-        <div className="grid gap-7 xl:grid-cols-[minmax(0,1.12fr)_minmax(380px,0.88fr)]">
-          <div className="flex min-h-full flex-col justify-between gap-8">
-            <div className="space-y-5">
-              <div className="admin-project-kicker inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-200">
-                <FolderKanban size={14} />
-                Project Details / Reports
-              </div>
-              <div className="space-y-3">
-                <h1 className="max-w-4xl text-3xl font-semibold tracking-tight text-white md:text-5xl md:leading-[1.05]">
-                  Project intelligence for execution, governance, and learner outcomes.
-                </h1>
-                <p className="max-w-3xl text-sm leading-6 text-slate-300 md:text-base md:leading-7">
-                  A focused command surface for portfolio health, center performance,
-                  batch movement, staffing, learner progress, and governance risk.
-                </p>
-              </div>
-            </div>
-
-            <ProjectWorkflowStepper currentStep={currentStep} />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <PortfolioStatCard
-              label="Live Programs"
-              value={`${portfolio.activeProjects}/${portfolio.projects}`}
-              caption={`${portfolio.centerCount} centers under governance right now.`}
-              icon={ShieldCheck}
-              accentClass="text-emerald-300"
-              panelClass="border-emerald-500/15 bg-emerald-500/10"
-            />
-            <PortfolioStatCard
-              label="Learners In Flight"
-              value={formatNumber(portfolio.learners)}
-              caption={`${formatNumber(
-                portfolio.mappedCandidates
-              )} learners already aligned to placement pipelines.`}
-              icon={Users}
-              accentClass="text-fuchsia-200"
-              panelClass="border-white/10 bg-white/[0.035]"
-            />
-            <PortfolioStatCard
-              label="Portfolio Health"
-              value={`${portfolio.avgHealthScore}%`}
-              caption={`${portfolio.avgPlacementRate}% weighted placement conversion across the ERP portfolio.`}
-              icon={TrendingUp}
-              accentClass="text-violet-300"
-              panelClass="border-violet-500/15 bg-violet-500/10"
-            />
-            <PortfolioStatCard
-              label="At-Risk Programs"
-              value={`${portfolio.atRiskProjects}`}
-              caption={`${formatNumber(portfolio.employees)} employees are mapped into project delivery and support lanes.`}
-              icon={CircleAlert}
-              accentClass="text-amber-300"
-              panelClass="border-amber-500/15 bg-amber-500/10"
-            />
-          </div>
-        </div>
-      </header>
-
-      <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
-        <div className="flex flex-col gap-4 border-b border-white/10 pb-4 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="admin-project-kicker text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
-              Guided Workflow
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">
-              Select project first, then center, then review performance
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-              Start with the program portfolio, narrow into a center, then review
-              the operating metrics, learner movement, and governance signals.
-            </p>
-          </div>
-
-          {currentStep > 1 ? (
-            <button
-              type="button"
-              onClick={handleBack}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-200 transition hover:bg-white/[0.08]"
-            >
-              <ArrowLeft size={16} />
-              Back
-            </button>
-          ) : null}
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          {selectedProject ? (
-            <SelectionChip
-              label="Project"
-              value={selectedProject.name}
-              onClear={() => {
-                setSelectedProjectId("");
-                setSelectedCenterId("");
-                setSelectedBatchId("");
-              }}
-            />
-          ) : null}
-          {activeCenter ? (
-            <SelectionChip
-              label="Center"
-              value={activeCenter.name}
-              onClear={() => {
-                setSelectedCenterId("");
-                setSelectedBatchId("");
-              }}
-            />
-          ) : null}
-        </div>
-
-        <div className="mt-5">
-          {currentStep === 1 ? (
-            <GuidedStepSection
-              step="Step 1"
-              title="Choose the skilling project"
-              description="Project cards stay up front so the user can begin with the program itself before deciding which center to inspect."
-            >
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {projectSnapshots.map((project) => (
-                  <ProjectRailCard
-                    key={project.id}
-                    project={project}
-                    isActive={selectedProject?.id === project.id}
-                    onClick={() => handleProjectSelect(project.id)}
-                  />
-                ))}
-              </div>
-            </GuidedStepSection>
-          ) : null}
-
-          {currentStep === 2 && selectedProject ? (
-            <GuidedStepSection
-              step="Step 2"
-              title={`Choose the center inside ${selectedProject.name}`}
-              description="After selecting the project, the layout now narrows down to the centers under that program so the user can open the right performance view."
-            >
-              <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                <ProjectSelectionSpotlight
-                  project={selectedProject}
-                  projectHealthMeta={projectHealthMeta}
-                  projectStatusMeta={projectStatusMeta}
-                />
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  {rankedCenters.map((center) => (
-                    <CenterBenchmarkCard
-                      key={center.id}
-                      center={center}
-                      isActive={activeCenter?.id === center.id}
-                      onClick={() => handleCenterSelect(center.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </GuidedStepSection>
-          ) : null}
-        </div>
-      </section>
-
-      {currentStep === 3 && selectedProject && activeCenter ? (
-        <div className="space-y-6">
-          <section className="admin-project-focus rounded-[28px] border border-white/10 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.3)] lg:p-7">
-            <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-              <div className="space-y-5">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${projectStatusMeta.badgeClass}`}
-                  >
-                    {projectStatusMeta.label}
-                  </span>
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${projectHealthMeta.badgeClass}`}
-                  >
-                    {selectedProject.healthScore}% project health
-                  </span>
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${centerHealthMeta.badgeClass}`}
-                  >
-                    {activeCenter.healthScore}% center health
-                  </span>
-                  {selectedBatch ? (
-                    <span className="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-300">
-                      Batch focus: {selectedBatch.label}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div>
-                  <h2 className="text-3xl font-semibold tracking-tight text-white">
-                    {activeCenter.name}
-                  </h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
-                    {activeCenter.name} is the selected delivery center under{" "}
-                    {selectedProject.name}. Key delivery signals, batch flow,
-                    staffing, and risk posture are consolidated below.
-                  </p>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  <ProjectMetaCard
-                    icon={BriefcaseBusiness}
-                    label="Project"
-                    value={selectedProject.name}
-                    caption={selectedProject.fundingAgency}
-                  />
-                  <ProjectMetaCard
-                    icon={MapPin}
-                    label="Center"
-                    value={activeCenter.location}
-                    caption={`Managed by ${activeCenter.manager}`}
-                  />
-                  <ProjectMetaCard
-                    icon={CalendarRange}
-                    label="Delivery window"
-                    value={`${formatDate(selectedProject.startDate)} to ${formatDate(
-                      selectedProject.endDate
-                    )}`}
-                    caption={`${selectedProject.duration.remainingDays} day(s) remain in this program window.`}
-                  />
-                </div>
-
-                <div className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-300">
-                        Center execution pulse
-                      </p>
-                      <p className="mt-1 text-3xl font-semibold text-white">
-                        {activeCenter.healthScore}%
-                      </p>
-                    </div>
-                    <div className="text-right text-sm text-slate-400">
-                      <p>{activeCenter.batchSnapshots.length} active batches</p>
-                      <p>{activeCenter.complianceScore}% compliance confidence</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-slate-800">
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${centerHealthMeta.barClass}`}
-                      style={{ width: `${activeCenter.healthScore}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <HeroSignalCard
-                    label="Learners"
-                    value={formatNumber(activeCenter.candidates)}
-                    caption={`${activeCenter.batchSnapshots.length} active batches inside the selected center.`}
-                    icon={Users}
-                    accentClass="text-amber-300"
-                    panelClass="border-white/10 bg-white/[0.03]"
-                  />
-                  <HeroSignalCard
-                    label="Attendance Rate"
-                    value={`${activeCenter.attendanceRate}%`}
-                    caption={`${activeCenter.enrollmentAchievement}% enrollment achievement in the current center.`}
-                    icon={Activity}
-                    accentClass="text-violet-300"
-                    panelClass="border-white/10 bg-white/[0.03]"
-                  />
-                  <HeroSignalCard
-                    label="Placement Rate"
-                    value={`${activeCenter.placementRate}%`}
-                    caption={`${formatNumber(
-                      activeCenter.mappedCandidates
-                    )} learners are already mapped into opportunity pipelines.`}
-                    icon={Award}
-                    accentClass="text-emerald-300"
-                    panelClass="border-white/10 bg-white/[0.03]"
-                  />
-                  <HeroSignalCard
-                    label="Governance Load"
-                    value={`${activeCenter.grievances}`}
-                    caption={`${activeCenter.riskLabel} risk posture for the selected center.`}
-                    icon={CircleAlert}
-                    accentClass="text-rose-300"
-                    panelClass="border-white/10 bg-white/[0.03]"
-                  />
-                </div>
-
-                {selectedBatch ? (
-                  <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,_rgba(24,24,27,0.94),_rgba(10,10,12,0.96))] p-5">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
-                          Batch Focus
-                        </p>
-                        <p className="mt-2 text-2xl font-semibold text-white">
-                          {selectedBatch.label}
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-slate-400">
-                          {selectedBatch.track} delivery in {selectedBatch.mode} mode.
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-                        {selectedBatch.readiness}% readiness
-                      </span>
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                      <SmallStat
-                        label="Learners"
-                        value={formatNumber(selectedBatch.size)}
-                      />
-                      <SmallStat
-                        label="Certified"
-                        value={formatNumber(selectedBatch.certifiedCandidates)}
-                      />
-                      <SmallStat
-                        label="Placement Active"
-                        value={formatNumber(
-                          selectedBatch.placementTrackedCandidates
-                        )}
-                      />
-                      <SmallStat
-                        label="Placed"
-                        value={formatNumber(selectedBatch.placedCandidates)}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </section>
-
-          <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
-              <div className="flex items-center gap-3 border-b border-white/10 pb-4">
-                <div className="rounded-2xl bg-violet-500/10 p-2 text-violet-300">
-                  <Target size={18} />
-                </div>
-                <div>
-                  <p className="text-lg font-medium text-white">
-                    Delivery compass
-                  </p>
-                  <p className="text-sm text-slate-400">
-                    Project-level outcome signals and leadership context for the
-                    selected center.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-4">
-                {projectScorecard.map((signal) => (
-                  <SignalMeter
-                    key={signal.label}
-                    label={signal.label}
-                    value={signal.value}
-                    accentClass={signal.accentClass}
-                    barClass={signal.barClass}
-                  />
-                ))}
-              </div>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
-                <InsightStatRow
-                  label="Selected center posture"
-                  value={activeCenter.riskLabel}
-                  caption={`${activeCenter.healthScore}% health / ${activeCenter.complianceScore}% compliance / ${activeCenter.grievances} active issue(s).`}
-                  accentClass={centerRiskMeta.accentClass}
-                />
-                <InsightStatRow
-                  label="Best project center"
-                  value={selectedProject.topCenter?.name || "-"}
-                  caption={
-                    selectedProject.topCenter
-                      ? `${selectedProject.topCenter.healthScore}% health and ${selectedProject.topCenter.placementRate}% placement rate.`
-                      : "No benchmark available."
-                  }
-                  accentClass="text-emerald-300"
-                />
-                <InsightStatRow
-                  label="Watch center"
-                  value={selectedProject.watchCenter?.name || "-"}
-                  caption={
-                    selectedProject.watchCenter
-                      ? `${selectedProject.watchCenter.grievances} grievance(s) / ${selectedProject.watchCenter.riskLabel}.`
-                      : "No watch center available."
-                  }
-                  accentClass="text-amber-300"
-                />
-              </div>
-            </section>
-
-            <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
-              <div className="flex flex-col gap-4 border-b border-white/10 pb-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
-                    Center Switchboard
-                  </p>
-                  <h3 className="mt-2 text-2xl font-semibold text-white">
-                    Compare or switch centers without leaving the details view
-                  </h3>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                    Switch between centers in the selected project while keeping
-                    health, attendance, placement, and risk context visible.
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${projectStatusMeta.badgeClass}`}
-                >
-                  {selectedProject.status}
-                </span>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {rankedCenters.map((center) => (
-                  <CenterSwitchRow
-                    key={center.id}
-                    center={center}
-                    isActive={activeCenter?.id === center.id}
-                    onClick={() => handleCenterSelect(center.id)}
-                  />
-                ))}
-              </div>
-            </section>
-          </section>
-
-          <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
-            <div className="flex flex-col gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
-                  Batch And Learner Clarity
-                </p>
-                <h3 className="mt-2 text-2xl font-semibold text-white">
-                  Batch details and candidate roster for the selected center
-                </h3>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                  Select a batch to inspect candidate readiness, training status,
-                  placement movement, and the next milestone for each learner.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${centerHealthMeta.badgeClass}`}
-                >
-                  {activeCenter.healthScore}% health
-                </span>
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${centerRiskMeta.badgeClass}`}
-                >
-                  {activeCenter.riskLabel}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
-              <div className="space-y-4">
-                <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-violet-500/10 p-2 text-violet-300">
-                      <GraduationCap size={18} />
-                    </div>
-                    <div>
-                      <p className="text-lg font-medium text-white">
-                        Batch navigator
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        Select one batch to open its learner-level details.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 space-y-3">
-                    {activeCenter.batchSnapshots.map((batch) => (
-                      <BatchNavigatorCard
-                        key={batch.id}
-                        batch={batch}
-                        isActive={selectedBatch?.id === batch.id}
-                        onClick={() => setSelectedBatchId(batch.id)}
-                      />
-                    ))}
-                  </div>
-                </section>
-
-                {selectedBatch ? (
-                  <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-2xl bg-violet-500/10 p-2 text-violet-300">
-                        <Sparkles size={18} />
-                      </div>
-                      <div>
-                        <p className="text-lg font-medium text-white">
-                          Selected batch snapshot
-                        </p>
-                        <p className="text-sm text-slate-400">
-                          Training and placement stage mix for {selectedBatch.label}.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      <SmallStat
-                        label="Attendance"
-                        value={`${selectedBatch.attendanceRate}%`}
-                      />
-                      <SmallStat
-                        label="Assessment"
-                        value={`${selectedBatch.assessmentRate}%`}
-                      />
-                      <SmallStat
-                        label="Mapped"
-                        value={formatNumber(selectedBatch.mappedCandidates)}
-                      />
-                      <SmallStat
-                        label="Risk Flags"
-                        value={`${selectedBatch.riskCount}`}
-                      />
-                    </div>
-
-                    <div className="mt-5 space-y-4">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                          Training status mix
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {selectedBatch.trainingStatusMix.map((item) => (
-                            <StatusCountPill
-                              key={item.label}
-                              label={item.label}
-                              count={item.count}
-                              meta={item}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                          Placement status mix
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {selectedBatch.placementStatusMix.map((item) => (
-                            <StatusCountPill
-                              key={item.label}
-                              label={item.label}
-                              count={item.count}
-                              meta={item}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                ) : null}
-              </div>
-
-              <div className="space-y-4">
-                {selectedBatch ? (
-                  <section className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.04),_rgba(255,255,255,0.02))] p-5">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
-                          Batch Details
-                        </p>
-                        <h4 className="mt-2 text-2xl font-semibold text-white">
-                          {selectedBatch.label}
-                        </h4>
-                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-                          Candidate list, training status, placement movement,
-                          and readiness are grouped here so the batch story is
-                          visible in one place.
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          openDetailPanel({
-                            title: "Batch Candidate Roster",
-                            subtitle: `${selectedBatch.label} / ${activeCenter.name} / ${selectedProject.name}`,
-                            icon: GraduationCap,
-                            accentClass: "text-violet-300",
-                            records: selectedBatch.candidateRecords,
-                          })
-                        }
-                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-200 transition hover:bg-white/[0.08]"
-                      >
-                        Open Searchable Roster
-                        <ExternalLink size={15} />
-                      </button>
-                    </div>
-
-                    <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                      <SmallStat
-                        label="Learners"
-                        value={formatNumber(selectedBatch.size)}
-                      />
-                      <SmallStat
-                        label="Certified"
-                        value={formatNumber(selectedBatch.certifiedCandidates)}
-                      />
-                      <SmallStat
-                        label="Placement Active"
-                        value={formatNumber(
-                          selectedBatch.placementTrackedCandidates
-                        )}
-                      />
-                      <SmallStat
-                        label="Placed"
-                        value={formatNumber(selectedBatch.placedCandidates)}
-                      />
-                    </div>
-                  </section>
-                ) : null}
-
-                {selectedBatch ? (
-                  <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                    <div className="flex flex-col gap-3 border-b border-white/10 pb-4 md:flex-row md:items-start md:justify-between">
-                      <div>
-                        <p className="text-lg font-medium text-white">
-                          Candidate roster
-                        </p>
-                        <p className="mt-1 text-sm leading-6 text-slate-400">
-                          Learner-level training and placement indicators inside{" "}
-                          {selectedBatch.label}.
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-300">
-                        {selectedBatch.candidateRecords.length} candidates
-                      </span>
-                    </div>
-
-                    <div className="mt-4 overflow-x-auto rounded-[20px] border border-white/10">
-                      <div className="max-h-[560px] overflow-auto">
-                        <table className="min-w-[980px] w-full text-left text-sm">
-                          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.18em] text-slate-500">
-                            <tr>
-                              <th className="px-4 py-3 font-medium">Candidate</th>
-                              <th className="px-4 py-3 font-medium">Skill Lane</th>
-                              <th className="px-4 py-3 font-medium">Attendance</th>
-                              <th className="px-4 py-3 font-medium">Training Status</th>
-                              <th className="px-4 py-3 font-medium">Placement Status</th>
-                              <th className="px-4 py-3 font-medium">Next Milestone</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-white/10">
-                            {selectedBatch.candidateRecords.map((candidate) => (
-                              <tr
-                                key={candidate.id}
-                                className="align-top transition hover:bg-white/[0.03]"
-                              >
-                                <td className="px-4 py-4">
-                                  <div>
-                                    <p className="font-medium text-white">
-                                      {candidate.name}
-                                    </p>
-                                    <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
-                                      {candidate.candidateCode}
-                                    </p>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4">
-                                  <p className="text-white">{candidate.jobRole}</p>
-                                  <p className="mt-1 text-xs text-slate-500">
-                                    {selectedBatch.label}
-                                  </p>
-                                </td>
-                                <td className="px-4 py-4">
-                                  <InlinePercent value={candidate.attendanceRate} />
-                                </td>
-                                <td className="px-4 py-4">
-                                  <div className="space-y-2">
-                                    <StatusBadge
-                                      label={candidate.trainingStatus}
-                                      meta={candidate.trainingMeta}
-                                    />
-                                    <p className="text-xs text-slate-500">
-                                      Progress {candidate.trainingProgress}%
-                                    </p>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4">
-                                  <div className="space-y-2">
-                                    <StatusBadge
-                                      label={candidate.placementStatus}
-                                      meta={candidate.placementMeta}
-                                    />
-                                    <p className="text-xs text-slate-500">
-                                      Readiness {candidate.placementReadiness}%
-                                    </p>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4 text-slate-300">
-                                  {candidate.nextMilestone}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </section>
-                ) : null}
-              </div>
-            </div>
-          </section>
-
-          <section className="admin-project-section rounded-[28px] border border-white/10 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.26)] lg:p-6">
-            <div className="flex flex-col gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-300">
-                  Operations And Governance
-                </p>
-                <h3 className="mt-2 text-2xl font-semibold text-white">
-                  Delivery performance, staffing, and operational controls
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Delivery metrics, staffing distribution, personnel, job-role
-                  coverage, and open governance items for the selected center.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
-              <div className="space-y-6">
-                <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-violet-500/10 p-2 text-violet-300">
-                      <TrendingUp size={18} />
-                    </div>
-                    <div>
-                      <p className="text-lg font-medium text-white">
-                        Delivery performance stack
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        Outcome layers for enrollment, assessment, placement,
-                        retention, and compliance.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 space-y-4">
-                    {[
-                      {
-                        label: "Enrollment Achievement",
-                        value: activeCenter.enrollmentAchievement,
-                        accentClass: "text-violet-300",
-                        barClass: "bg-violet-500",
-                      },
-                      {
-                        label: "Assessment Pass Rate",
-                        value: activeCenter.assessmentPassRate,
-                        accentClass: "text-violet-300",
-                        barClass: "bg-violet-500",
-                      },
-                      {
-                        label: "Placement Conversion",
-                        value: activeCenter.placementConversion,
-                        accentClass: "text-emerald-300",
-                        barClass: "bg-emerald-500",
-                      },
-                      {
-                        label: "Retention After 90 Days",
-                        value: activeCenter.retentionRate,
-                        accentClass: "text-amber-300",
-                        barClass: "bg-amber-500",
-                      },
-                      {
-                        label: "Compliance Confidence",
-                        value: activeCenter.complianceScore,
-                        accentClass: "text-slate-200",
-                        barClass: "bg-slate-400",
-                      },
-                    ].map((signal) => (
-                      <SignalMeter
-                        key={signal.label}
-                        label={signal.label}
-                        value={signal.value}
-                        accentClass={signal.accentClass}
-                        barClass={signal.barClass}
-                      />
-                    ))}
-                  </div>
-                </section>
-
-                <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-violet-500/10 p-2 text-violet-300">
-                      <Users size={18} />
-                    </div>
-                    <div>
-                      <p className="text-lg font-medium text-white">
-                        Workforce deployment
-                      </p>
-                      <p className="text-sm text-slate-400">
-                        Current staffing distribution across execution lanes
-                        inside the center.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 space-y-4">
-                    {activeCenter.staffingPods.map((pod) => (
-                      <div
-                        key={pod.label}
-                        className="rounded-[20px] border border-white/10 bg-black/[0.18] p-4"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`rounded-xl px-3 py-1 text-xs font-semibold ${pod.panelClass} ${pod.accentClass}`}
-                            >
-                              {pod.label}
-                            </div>
-                            <p className="text-sm text-slate-400">
-                              {Math.round((pod.value / activeCenter.employees) * 100)}
-                              % of center strength
-                            </p>
-                          </div>
-                          <span
-                            className={`text-lg font-semibold ${pod.accentClass}`}
-                          >
-                            {pod.value}
-                          </span>
-                        </div>
-                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
-                          <div
-                            className={`h-full rounded-full ${pod.barClass}`}
-                            style={{
-                              width: `${Math.round(
-                                (pod.value / activeCenter.employees) * 100
-                              )}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              </div>
-
-              <div className="grid gap-6">
-                <PreviewPanel
-                  title="Key Personnel"
-                  caption="Named employees currently anchoring execution inside this center."
-                  icon={Users}
-                  records={activeCenter.employeeRecords}
-                  countLabel={`${activeCenter.employeeRecords.length} profiles`}
-                  onViewAll={() =>
-                    openDetailPanel({
-                      title: "Key Personnel",
-                      subtitle: `${activeCenter.name} / ${selectedProject.name}`,
-                      icon: Users,
-                      accentClass: "text-violet-300",
-                      records: activeCenter.employeeRecords,
-                    })
-                  }
-                />
-                <PreviewPanel
-                  title="Skill Vertical Coverage"
-                  caption="Role demand and learner distribution across job-role lanes."
-                  icon={FolderKanban}
-                  records={activeCenter.jobRoleRecords}
-                  countLabel={`${activeCenter.jobRoleRecords.length} job roles`}
-                  onViewAll={() =>
-                    openDetailPanel({
-                      title: "Skill Vertical Coverage",
-                      subtitle: `${activeCenter.name} / ${selectedProject.name}`,
-                      icon: FolderKanban,
-                      accentClass: "text-violet-300",
-                      records: activeCenter.jobRoleRecords,
-                    })
-                  }
-                />
-                <PreviewPanel
-                  title="Governance Queue"
-                  caption="Open issues, infrastructure risks, and operational escalations."
-                  icon={CircleAlert}
-                  records={activeCenter.grievanceRecords}
-                  countLabel={`${activeCenter.grievanceRecords.length} open items`}
-                  onViewAll={() =>
-                    openDetailPanel({
-                      title: "Governance Queue",
-                      subtitle: `${activeCenter.name} / ${selectedProject.name}`,
-                      icon: CircleAlert,
-                      accentClass: "text-amber-300",
-                      records: activeCenter.grievanceRecords,
-                    })
-                  }
-                />
-              </div>
-            </div>
-          </section>
-        </div>
-      ) : null}
-
-      <SlidePanel
-        open={detailPanel.isOpen}
-        onClose={closeDetailPanel}
-        title={detailPanel.title}
-        width="lg"
-      >
-        <div className="flex h-full flex-col bg-[#0a0e17]">
-          <div className="sticky top-0 z-10 border-b border-white/10 bg-[#0a0e17] p-6">
-            <div className="flex items-start gap-3">
-              <div
-                className={`rounded-2xl bg-white/[0.04] p-2.5 ${detailPanel.accentClass}`}
-              >
-                <PanelIcon size={20} />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-white">
-                  {detailPanel.title}
-                </h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  {detailPanel.subtitle}
-                </p>
-              </div>
-            </div>
-
-            <div className="relative mt-5">
-              <Search
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-              />
-              <input
-                type="text"
-                value={detailPanel.searchQuery}
-                onChange={(event) =>
-                  setDetailPanel((currentValue) => ({
-                    ...currentValue,
-                    searchQuery: event.target.value,
-                  }))
-                }
-                placeholder="Search records..."
-                className="w-full rounded-xl border border-white/10 bg-[#0f172a] py-2.5 pl-9 pr-4 text-sm text-white placeholder-slate-500 outline-none transition focus:border-violet-500"
-              />
-            </div>
-          </div>
-
-          <div className="flex-1 space-y-3 overflow-y-auto p-6 custom-scrollbar">
-            {detailRecords.length ? (
-              detailRecords.map((record) => (
-                <div
-                  key={record.id}
-                  className="rounded-[22px] border border-white/10 bg-[#111827] p-4"
-                >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-2">
-                      <p className="text-base font-medium text-white">
-                        {record.title}
-                      </p>
-                      <p className="text-sm text-slate-300">{record.subtitle}</p>
-                      <p className="text-xs uppercase tracking-[0.18em] text-slate-500">
-                        {record.meta}
-                      </p>
-                    </div>
-                    <span
-                      className={`h-fit rounded-full px-3 py-1 text-xs font-semibold ${
-                        record.toneClass || "bg-white/[0.05] text-slate-300"
-                      }`}
-                    >
-                      {record.tag}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">
-                    {record.description}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <div className="flex h-full min-h-[240px] flex-col items-center justify-center text-center">
-                <Search size={28} className="text-slate-600" />
-                <p className="mt-4 text-base font-medium text-slate-300">
-                  No matching records
-                </p>
-                <p className="mt-2 text-sm text-slate-500">
-                  Try a different keyword or clear the search box.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </SlidePanel>
-    </div>
-  );
 }
 
 function EnterpriseProjectDashboard({
@@ -2187,8 +1180,6 @@ function EnterpriseProjectDashboard({
   onCenterSelect,
   onBatchSelect,
   onBack,
-  onResetProject,
-  onResetCenter,
 }) {
   const mode = !selectedProject ? "Portfolio" : !activeCenter ? "Project" : "Center";
 
@@ -2725,6 +1716,49 @@ function EnterpriseBatchTable({ batches, selectedBatch, onBatchSelect }) {
   );
 }
 
+function normalizeSubmittedEnrollmentForProject(candidate, index) {
+  const documents = candidate.documents || {};
+  return {
+    ...candidate,
+    id: candidate.id || `submitted-${index + 1}`,
+    name: candidate.name || `Submitted Candidate ${index + 1}`,
+    candidateCode: candidate.candidateCode || `SUB-${String(index + 1).padStart(3, "0")}`,
+    jobRole: candidate.jobRole || candidate.jobrole || "Not Assigned",
+    phone: candidate.phone || "-",
+    mobilizer: candidate.mobilizer || "Mobilizer Submission",
+    enrollmentDate: candidate.enrollmentDate || new Date().toISOString().split("T")[0],
+    enrollmentStatus: candidate.status || candidate.enrollmentStatus || "Pending",
+    aadharNumber: candidate.aadharNumber || candidate.aadhaar || "-",
+    dateOfBirth: candidate.dateOfBirth || candidate.dob || "-",
+    gender: candidate.gender || "-",
+    qualificationLevel: candidate.qualificationLevel || candidate.qualification || "-",
+    qualificationTrade: candidate.qualificationTrade || "-",
+    qualificationInstitute: candidate.qualificationInstitute || "-",
+    qualificationYear: candidate.qualificationYear || "-",
+    experienceYears: candidate.experienceYears || candidate.experience || "0 Years",
+    currentlyEmployed: candidate.currentlyEmployed || "-",
+    address: candidate.address || "-",
+    livePhoto: candidate.livePhoto || candidate.image,
+    liveLocation: candidate.liveLocation,
+    enrollmentDocuments: {
+      aadhaar: documents.aadhaar || (candidate.aadhaarFile ? { name: "Aadhaar", url: candidate.aadhaarFile } : null),
+      qualification: documents.qualification || (candidate.qualificationFile ? { name: "Qualification", url: candidate.qualificationFile } : null),
+      experience: documents.experience || null,
+      license: documents.license || (candidate.licenceFile ? { name: "License", url: candidate.licenceFile } : null),
+    },
+  };
+}
+
+function getEnrollmentDocumentUrl(file) {
+  return typeof file === "string" ? file : file?.url;
+}
+
+function isEnrollmentPdf(file) {
+  const url = getEnrollmentDocumentUrl(file) || "";
+  const type = typeof file === "string" ? "" : file?.type || "";
+  return type.includes("pdf") || url.includes("application/pdf") || url.toLowerCase().includes(".pdf");
+}
+
 function CandidateRosterTabs({
   selectedBatch,
   project,
@@ -2735,6 +1769,14 @@ function CandidateRosterTabs({
   onBatchSelect,
 }) {
   const [activeTab, setActiveTab] = useState("training");
+  const submittedEnrollmentCandidates = useMemo(
+    () => getSubmittedEnrollments().map(normalizeSubmittedEnrollmentForProject),
+    []
+  );
+  const enrollmentCandidates = useMemo(
+    () => [...submittedEnrollmentCandidates, ...selectedBatch.candidateRecords],
+    [selectedBatch, submittedEnrollmentCandidates]
+  );
   const [verificationState, setVerificationState] = useState(() => {
     const initial = {};
     selectedBatch.candidateRecords.forEach((c) => {
@@ -2744,7 +1786,7 @@ function CandidateRosterTabs({
   });
   const [enrollmentState, setEnrollmentState] = useState(() => {
     const initial = {};
-    selectedBatch.candidateRecords.forEach((c) => {
+    enrollmentCandidates.forEach((c) => {
       initial[c.id] = c.enrollmentStatus;
     });
     return initial;
@@ -2755,11 +1797,13 @@ function CandidateRosterTabs({
     const enrollmentInitial = {};
     selectedBatch.candidateRecords.forEach((c) => {
       initial[c.id] = c.isVerified;
+    });
+    enrollmentCandidates.forEach((c) => {
       enrollmentInitial[c.id] = c.enrollmentStatus;
     });
     setVerificationState(initial);
     setEnrollmentState(enrollmentInitial);
-  }, [selectedBatch]);
+  }, [selectedBatch, enrollmentCandidates]);
 
   const toggleVerification = (candidateId) => {
     setVerificationState((prev) => ({
@@ -2779,7 +1823,7 @@ function CandidateRosterTabs({
     { key: "training", label: "Training Detail", icon: BookOpen },
     { key: "placements", label: "Placements", icon: Briefcase },
   ];
-  const pendingEnrollments = selectedBatch.candidateRecords.filter(
+  const pendingEnrollments = enrollmentCandidates.filter(
     (candidate) => enrollmentState[candidate.id] === "Pending"
   ).length;
 
@@ -2789,7 +1833,7 @@ function CandidateRosterTabs({
         <div>
           <h3 className="text-xl font-semibold text-white">Candidate Roster</h3>
           <p className="mt-1 text-sm text-slate-400">
-            {selectedBatch.candidateRecords.length} candidates in{" "}
+            {enrollmentCandidates.length} candidates in{" "}
             {selectedBatch.label}
           </p>
         </div>
@@ -2898,7 +1942,7 @@ function CandidateRosterTabs({
       {/* Tab content */}
       {activeTab === "enrollment" ? (
         <EnrollmentApprovalTable
-          candidates={selectedBatch.candidateRecords}
+          candidates={enrollmentCandidates}
           project={project}
           center={center}
           batchLabel={selectedBatch.label}
@@ -3140,6 +2184,8 @@ function EnrollmentApprovalTable({
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
+  const [previewEnrollmentDoc, setPreviewEnrollmentDoc] = useState(null);
+  const [viewEnrollmentCandidate, setViewEnrollmentCandidate] = useState(null);
 
   const roleOptions = useMemo(
     () => Array.from(new Set(candidates.map((candidate) => candidate.jobRole))).sort(),
@@ -3171,6 +2217,15 @@ function EnrollmentApprovalTable({
       { key: "centerName", header: "Center", exportValue: () => center.name },
       { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
       { key: "jobRole", header: "Job Role" },
+      { key: "aadharNumber", header: "Aadhaar" },
+      { key: "dateOfBirth", header: "DOB", type: "date" },
+      { key: "gender", header: "Gender" },
+      { key: "qualificationLevel", header: "Qualification" },
+      { key: "qualificationTrade", header: "Trade" },
+      { key: "qualificationInstitute", header: "Institute" },
+      { key: "qualificationYear", header: "Passing Year" },
+      { key: "experienceYears", header: "Experience" },
+      { key: "currentlyEmployed", header: "Currently Employed" },
       { key: "enrollmentDate", header: "Enrolled On", type: "date" },
       {
         key: "enrollmentStatus",
@@ -3205,16 +2260,18 @@ function EnrollmentApprovalTable({
         />
       </TableToolbar>
       <div className="max-h-[560px] overflow-auto">
-        <table className="w-full min-w-[1080px] text-left text-sm">
+        <table className="w-full min-w-[1680px] text-left text-sm">
           <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
             <tr>
               <th className="px-4 py-3 font-medium">Candidate</th>
-              <th className="px-4 py-3 font-medium">Mobilizer</th>
-              <th className="px-4 py-3 font-medium">Project</th>
-              <th className="px-4 py-3 font-medium">Center</th>
-              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">School / Center</th>
               <th className="px-4 py-3 font-medium">Job Role</th>
-              <th className="px-4 py-3 font-medium">Enrolled On</th>
+              <th className="px-4 py-3 font-medium">Aadhaar</th>
+              <th className="px-4 py-3 font-medium">DOB / Gender</th>
+              <th className="px-4 py-3 font-medium">Qualification</th>
+              <th className="px-4 py-3 font-medium">Experience</th>
+              <th className="px-4 py-3 font-medium">Documents</th>
+              <th className="px-4 py-3 font-medium">Submitted</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 text-right font-medium">Action</th>
             </tr>
@@ -3225,27 +2282,93 @@ function EnrollmentApprovalTable({
               return (
                 <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
                   <td className="px-4 py-4">
-                    <p className="font-medium text-white">{candidate.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {candidate.candidateCode} • {candidate.phone}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      {candidate.livePhoto ? (
+                        <img
+                          src={candidate.livePhoto}
+                          alt=""
+                          className="h-10 w-10 rounded-lg border border-white/10 object-cover"
+                        />
+                      ) : null}
+                      <div>
+                        <p className="font-medium text-white">{candidate.name}</p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          {candidate.candidateCode} • {candidate.phone}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">{candidate.mobilizer}</p>
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-4 py-4 text-slate-300">{candidate.mobilizer}</td>
-                  <td className="px-4 py-4 text-slate-300">{project.name}</td>
-                  <td className="px-4 py-4 text-slate-300">{center.name}</td>
                   <td className="px-4 py-4">
-                    <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
-                      {batchLabel}
-                    </span>
+                    <p className="text-slate-300">{project.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">{center.name} • {batchLabel}</p>
                   </td>
                   <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
+                  <td className="px-4 py-4 text-slate-300">{candidate.aadharNumber || "—"}</td>
+                  <td className="px-4 py-4">
+                    <p className="text-slate-300">{candidate.dateOfBirth || "—"}</p>
+                    <p className="mt-1 text-xs text-slate-500">{candidate.gender || "—"}</p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="text-slate-300">{candidate.qualificationLevel || "—"}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {[candidate.qualificationTrade, candidate.qualificationInstitute, candidate.qualificationYear]
+                        .filter(Boolean)
+                        .join(" • ") || "—"}
+                    </p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="text-slate-300">{formatEnrollmentExperience(candidate.experienceYears)}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Employed: {candidate.currentlyEmployed || "—"}
+                    </p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-wrap gap-2">
+                      {ENROLLMENT_DOCUMENT_FIELDS.map((field) => {
+                        const file = candidate.enrollmentDocuments?.[field.key];
+                        const available = Boolean(getEnrollmentDocumentUrl(file));
+                        return (
+                          <button
+                            key={field.key}
+                            type="button"
+                            disabled={!available}
+                            onClick={() =>
+                              setPreviewEnrollmentDoc({
+                                label: field.label,
+                                file,
+                                candidate,
+                              })
+                            }
+                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
+                              available
+                                ? "border-violet-400/20 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20"
+                                : "cursor-not-allowed border-white/10 text-slate-600"
+                            }`}
+                          >
+                            <FileText size={12} />
+                            {field.label.split(" ")[0]}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </td>
                   <td className="px-4 py-4 text-slate-300">{candidate.enrollmentDate}</td>
                   <td className="px-4 py-4">
                     <EnrollmentStatusBadge status={status} />
                   </td>
                   <td className="px-4 py-4 text-right">
-                    {status === "Pending" ? (
-                      <div className="inline-flex items-center gap-2">
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setViewEnrollmentCandidate(candidate)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.08]"
+                      >
+                        <Eye size={13} />
+                        View
+                      </button>
+                      {status === "Pending" ? (
+                        <>
                         <button
                           type="button"
                           onClick={() => onUpdateEnrollmentStatus(candidate.id, "Approved")}
@@ -3262,10 +2385,9 @@ function EnrollmentApprovalTable({
                           <XCircle size={13} />
                           Reject
                         </button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-500">Reviewed</span>
-                    )}
+                        </>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               );
@@ -3273,7 +2395,169 @@ function EnrollmentApprovalTable({
           </tbody>
         </table>
       </div>
+      <EnrollmentCandidatePanel
+        candidate={viewEnrollmentCandidate}
+        projectName={project.name}
+        centerName={center.name}
+        batchLabel={batchLabel}
+        onClose={() => setViewEnrollmentCandidate(null)}
+        onPreviewDocument={setPreviewEnrollmentDoc}
+      />
+      <EnrollmentDocumentPreview
+        preview={previewEnrollmentDoc}
+        onClose={() => setPreviewEnrollmentDoc(null)}
+      />
     </div>
+  );
+}
+
+function formatEnrollmentExperience(value) {
+  if (!value) return "0 Years";
+  return String(value).toLowerCase().includes("year") ? value : `${value} Years`;
+}
+
+function EnrollmentCandidatePanel({
+  batchLabel,
+  candidate,
+  centerName,
+  onClose,
+  onPreviewDocument,
+  projectName,
+}) {
+  return (
+    <SlidePanel open={!!candidate} onClose={onClose} title="Enrollment Details" width="xl">
+      {candidate ? (
+        <div className="space-y-6">
+          <div className="flex items-start gap-4">
+            {candidate.livePhoto ? (
+              <img
+                src={candidate.livePhoto}
+                alt=""
+                className="h-20 w-20 rounded-xl border border-white/10 object-cover"
+              />
+            ) : null}
+            <div>
+              <h3 className="text-xl font-semibold text-white">{candidate.name}</h3>
+              <p className="mt-1 text-sm text-violet-300">{candidate.jobRole}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {candidate.candidateCode} • {candidate.phone}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            {[
+              ["Project", projectName],
+              ["Center", centerName],
+              ["Batch", batchLabel],
+              ["Mobilizer", candidate.mobilizer],
+              ["Aadhaar", candidate.aadharNumber],
+              ["Date of Birth", candidate.dateOfBirth],
+              ["Gender", candidate.gender],
+              ["Qualification", candidate.qualificationLevel],
+              ["Trade / Discipline", candidate.qualificationTrade],
+              ["Institute / Board", candidate.qualificationInstitute],
+              ["Year of Passing", candidate.qualificationYear],
+              ["Experience", formatEnrollmentExperience(candidate.experienceYears)],
+              ["Currently Employed", candidate.currentlyEmployed],
+              ["Address", candidate.address],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {label}
+                </p>
+                <p className="mt-1 text-sm text-slate-200">{value || "—"}</p>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+              Uploaded Documents
+            </p>
+            <div className="grid gap-3 md:grid-cols-2">
+              {ENROLLMENT_DOCUMENT_FIELDS.map((field) => {
+                const file = candidate.enrollmentDocuments?.[field.key];
+                const available = Boolean(getEnrollmentDocumentUrl(file));
+                return (
+                  <button
+                    key={field.key}
+                    type="button"
+                    disabled={!available}
+                    onClick={() => onPreviewDocument({ label: field.label, file, candidate })}
+                    className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-sm ${
+                      available
+                        ? "border-white/10 bg-white/[0.04] text-slate-200 hover:bg-white/[0.08]"
+                        : "cursor-not-allowed border-white/10 text-slate-600"
+                    }`}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <FileText size={15} />
+                      {field.label}
+                    </span>
+                    <span className="text-xs">{available ? "Preview" : "Missing"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {candidate.liveLocation ? (
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4 text-sm text-slate-300">
+              <p className="flex items-center gap-2 font-semibold text-white">
+                <MapPin size={15} />
+                Captured Location
+              </p>
+              <p className="mt-2">{candidate.liveLocation.place || "Location captured during enrollment"}</p>
+              <p className="mt-1 text-xs text-slate-500">
+                {candidate.liveLocation.lat}, {candidate.liveLocation.lng}
+                {candidate.liveLocation.accuracy
+                  ? ` • Accuracy +/-${Math.round(candidate.liveLocation.accuracy)} m`
+                  : ""}
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </SlidePanel>
+  );
+}
+
+function EnrollmentDocumentPreview({ onClose, preview }) {
+  const fileUrl = getEnrollmentDocumentUrl(preview?.file);
+
+  return (
+    <SlidePanel open={!!preview} onClose={onClose} title={preview?.label || "Document Preview"} width="xl">
+      {preview ? (
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm font-semibold text-white">{preview.candidate?.name}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {preview.candidate?.candidateCode} • {preview.file?.name || preview.label}
+            </p>
+          </div>
+          {fileUrl ? (
+            isEnrollmentPdf(preview.file) ? (
+              <iframe
+                src={fileUrl}
+                title={preview.label}
+                className="h-[70vh] w-full rounded-xl border border-white/10 bg-white"
+              />
+            ) : (
+              <img
+                src={fileUrl}
+                alt={preview.label}
+                className="max-h-[70vh] w-full rounded-xl border border-white/10 object-contain"
+              />
+            )
+          ) : (
+            <div className="rounded-xl border border-white/10 p-10 text-center text-slate-500">
+              No preview available.
+            </div>
+          )}
+        </div>
+      ) : null}
+    </SlidePanel>
   );
 }
 

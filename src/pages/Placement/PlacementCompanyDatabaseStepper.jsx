@@ -288,7 +288,7 @@ function StepSpoc({ form, handleChange }) {
   );
 }
 
-function StepDocs({ form, handleChange }) {
+function StepDocs({ handleChange }) {
   return (
     <div className="space-y-6">
 

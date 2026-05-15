@@ -26,7 +26,6 @@ export default function TrainerLiveFeedHost({ embedded = false }) {
   const peerRef = useRef(null);
   const streamRef = useRef(null);
   const callsRef = useRef([]);
-  const canvasRef = useRef(null);
 
   const [sessionId, setSessionId] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -113,7 +112,7 @@ export default function TrainerLiveFeedHost({ embedded = false }) {
         setStatus("error");
         addLog(`Error: ${err.message}`, "error");
       });
-    } catch (err) {
+    } catch {
       setError("Camera/microphone permission denied.");
       setStatus("error");
       addLog("Camera access denied", "error");
@@ -121,7 +120,13 @@ export default function TrainerLiveFeedHost({ embedded = false }) {
   }, []);
 
   const stopSession = useCallback(() => {
-    callsRef.current.forEach((c) => { try { c.close(); } catch (_) {} });
+    callsRef.current.forEach((c) => {
+      try {
+        c.close();
+      } catch {
+        // Ignore cleanup errors from already-closed peer calls.
+      }
+    });
     callsRef.current = [];
     streamRef.current?.getTracks().forEach((t) => t.stop());
     peerRef.current?.destroy();
