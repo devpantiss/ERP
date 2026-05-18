@@ -15,6 +15,8 @@ import {
   Briefcase,
   MessageSquareWarning,
   MapPinned,
+  PackageCheck,
+  ShieldCheck,
 } from "lucide-react";
 
 /* ─── Dock config ─── */
@@ -54,6 +56,8 @@ const DRAWER_ITEMS = [
   },
   { label: "Live Feed", path: "/admin/live-feed", icon: Radio },
   { label: "Project Details / Reports", path: "/admin/project-details-reports", icon: Briefcase },
+  { label: "Students Kit Distribution", path: "/admin/students-kit-distribution", icon: PackageCheck },
+  { label: "Student Insurance Details", path: "/admin/student-insurance-details", icon: ShieldCheck },
   { label: "Grievance Portal", path: "/admin/grievance-portal", icon: MessageSquareWarning },
 ];
 

@@ -1,5 +1,3 @@
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-
 /* ===================== PROJECT STATUS DATA ===================== */
 
 const PROJECTS = [
@@ -11,7 +9,6 @@ const PROJECTS = [
     enrolled: 240,
     certified: 212,
     placed: 185,
-    trend: "up",
   },
   {
     name: "CSR – Tata Steel",
@@ -21,7 +18,6 @@ const PROJECTS = [
     enrolled: 180,
     certified: 146,
     placed: 112,
-    trend: "up",
   },
   {
     name: "DDUGKY",
@@ -31,7 +27,6 @@ const PROJECTS = [
     enrolled: 320,
     certified: 218,
     placed: 144,
-    trend: "down",
   },
   {
     name: "State Skill Mission",
@@ -41,7 +36,6 @@ const PROJECTS = [
     enrolled: 150,
     certified: 141,
     placed: 132,
-    trend: "up",
   },
   {
     name: "DMF Keonjhar",
@@ -51,7 +45,6 @@ const PROJECTS = [
     enrolled: 200,
     certified: 116,
     placed: 68,
-    trend: "up",
   },
   {
     name: "Shaksham Sundargarh",
@@ -61,7 +54,6 @@ const PROJECTS = [
     enrolled: 280,
     certified: 206,
     placed: 154,
-    trend: "down",
   },
 ];
 
@@ -94,7 +86,6 @@ export default function AdminDashboardSection3() {
               <th className="px-4 py-4">Enrolled</th>
               <th className="px-4 py-4">Certified</th>
               <th className="px-4 py-4">Placed</th>
-              <th className="px-4 py-4">Trend</th>
             </tr>
           </thead>
 
@@ -150,20 +141,6 @@ export default function AdminDashboardSection3() {
 
                 <td className="px-4 py-4 font-medium text-white/80">
                   {project.placed}
-                </td>
-
-                <td className="px-4 py-4">
-                  {project.trend === "up" ? (
-                    <span className="flex items-center gap-1 text-xs font-medium text-emerald-300">
-                      <ArrowUpRight size={14} />
-                      Up
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-xs font-medium text-red-300">
-                      <ArrowDownRight size={14} />
-                      Down
-                    </span>
-                  )}
                 </td>
               </tr>
             ))}

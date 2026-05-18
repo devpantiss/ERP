@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   Users,
+  UserPlus,
   Building2,
   FolderKanban,
   MapPin,
@@ -72,6 +73,8 @@ export default function AdminDashboardSection1({
   totalData = {
     totalUsers: 186,
     totalUsersTarget: 250,
+    admissions: 142,
+    admissionsTarget: 200,
     activeCenters: 12,
     activeCentersTarget: 20,
     activeProjects: 8,
@@ -83,6 +86,8 @@ export default function AdminDashboardSection1({
   lastMonthData = {
     totalUsers: 24,
     totalUsersTarget: 40,
+    admissions: 31,
+    admissionsTarget: 50,
     activeCenters: 3,
     activeCentersTarget: 5,
     activeProjects: 2,
@@ -95,6 +100,7 @@ export default function AdminDashboardSection1({
   const data = view === "total" ? totalData : lastMonthData;
 
   const animatedUsers = useCountUp(data.totalUsers);
+  const animatedAdmissions = useCountUp(data.admissions);
   const animatedCenters = useCountUp(data.activeCenters);
   const animatedProjects = useCountUp(data.activeProjects);
   const targetPie = (achieved, target) => [
@@ -156,7 +162,7 @@ export default function AdminDashboardSection1({
         </div>
 
         {/* KPI GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
 
           <KpiCard
             title="Total Users"
@@ -172,6 +178,14 @@ export default function AdminDashboardSection1({
             target={`Target: ${data.activeCentersTarget}`}
             icon={<Building2 size={18} />}
             pie={targetPie(data.activeCenters, data.activeCentersTarget)}
+          />
+
+          <KpiCard
+            title="Admissions"
+            value={animatedAdmissions}
+            target={`Target: ${data.admissionsTarget}`}
+            icon={<UserPlus size={18} />}
+            pie={targetPie(data.admissions, data.admissionsTarget)}
           />
 
           <KpiCard

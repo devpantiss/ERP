@@ -1,10 +1,20 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import {
+  ArrowRight,
+  Building2,
   BriefcaseBusiness,
+  CalendarDays,
+  Database,
   Download,
+  Eye,
+  ExternalLink,
   FileSpreadsheet,
   FileText,
+  LoaderCircle,
+  PanelLeft,
+  Settings2,
+  SlidersHorizontal,
 } from "lucide-react";
 import { Header } from "./ClientDashboard";
 import {
@@ -194,6 +204,7 @@ export default function ClientReports() {
   const [month, setMonth] = useState(MONTH_OPTIONS[new Date().getMonth()]);
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [generatingReport, setGeneratingReport] = useState("");
+  const [selectedReportId, setSelectedReportId] = useState(REPORT_TYPES[0].id);
 
   const selectedCenters = useMemo(() => {
     if (!selectedProject) return [];
@@ -217,6 +228,13 @@ export default function ClientReports() {
           : 0,
     };
   }, [selectedCenters]);
+
+  const reportAnalytics = useMemo(
+    () => (selectedProject ? buildReportAnalytics(selectedCenters, selectedProject) : null),
+    [selectedCenters, selectedProject]
+  );
+
+  const selectedReport = REPORT_TYPES.find((report) => report.id === selectedReportId) || REPORT_TYPES[0];
 
   const handleProjectChange = (nextProjectId) => {
     setProjectId(nextProjectId);
@@ -275,47 +293,100 @@ export default function ClientReports() {
   }
 
   return (
-    <section className="space-y-7">
-      <Header
-        eyebrow="Report Generation"
-        title="Reports"
-        description="Select the project, center, and reporting period, then download the required client report."
-      />
+    <section className="report-studio relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#050914] shadow-2xl shadow-black/40 xl:h-[calc(100vh-5rem)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_8%_0%,rgba(34,211,238,0.16),transparent_26%),radial-gradient(circle_at_92%_10%,rgba(139,92,246,0.18),transparent_28%),linear-gradient(to_right,rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-size-[auto,auto,44px_44px,44px_44px]" />
 
-      <section className="grid gap-4 rounded-2xl border border-violet-200/10 bg-white/[0.035] p-4 md:grid-cols-2">
-        <SelectField label="Project" value={selectedProject.id} onChange={handleProjectChange}>
-          {snapshots.map((project) => (
-            <option key={project.id} value={project.id}>{project.name}</option>
-          ))}
-        </SelectField>
-        <SelectField label="Center" value={centerId} onChange={setCenterId}>
-          <option value="all">All centers</option>
-          {selectedProject.centers.map((center) => (
-            <option key={center.id} value={center.id}>{center.name}</option>
-          ))}
-        </SelectField>
-      </section>
+      <div className="relative z-10 grid min-h-[calc(100vh-5rem)] xl:h-full xl:min-h-0 xl:grid-cols-[310px_minmax(0,1fr)]">
+        <aside className="report-studio-rail border-b border-white/10 bg-black/20 p-5 xl:h-full xl:overflow-y-auto xl:border-b-0 xl:border-r">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10">
+              <PanelLeft size={19} className="text-cyan-200" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">Client</p>
+              <h1 className="text-xl font-semibold text-white">Report Studio</h1>
+            </div>
+          </div>
 
-      <section className="grid gap-4 lg:grid-cols-3">
-        {REPORT_TYPES.map((report) => (
-          <ReportDownloadCard
-            key={report.id}
-            report={report}
-            isGenerating={generatingReport === report.id}
-            isDisabled={Boolean(generatingReport)}
+          <div className="space-y-4">
+            <StudioSelect label="Project" value={selectedProject.id} onChange={handleProjectChange} icon={Building2}>
+              {snapshots.map((project) => (
+                <option key={project.id} value={project.id}>{project.name}</option>
+              ))}
+            </StudioSelect>
+            <StudioSelect label="Center Scope" value={centerId} onChange={setCenterId} icon={Database}>
+              <option value="all">All centers</option>
+              {selectedProject.centers.map((center) => (
+                <option key={center.id} value={center.id}>{center.name}</option>
+              ))}
+            </StudioSelect>
+
+            <div className="grid grid-cols-2 gap-3">
+              <StudioSelect label="Month" value={month} onChange={setMonth} icon={CalendarDays}>
+                {MONTH_OPTIONS.map((item) => <option key={item}>{item}</option>)}
+              </StudioSelect>
+              <label className="block">
+                <span className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">
+                  <Settings2 size={13} />
+                  Year
+                </span>
+                <input
+                  value={year}
+                  onChange={(event) => setYear(event.target.value)}
+                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.045] px-3 text-sm text-white outline-none transition focus:border-cyan-300/45"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className="mt-7">
+            <p className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
+              <SlidersHorizontal size={13} />
+              Report Type
+            </p>
+            <div className="space-y-2">
+              {REPORT_TYPES.map((report) => (
+                <ReportRailButton
+                  key={report.id}
+                  onClick={() => setSelectedReportId(report.id)}
+                  report={report}
+                  selected={selectedReportId === report.id}
+                />
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <main className="report-studio-stage min-w-0 p-4 md:p-6 xl:h-full xl:overflow-y-auto">
+          <ReportPreviewPanel
+            centers={selectedCenters}
+            client={client}
             month={month}
-            onDownload={() => downloadReport(report.id)}
-            onMonthChange={setMonth}
-            onYearChange={setYear}
+            isGenerating={generatingReport === selectedReport.id}
+            onDownload={() => downloadReport(selectedReport.id)}
+            project={selectedProject}
+            report={selectedReport}
+            summary={reportSummary}
             year={year}
           />
-        ))}
-      </section>
+        </main>
+
+      </div>
     </section>
   );
 }
 
-async function generateMonthlyProgressPdf({ centers, client, month, project, summary, year }) {
+function finalizeReportPdf(doc, fileName, output = "download") {
+  const safeName = `${slugifyFileName(fileName)}.pdf`;
+  if (output === "blob-url") {
+    return URL.createObjectURL(doc.output("blob"));
+  }
+
+  doc.save(safeName);
+  return null;
+}
+
+async function generateMonthlyProgressPdf({ centers, client, month, output, project, summary, year }) {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
@@ -816,10 +887,10 @@ async function generateMonthlyProgressPdf({ centers, client, month, project, sum
     pageSections[doc.internal.getNumberOfPages()] = "Table of Contents";
   }
   addFooter();
-  doc.save(`${slugifyFileName(`${client.name}_${project.name}_${month}_${year}_monthly_progress_report`)}.pdf`);
+  return finalizeReportPdf(doc, `${client.name}_${project.name}_${month}_${year}_monthly_progress_report`, output);
 }
 
-async function generateBatchwiseDetailsPdf({ centers, client, month, project, year }) {
+async function generateBatchwiseDetailsPdf({ centers, client, month, output, project, year }) {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
@@ -999,10 +1070,10 @@ async function generateBatchwiseDetailsPdf({ centers, client, month, project, ye
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...muted);
-  doc.save(`${slugifyFileName(`${client.name}_${project.name}_${month}_${year}_batchwise_details`)}.pdf`);
+  return finalizeReportPdf(doc, `${client.name}_${project.name}_${month}_${year}_batchwise_details`, output);
 }
 
-async function generatePlacementReportPdf({ centers, client, month, project, year }) {
+async function generatePlacementReportPdf({ centers, client, month, output, project, year }) {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
@@ -1105,7 +1176,7 @@ async function generatePlacementReportPdf({ centers, client, month, project, yea
     didDrawPage: () => addSimpleFooter(doc, { client, margin, pageHeight, pageWidth, project, section: "Placement Pipeline" }),
   });
 
-  doc.save(`${slugifyFileName(`${client.name}_${project.name}_${month}_${year}_placement_report`)}.pdf`);
+  return finalizeReportPdf(doc, `${client.name}_${project.name}_${month}_${year}_placement_report`, output);
 }
 
 function addSimpleReportCover(doc, { accent, client, margin, month, pageWidth, project, reportTitle, subtitle, year }) {
@@ -1153,6 +1224,52 @@ function addSimpleFooter(doc, { client, margin, pageHeight, pageWidth, project, 
   doc.text(`Page ${pageNumber}`, pageWidth - margin, pageHeight - 14, { align: "right" });
 }
 
+function StudioSelect({ children, icon: Icon, label, onChange, value }) {
+  return (
+    <label className="block">
+      <span className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/35">
+        <Icon size={13} />
+        {label}
+      </span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.045] px-3 text-sm text-white outline-none transition focus:border-cyan-300/45"
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
+
+function ReportRailButton({ onClick, report, selected }) {
+  const Icon = report.icon;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`report-type-card group w-full rounded-2xl border p-3 text-left transition ${
+        selected
+          ? "is-selected border-cyan-300/45 bg-cyan-300/10 shadow-lg shadow-cyan-500/10"
+          : "border-white/10 bg-white/[0.035] hover:border-white/20 hover:bg-white/[0.06]"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${
+          selected ? "border-cyan-300/30 bg-cyan-300/10" : "border-white/10 bg-black/20"
+        }`}>
+          <Icon size={17} className={selected ? "text-cyan-200" : "text-white/55 group-hover:text-white/80"} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-white">{report.title}</p>
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-white/42">{report.subtitle}</p>
+        </div>
+      </div>
+    </button>
+  );
+}
+
 function SelectField({ children, label, onChange, value }) {
   return (
     <label>
@@ -1181,22 +1298,392 @@ function InputField({ label, onChange, value }) {
   );
 }
 
+function MiniMetric({ label, value }) {
+  return (
+    <div className="min-w-[92px] rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
+      <p className="text-lg font-semibold text-white">{value}</p>
+      <p className="text-[11px] uppercase tracking-wider text-white/40">{label}</p>
+    </div>
+  );
+}
+
+function ReportPreviewPanel({ centers, client, isGenerating, month, onDownload, project, report, summary, year }) {
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState("");
+  const Icon = report.icon;
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl = "";
+
+    const buildPreview = async () => {
+      if (!project || !centers.length) {
+        setPreviewUrl("");
+        return;
+      }
+
+      setIsPreviewLoading(true);
+      setPreviewError("");
+
+      try {
+        const payload = {
+          centers,
+          client,
+          month,
+          output: "blob-url",
+          project,
+          summary,
+          year,
+        };
+
+        if (report.id === "batchwise") {
+          objectUrl = await generateBatchwiseDetailsPdf(payload);
+        } else if (report.id === "placement") {
+          objectUrl = await generatePlacementReportPdf(payload);
+        } else {
+          objectUrl = await generateMonthlyProgressPdf(payload);
+        }
+
+        if (!cancelled) {
+          setPreviewUrl(objectUrl);
+        }
+      } catch (error) {
+        console.error(error);
+        if (!cancelled) {
+          setPreviewUrl("");
+          setPreviewError("Unable to render the PDF preview. You can still download the report.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsPreviewLoading(false);
+        }
+      }
+    };
+
+    buildPreview();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [centers, client, month, project, report.id, summary, year]);
+
+  return (
+    <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#070b16]/95 p-5 shadow-2xl shadow-black/30">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.16),transparent_28%),radial-gradient(circle_at_82%_8%,rgba(139,92,246,0.16),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/50 to-transparent" />
+
+      <div className="relative z-10 mb-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-300/25 bg-cyan-300/10 shadow-lg shadow-cyan-500/10">
+            <Icon size={21} className="text-cyan-200" />
+          </div>
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">
+              <Eye size={13} />
+              PDF Preview
+            </p>
+            <h2 className="mt-1 text-xl font-semibold text-white">{report.title} Downloadable Format</h2>
+            <p className="mt-1 text-sm text-white/45">
+              This is the same generated PDF used by the download action.
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white/60 shadow-inner shadow-white/5">
+            {month} {year}
+          </span>
+          {previewUrl && (
+            <a
+              href={previewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 text-sm font-medium text-white/70 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
+            >
+              <ExternalLink size={15} />
+              Open
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={onDownload}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:bg-violet-400"
+          >
+            <Download size={16} />
+            {isGenerating ? "Generating..." : "Download"}
+          </button>
+        </div>
+      </div>
+
+      <div className="report-book-shell relative z-10 overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#111827] shadow-2xl shadow-black/35">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-[#0b1220] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-red-400/80" />
+            <span className="h-3 w-3 rounded-full bg-amber-300/80" />
+            <span className="h-3 w-3 rounded-full bg-emerald-300/80" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="mx-auto flex max-w-xl items-center justify-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-xs text-white/45">
+              <FileText size={14} className="shrink-0 text-cyan-200/70" />
+              <span className="truncate">
+                {project.name} / {report.title} / {month} {year}
+              </span>
+            </div>
+          </div>
+          <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs font-medium text-emerald-200">
+            Synced with export
+          </span>
+        </div>
+
+        <div className="report-book-desk bg-[#0a0f1d] p-3">
+        <div className="mb-3 grid gap-3 md:grid-cols-4">
+          <PreviewChip label="Report" value={report.title} />
+          <PreviewChip label="Project" value={project.name} />
+          <PreviewChip label="Scope" value={centers.length === project.centers.length ? "All centers" : `${centers.length} center(s)`} />
+          <PreviewChip label="Records" value={`${summary.learners} learners`} />
+        </div>
+
+        <div className="report-document-stage">
+        {isPreviewLoading && (
+          <div className="flex min-h-[720px] flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-black/20 text-sm text-white/55">
+            <LoaderCircle size={24} className="animate-spin text-cyan-200" />
+            Rendering exact PDF preview...
+          </div>
+        )}
+
+        {!isPreviewLoading && previewError && (
+          <div className="flex min-h-[720px] items-center justify-center rounded-2xl border border-amber-300/20 bg-amber-300/5 px-6 text-center text-sm text-amber-200">
+            {previewError}
+          </div>
+        )}
+
+        {!isPreviewLoading && previewUrl && (
+          <iframe
+            key={previewUrl}
+            title={`${report.title} PDF Preview`}
+            src={`${previewUrl}#toolbar=1&navpanes=1&view=FitH`}
+            className="report-page-frame h-[780px] w-full rounded-2xl border border-white/10 bg-white shadow-xl shadow-black/40"
+          />
+        )}
+        </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PreviewChip({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 shadow-inner shadow-white/5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">{label}</p>
+      <p className="mt-1 truncate text-sm font-semibold text-white/80">{value}</p>
+    </div>
+  );
+}
+
+function BookMetric({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-slate-950">{value}</p>
+    </div>
+  );
+}
+
+function ReportTable({ rows }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      {rows.map((row) => (
+        <div key={row.label} className="grid grid-cols-[1fr_auto] gap-4 border-b border-slate-200 px-4 py-3 last:border-0">
+          <span className="text-sm text-slate-500">{row.label}</span>
+          <span className="text-sm font-semibold text-slate-950">{row.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getReportBookPages({ analytics, centers, month, project, report, summary, year }) {
+  const scope = centers.length === project.centers.length ? "All project centers" : centers.map((center) => center.name).join(", ");
+  const basePages = [
+    {
+      type: "cover",
+      kicker: `${month} ${year}`,
+      title: report.title,
+      summary: `${report.subtitle} for ${project.name}, covering ${scope}. This preview mirrors the downloadable report structure before export.`,
+    },
+    {
+      type: "summary",
+      kicker: "Executive Snapshot",
+      title: "Performance Summary",
+      summary: `${formatNumber(summary.learners)} learners tracked across ${summary.centers} center(s), with ${formatNumber(summary.completed)} training completions and ${formatNumber(summary.placed)} placement outcomes.`,
+    },
+  ];
+
+  if (report.id === "batchwise") {
+    return [
+      ...basePages,
+      {
+        type: "table",
+        kicker: "Batch View",
+        title: "Batchwise Training Progress",
+        summary: "Batch-level delivery preview with enrolled, completed, certified, and placement movement.",
+        rows: [
+          { label: "Total batches", value: analytics.batches.length },
+          { label: "Assessment completed", value: formatNumber(analytics.assessmentCompleted) },
+          { label: "Certified candidates", value: formatNumber(summary.certified) },
+          { label: "Average attendance", value: `${summary.attendance}%` },
+        ],
+      },
+      {
+        type: "notes",
+        kicker: "Download Sections",
+        title: "Included Sections",
+        summary: "The generated batchwise PDF includes the following report sections.",
+        rows: [
+          { label: "Batch table", value: "Center, batch, trade, enrolled learners, completion, certification, placement, and attendance status." },
+          { label: "Delivery comments", value: "Training progress observations and assessment readiness notes are scoped to the selected center filter." },
+          { label: "Export behavior", value: "The downloadable PDF uses the same project, center, month, and year selected above." },
+        ],
+      },
+    ];
+  }
+
+  if (report.id === "placement") {
+    return [
+      ...basePages,
+      {
+        type: "table",
+        kicker: "Placement View",
+        title: "Livelihood Outcomes",
+        summary: "Placement preview with placed learners, recruiter mapping, and salary movement.",
+        rows: [
+          { label: "Placed learners", value: formatNumber(summary.placed) },
+          { label: "Placement percentage", value: analytics.placementPercentage },
+          { label: "Salary range", value: `${formatCurrency(analytics.salaryMin)} - ${formatCurrency(analytics.salaryMax)}` },
+          { label: "Recruiter records", value: analytics.placed ? "Mapped in candidate-level placement section" : "Data Not Available" },
+        ],
+      },
+      {
+        type: "notes",
+        kicker: "Download Sections",
+        title: "Included Sections",
+        summary: "The generated placement PDF includes employer and candidate outcome sections.",
+        rows: [
+          { label: "Placement summary", value: "Placed, employer mapped, pending pipeline, salary range, and company mapping." },
+          { label: "Candidate table", value: "Candidate name, center, batch, job role, employer, designation, salary, and placement status." },
+          { label: "Export behavior", value: "The downloadable report is generated from the same project and center scope visible in this book preview." },
+        ],
+      },
+    ];
+  }
+
+  return [
+    ...basePages,
+    {
+      type: "chart",
+      kicker: "Center Analytics",
+      title: "Attendance And Delivery Trends",
+      summary: "Center-wise progress preview using the same underlying data that feeds the MPR export.",
+      rows: [
+        { label: "Average attendance", value: `${summary.attendance}%` },
+        { label: "Pass percentage", value: analytics.passPercentage },
+        { label: "Placement percentage", value: analytics.placementPercentage },
+        { label: "Dropout / at-risk", value: formatNumber(analytics.dropout) },
+      ],
+    },
+    {
+      type: "table",
+      kicker: "Financial Preview",
+      title: "Utilization Snapshot",
+      summary: "Budget and utilization figures included in the downloadable monthly progress report.",
+      rows: [
+        { label: "Approved budget", value: formatCurrency(analytics.approvedBudget) },
+        { label: "Current month utilization", value: formatCurrency(analytics.currentMonthUtilization) },
+        { label: "Cumulative utilization", value: formatCurrency(analytics.cumulativeUtilization) },
+        { label: "Remaining balance", value: formatCurrency(analytics.remainingBalance) },
+      ],
+    },
+    {
+      type: "notes",
+      kicker: "Download Sections",
+      title: "MPR Book Contents",
+      summary: "The full downloadable MPR expands this preview into a donor-ready PDF.",
+      rows: [
+        { label: "Core sections", value: "Cover, table of contents, executive summary, project overview, mobilization, training, certification, placement, and center status." },
+        { label: "Evidence sections", value: "Financial utilization, success stories, challenges, next-month plan, categorized gallery, and annexures." },
+        { label: "Export behavior", value: "The generated PDF follows the selected project, center scope, month, and year from this console." },
+      ],
+    },
+  ];
+}
+
+function PreviewStat({ icon: Icon, label, tone, value }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+      <Icon size={16} className={tone} />
+      <p className="mt-2 text-base font-semibold text-white">{value}</p>
+      <p className="text-[11px] text-white/40">{label}</p>
+    </div>
+  );
+}
+
+function getPreviewRows(reportId, analytics, centers, summary) {
+  if (!analytics) return [];
+
+  if (reportId === "batchwise") {
+    return [
+      { label: "Batch records in export", value: analytics.batches.length },
+      { label: "Completed training", value: formatNumber(summary.completed) },
+      { label: "Assessment completed", value: formatNumber(analytics.assessmentCompleted) },
+      { label: "Average attendance", value: `${summary.attendance}%` },
+    ];
+  }
+
+  if (reportId === "placement") {
+    return [
+      { label: "Placed learners", value: formatNumber(summary.placed) },
+      { label: "Placement percentage", value: analytics.placementPercentage },
+      { label: "Salary range", value: `${formatCurrency(analytics.salaryMin)} - ${formatCurrency(analytics.salaryMax)}` },
+      { label: "Centers covered", value: centers.length },
+    ];
+  }
+
+  return [
+    { label: "Narrative sections", value: "12 sections" },
+    { label: "Learners tracked", value: formatNumber(summary.learners) },
+    { label: "Financial utilization", value: formatCurrency(analytics.cumulativeUtilization) },
+    { label: "Gallery evidence", value: `${centers.length * REPORT_GALLERY_ASSETS.length} assets` },
+  ];
+}
+
 function ReportDownloadCard({
   isDisabled,
   isGenerating,
   month,
   onDownload,
   onMonthChange,
+  onSelect,
   onYearChange,
   report,
+  selected,
   year,
 }) {
   const Icon = report.icon;
   const isMpr = report.id === "mpr";
 
   return (
-    <article className="rounded-2xl border border-violet-200/10 bg-[#10091a]/90 p-5 shadow-xl shadow-black/20">
-      <div className="flex items-start gap-4">
+    <article
+      className={`rounded-[1.5rem] border p-5 shadow-xl shadow-black/20 transition ${
+        selected
+          ? "border-cyan-300/45 bg-cyan-300/[0.08]"
+          : "border-violet-200/10 bg-[#10091a]/90 hover:border-cyan-300/25 hover:bg-white/[0.045]"
+      }`}
+    >
+      <button type="button" onClick={onSelect} className="flex w-full items-start gap-4 text-left">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-500/15">
           <Icon size={21} className="text-violet-200" />
         </div>
@@ -1205,7 +1692,7 @@ function ReportDownloadCard({
           <p className="mt-1 text-sm font-medium text-violet-200/80">{report.subtitle}</p>
           <p className="mt-3 text-sm leading-6 text-white/50">{report.description}</p>
         </div>
-      </div>
+      </button>
 
       {isMpr ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -1216,15 +1703,25 @@ function ReportDownloadCard({
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={onDownload}
-        disabled={isDisabled}
-        className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:bg-violet-500/40"
-      >
-        <Download size={16} />
-        {isGenerating ? "Generating..." : `Download ${isMpr ? "MPR" : "PDF"}`}
-      </button>
+      <div className="mt-5 grid grid-cols-[1fr_auto] gap-3">
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={isDisabled}
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-violet-500 px-4 text-sm font-semibold text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:bg-violet-500/40"
+        >
+          <Download size={16} />
+          {isGenerating ? "Generating..." : `Download ${isMpr ? "MPR" : "PDF"}`}
+        </button>
+        <button
+          type="button"
+          onClick={onSelect}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-cyan-200 transition hover:bg-cyan-300/10"
+          aria-label={`Preview ${report.title}`}
+        >
+          {selected ? <Eye size={16} /> : <ArrowRight size={16} />}
+        </button>
+      </div>
     </article>
   );
 }

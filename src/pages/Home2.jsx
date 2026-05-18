@@ -193,7 +193,6 @@ function AuthInput({ label, type = "text", icon: Icon, value, onChange, accentHe
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function Home2() {
-
   // Refs
   const wrapRef      = useRef(null);
   const canvasRef    = useRef(null);
@@ -202,6 +201,7 @@ export default function Home2() {
   const loginFlagRef = useRef(false);
   const loginLockedRef = useRef(false);
   const lenisRef = useRef(null);
+  const lenisRafRef = useRef(null);
   const scrollTweenRef = useRef(null);
   const rafLoginRef   = useRef(null);
   const rafSceneRef   = useRef(null);
@@ -229,6 +229,21 @@ export default function Home2() {
   const acHex = ROLE_HEX[role] || "#A78BFA";
   const acRgb = ROLE_RGB[acHex] || "167,139,250";
 
+  const releaseHomeExperience = useCallback(() => {
+    if (rafLoginRef.current) cancelAnimationFrame(rafLoginRef.current);
+    if (rafSceneRef.current) cancelAnimationFrame(rafSceneRef.current);
+    if (rafTransRef.current) cancelAnimationFrame(rafTransRef.current);
+    if (lenisRafRef.current) cancelAnimationFrame(lenisRafRef.current);
+    scrollTweenRef.current?.kill?.();
+    scrollTweenRef.current = null;
+    ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+    gsap.killTweensOf(frameRef.current);
+    lenisRef.current?.destroy?.();
+    lenisRef.current = null;
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
+  }, []);
+
   // ── Login T animation ──────────────────────────────────────────────────────
   useEffect(() => {
     if (rafLoginRef.current) cancelAnimationFrame(rafLoginRef.current);
@@ -254,20 +269,18 @@ export default function Home2() {
     e.preventDefault();
     if (id === "kovon" && pw === "1234") {
       setErr("");
-      // Kill all GSAP animations and Lenis before leaving —
-      // prevents overflow:hidden / pinned scroll poisoning the next route.
-      if (rafLoginRef.current) cancelAnimationFrame(rafLoginRef.current);
-      if (rafSceneRef.current) cancelAnimationFrame(rafSceneRef.current);
-      ScrollTrigger.getAll().forEach((t) => t.kill());
-      gsap.killTweensOf(frameRef.current);
-      document.body.style.overflow = "";
-      document.documentElement.style.overflow = "";
+      releaseHomeExperience();
       // Hard navigate — fully unmounts this component and all its side effects.
       window.location.href = ROLE_ROUTE[role];
     } else {
       setErr("Invalid credentials — try kovon / 1234");
     }
-  }, [id, pw, role]);
+  }, [id, pw, releaseHomeExperience, role]);
+
+  const openClientPortal = useCallback(() => {
+    releaseHomeExperience();
+    window.location.href = "/client-login";
+  }, [releaseHomeExperience]);
 
   // ── Lenis ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -278,11 +291,15 @@ export default function Home2() {
       touchMultiplier: 1.5,
     });
     lenisRef.current = lenis;
-    const loop  = (t) => { lenis.raf(t); requestAnimationFrame(loop); };
-    const id    = requestAnimationFrame(loop);
+    const loop = (t) => {
+      lenis.raf(t);
+      lenisRafRef.current = requestAnimationFrame(loop);
+    };
+    lenisRafRef.current = requestAnimationFrame(loop);
     return () => {
-      cancelAnimationFrame(id);
-      lenis.destroy();
+      if (lenisRafRef.current) cancelAnimationFrame(lenisRafRef.current);
+      lenisRafRef.current = null;
+      lenisRef.current?.destroy?.();
       lenisRef.current = null;
     };
   }, []);
@@ -1326,6 +1343,42 @@ export default function Home2() {
                     Authenticate &amp; Enter →
                   </button>
                 </form>
+
+                <button
+                  type="button"
+                  onClick={openClientPortal}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    marginTop: 14,
+                    width: "100%",
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    background: "rgba(255,255,255,0.035)",
+                    color: "rgba(255,255,255,0.78)",
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    transition: "border-color 0.2s ease, background 0.2s ease, color 0.2s ease",
+                  }}
+                  onMouseEnter={(event) => {
+                    event.currentTarget.style.borderColor = `rgba(${acRgb},0.55)`;
+                    event.currentTarget.style.background = `rgba(${acRgb},0.1)`;
+                    event.currentTarget.style.color = acHex;
+                  }}
+                  onMouseLeave={(event) => {
+                    event.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                    event.currentTarget.style.background = "rgba(255,255,255,0.035)";
+                    event.currentTarget.style.color = "rgba(255,255,255,0.78)";
+                  }}
+                >
+                  Client Side Portal
+                </button>
 
                 {/* Demo hint */}
                 <p

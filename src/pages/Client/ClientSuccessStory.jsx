@@ -7,8 +7,10 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  PlayCircle,
   Quote,
   TrendingUp,
+  Video,
 } from "lucide-react";
 import {
   buildClientProjectSnapshot,
@@ -86,8 +88,42 @@ const STUDENT_TESTIMONIALS = [
   },
 ];
 
+const VIDEO_TESTIMONIALS = [
+  {
+    id: "sasmita-video",
+    name: "Sasmita Naik",
+    role: "Solar O&M Technician",
+    center: "Angul Solar Energy Skill Center",
+    outcome: "Placed at Vedanta Resources",
+    poster: "/images/client-gallery/2.png",
+    video: "",
+    quote: "Training helped me speak confidently during the interview and understand real workplace expectations.",
+  },
+  {
+    id: "rohit-video",
+    name: "Rohit Sahu",
+    role: "Industrial Welder",
+    center: "Angul Steel Skill Center",
+    outcome: "Certified and shortlisted",
+    poster: "/images/client-gallery/6.png",
+    video: "",
+    quote: "The lab practice improved my finishing and safety discipline. I feel ready for site work now.",
+  },
+  {
+    id: "ananya-video",
+    name: "Ananya Das",
+    role: "Warehouse Executive",
+    center: "Paradip Port Skill Center",
+    outcome: "Placed after employer connect",
+    poster: "/images/client-gallery/4.png",
+    video: "",
+    quote: "Mock interviews helped me explain my skills clearly and face employers with confidence.",
+  },
+];
+
 export default function ClientSuccessStory() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const [videoIndex, setVideoIndex] = useState(0);
   const client = getStoredClient();
   const projects = getClientProjects(client.name);
   const summary = getClientSummary(projects);
@@ -99,6 +135,7 @@ export default function ClientSuccessStory() {
     STUDENT_TESTIMONIALS[(testimonialIndex + 1) % STUDENT_TESTIMONIALS.length],
     STUDENT_TESTIMONIALS[(testimonialIndex + 2) % STUDENT_TESTIMONIALS.length],
   ];
+  const selectedVideoTestimonial = VIDEO_TESTIMONIALS[videoIndex];
   const showPreviousTestimonial = () => {
     setTestimonialIndex((current) =>
       current === 0 ? STUDENT_TESTIMONIALS.length - 1 : current - 1
@@ -197,19 +234,90 @@ export default function ClientSuccessStory() {
         </div>
       </section>
 
-      <div className="grid gap-5">
-        <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-6 shadow-xl shadow-black/20">
-          <Quote size={28} className="text-violet-300" />
-          <blockquote className="mt-5 text-2xl font-semibold leading-snug text-white">
-            The project created a clear pathway from classroom learning to workplace readiness, with
-            visible confidence among learners and stronger center-level delivery discipline.
-          </blockquote>
-          <div className="mt-6 border-t border-white/10 pt-5">
-            <p className="font-semibold text-white">{client.contact}</p>
-            <p className="mt-1 text-sm text-white/40">{client.designation}, {client.name}</p>
+      <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-6 shadow-xl shadow-black/20">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <SectionTitle eyebrow="Video Testimony" title="Learner stories on video" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100">
+              <Video size={14} />
+              Field evidence
+            </div>
+          </div>
+
+          <div className="mt-5 overflow-hidden rounded-3xl border border-white/10 bg-black/30">
+            {selectedVideoTestimonial.video ? (
+              <video
+                key={selectedVideoTestimonial.id}
+                src={selectedVideoTestimonial.video}
+                poster={selectedVideoTestimonial.poster}
+                controls
+                className="aspect-video w-full bg-black object-cover"
+              />
+            ) : (
+              <div className="relative aspect-video overflow-hidden">
+                <img
+                  src={selectedVideoTestimonial.poster}
+                  alt=""
+                  className="h-full w-full object-cover opacity-75"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-2xl shadow-black/40 backdrop-blur">
+                    <PlayCircle size={38} />
+                  </div>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-200">
+                    Video testimony placeholder
+                  </p>
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
+                    Add the learner video file to activate playback. The testimony metadata and poster are already wired here.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-white/10 p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">{selectedVideoTestimonial.name}</h3>
+                  <p className="mt-1 text-sm text-violet-200">{selectedVideoTestimonial.role}</p>
+                  <p className="mt-1 text-xs text-white/40">{selectedVideoTestimonial.center}</p>
+                </div>
+                <span className="w-fit rounded-full border border-emerald-300/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-200">
+                  {selectedVideoTestimonial.outcome}
+                </span>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-white/60">
+                "{selectedVideoTestimonial.quote}"
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {VIDEO_TESTIMONIALS.map((testimonial, index) => (
+              <button
+                key={testimonial.id}
+                type="button"
+                onClick={() => setVideoIndex(index)}
+                className={`group flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                  videoIndex === index
+                    ? "border-violet-300/40 bg-violet-500/15"
+                    : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.04]"
+                }`}
+              >
+                <img
+                  src={testimonial.poster}
+                  alt=""
+                  className="h-12 w-12 rounded-xl object-cover"
+                />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{testimonial.name}</p>
+                  <p className="mt-1 truncate text-xs text-white/40">{testimonial.role}</p>
+                </div>
+              </button>
+            ))}
           </div>
         </section>
-      </div>
 
       <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-6 shadow-xl shadow-black/20">
         <SectionTitle eyebrow="Events" title="Events conducted" />

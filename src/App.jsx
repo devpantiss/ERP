@@ -103,6 +103,8 @@ const AdminPlacementDriveApprovals = lazy(() => import("./pages/Admin/AdminPlace
 const AdminPlacementTracker = lazy(() => import("./pages/Admin/AdminPlacementTracker"));
 const AdminInvoiceManagement = lazy(() => import("./pages/Admin/AdminInvoiceManagement"));
 const AdminGrievancePortal = lazy(() => import("./pages/Admin/AdminGrievancePortal"));
+const AdminStudentsKitDistribution = lazy(() => import("./pages/Admin/AdminStudentsKitDistribution"));
+const AdminStudentInsuranceDetails = lazy(() => import("./pages/Admin/AdminStudentInsuranceDetails"));
 
 // Super Admin
 const SuperAdminDashboard = lazy(() => import("./pages/SuperAdmin/SuperAdminDashboard"));
@@ -257,6 +259,8 @@ function App() {
             />
             <Route path="live-feed" element={<AdminTrainerLiveFeed />} />
             <Route path="project-details-reports" element={<AdminProjectManagement />} />
+            <Route path="students-kit-distribution" element={<AdminStudentsKitDistribution />} />
+            <Route path="student-insurance-details" element={<AdminStudentInsuranceDetails />} />
             <Route path="hr/attendance" element={<AdminTrainerAttendance />} />
             <Route path="hr/leave" element={<LeaveManagement />} />
             <Route path="hr/salary" element={<SalaryDashboard />} />

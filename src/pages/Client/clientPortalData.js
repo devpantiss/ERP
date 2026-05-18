@@ -93,6 +93,9 @@ const designations = [
   "Fitter Trainee",
 ];
 
+const odishaDistrictPool = ["Angul", "Bolangir", "Jharsuguda", "Khurda", "Cuttack", "Sundargarh"];
+const outsideStatePool = ["Telangana", "Karnataka", "Maharashtra", "Gujarat", "Tamil Nadu"];
+
 export const getClientProjects = (clientName) =>
   PROJECT_REPORTS.filter((project) => project.fundingAgency === clientName);
 
@@ -136,6 +139,11 @@ export const getClientSummary = (projects) => {
     attendanceRate: average(projectSummaries.map((project) => project.attendanceRate)),
     health: average(projectSummaries.map((project) => project.health)),
   };
+};
+
+const clampPercent = (actual, target) => {
+  if (!target) return 0;
+  return Math.min(100, Math.round((actual / target) * 100));
 };
 
 export const buildClientProjectSnapshot = (project) => {
@@ -222,6 +230,184 @@ export const buildClientProjectSnapshot = (project) => {
     certified: centers.reduce((sum, center) => sum + center.certified, 0),
     mapped: centers.reduce((sum, center) => sum + center.mapped, 0),
     placed: centers.reduce((sum, center) => sum + center.placed, 0),
+  };
+};
+
+export const getClientDeliveryMetrics = (projects) => {
+  const snapshots = projects.map(buildClientProjectSnapshot);
+  const totals = snapshots.reduce(
+    (acc, project) => {
+      project.centers.forEach((center) => {
+        const enrollmentRate = parsePercent(
+          center.performanceMetrics.find((metric) => metric.label.includes("Enrollment"))?.value
+        ) || 85;
+        const assessmentRate = parsePercent(
+          center.performanceMetrics.find((metric) => metric.label.includes("Assessment"))?.value
+        ) || 82;
+        const placementRate = parsePercent(
+          center.performanceMetrics.find((metric) => metric.label.includes("Placement"))?.value
+        ) || center.placementRate || 70;
+        const retentionRate = parsePercent(
+          center.performanceMetrics.find((metric) => metric.label.includes("Retention"))?.value
+        ) || 65;
+
+        const enrolledTarget = Math.max(center.candidates, Math.round(center.candidates / (enrollmentRate / 100)));
+        const mobilizedTarget = Math.round(enrolledTarget * 1.2);
+        const mobilized = Math.min(mobilizedTarget, Math.round(center.candidates * 1.16));
+        const trainedTarget = center.candidates;
+        const certifiedTarget = Math.round(center.candidates * (assessmentRate / 100));
+        const placedTarget = Math.round(center.candidates * (placementRate / 100));
+        const retentionTarget = Math.round(placedTarget * (retentionRate / 100));
+        const retainedWithDocuments = Math.round(center.placed * (retentionRate / 100));
+
+        acc.mobilized.actual += mobilized;
+        acc.mobilized.target += mobilizedTarget;
+        acc.enrolled.actual += center.candidates;
+        acc.enrolled.target += enrolledTarget;
+        acc.trained.actual += center.completedTraining;
+        acc.trained.target += trainedTarget;
+        acc.certified.actual += center.certified;
+        acc.certified.target += certifiedTarget;
+        acc.placed.actual += center.placed;
+        acc.placed.target += placedTarget;
+        acc.retention.actual += retainedWithDocuments;
+        acc.retention.target += retentionTarget;
+      });
+
+      return acc;
+    },
+    {
+      mobilized: { actual: 0, target: 0 },
+      enrolled: { actual: 0, target: 0 },
+      trained: { actual: 0, target: 0 },
+      certified: { actual: 0, target: 0 },
+      placed: { actual: 0, target: 0 },
+      retention: { actual: 0, target: 0 },
+    }
+  );
+
+  const metrics = [
+    {
+      id: "mobilized",
+      label: "Total Mobilized",
+      helper: "Mobilized candidates against outreach target",
+      ...totals.mobilized,
+    },
+    {
+      id: "trained",
+      label: "Total Trained",
+      helper: "Learners who completed training",
+      ...totals.trained,
+    },
+    {
+      id: "placed",
+      label: "Total Placed",
+      helper: "Placed candidates against placement target",
+      ...totals.placed,
+    },
+    {
+      id: "enrolled",
+      label: "Total Enrolled",
+      helper: "Enrolled candidates against sanctioned target",
+      ...totals.enrolled,
+    },
+    {
+      id: "certified",
+      label: "Total Certified",
+      helper: "Certified candidates against assessment target",
+      ...totals.certified,
+    },
+    {
+      id: "retention",
+      label: "3 Months Retention",
+      helper: "Placed learners with offer letter and 3 salary slips uploaded",
+      ...totals.retention,
+    },
+  ].map((metric) => ({
+    ...metric,
+    percentage: clampPercent(metric.actual, metric.target),
+  }));
+
+  const actual = metrics.reduce((sum, metric) => sum + metric.actual, 0);
+  const target = metrics.reduce((sum, metric) => sum + metric.target, 0);
+
+  return {
+    actual,
+    metrics,
+    percentage: clampPercent(actual, target),
+    target,
+  };
+};
+
+const addLocationCount = (map, location, count) => {
+  if (!count) return;
+  map.set(location, (map.get(location) || 0) + count);
+};
+
+export const getClientPlacementGeography = (projects) => {
+  const snapshots = projects.map(buildClientProjectSnapshot);
+  const odishaDistrictCounts = new Map();
+  const outsideStateCounts = new Map();
+  let sameDistrict = 0;
+  let differentDistrict = 0;
+  let outsideState = 0;
+
+  snapshots.forEach((project, projectIndex) => {
+    project.centers.forEach((center, centerIndex) => {
+      const seed = projectIndex + centerIndex;
+      const placed = center.placed || 0;
+      const same = Math.round(placed * (0.42 + (seed % 3) * 0.03));
+      const different = Math.round(placed * (0.28 + (seed % 2) * 0.04));
+      const outside = Math.max(placed - same - different, 0);
+
+      sameDistrict += same;
+      differentDistrict += different;
+      outsideState += outside;
+
+      addLocationCount(odishaDistrictCounts, center.location, same);
+
+      const firstDistrict = odishaDistrictPool[(seed + 2) % odishaDistrictPool.length];
+      const secondDistrict = odishaDistrictPool[(seed + 4) % odishaDistrictPool.length];
+      addLocationCount(odishaDistrictCounts, firstDistrict, Math.ceil(different * 0.58));
+      addLocationCount(odishaDistrictCounts, secondDistrict, Math.floor(different * 0.42));
+
+      const firstState = outsideStatePool[(seed + 1) % outsideStatePool.length];
+      const secondState = outsideStatePool[(seed + 3) % outsideStatePool.length];
+      addLocationCount(outsideStateCounts, firstState, Math.ceil(outside * 0.62));
+      addLocationCount(outsideStateCounts, secondState, Math.floor(outside * 0.38));
+    });
+  });
+
+  const local = sameDistrict + differentDistrict;
+  const total = local + outsideState;
+  const odishaDistricts = Array.from(odishaDistrictCounts, ([location, count]) => ({
+    count,
+    location,
+    type: "Odisha district",
+  })).sort((a, b) => b.count - a.count);
+  const outsideStates = Array.from(outsideStateCounts, ([location, count]) => ({
+    count,
+    location,
+    type: "Outside Odisha",
+  })).sort((a, b) => b.count - a.count);
+
+  return {
+    districtSplit: [
+      { name: "Same district", value: sameDistrict },
+      { name: "Different district in Odisha", value: differentDistrict },
+    ],
+    localSplit: [
+      { name: "Placed locally in Odisha", value: local },
+      { name: "Placed outside Odisha", value: outsideState },
+    ],
+    locationBars: [...odishaDistricts, ...outsideStates],
+    totals: {
+      differentDistrict,
+      local,
+      outsideState,
+      sameDistrict,
+      total,
+    },
   };
 };
 

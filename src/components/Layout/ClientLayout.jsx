@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
-  BarChart3,
   Building2,
   ChevronLeft,
   ChevronRight,
@@ -18,7 +17,6 @@ import { getStoredClient } from "../../pages/Client/clientPortalData";
 const NAV_ITEMS = [
   { label: "Dashboard", shortLabel: "Home", path: "/client/dashboard", icon: LayoutDashboard },
   { label: "Projects", path: "/client/projects", icon: FolderKanban },
-  { label: "Performance", path: "/client/performance", icon: BarChart3 },
   { label: "Reports", path: "/client/reports", icon: FileText },
   { label: "Success Story", shortLabel: "Story", path: "/client/success-story", icon: PlayCircle },
 ];
@@ -48,7 +46,7 @@ export default function ClientLayout() {
       >
         <div className="flex h-16 items-center justify-between gap-3 border-b border-violet-200/10 px-4">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-500/15">
-            <Building2 size={20} className="text-violet-200" />
+            <Building2 size={20} className="shrink-0 text-violet-200" />
           </div>
             <div className="perf-sidebar-label min-w-0 flex-1">
               <p className="text-sm font-semibold text-white">Client Portal</p>
@@ -60,7 +58,7 @@ export default function ClientLayout() {
             className="rounded-xl p-2 text-white/55 transition hover:bg-white/[0.06] hover:text-white"
             aria-label={collapsed ? "Expand client sidebar" : "Collapse client sidebar"}
           >
-            {collapsed ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
+            {collapsed ? <ChevronRight size={17} className="shrink-0" /> : <ChevronLeft size={17} className="shrink-0" />}
           </button>
         </div>
 
@@ -79,7 +77,7 @@ export default function ClientLayout() {
                   }`
                 }
               >
-                <Icon size={18} />
+                <Icon size={18} className="h-[18px] w-[18px] shrink-0" />
                 <span className="perf-sidebar-label">{item.label}</span>
               </NavLink>
             );
@@ -96,7 +94,7 @@ export default function ClientLayout() {
             onClick={logout}
             className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm text-red-300 transition hover:bg-red-500/10"
           >
-            <LogOut size={17} />
+            <LogOut size={17} className="h-[17px] w-[17px] shrink-0" />
             <span className="perf-sidebar-label">Log Out</span>
           </button>
             <Link to="/" className="perf-sidebar-label mt-2 block px-4 text-xs text-white/35 hover:text-white/60">

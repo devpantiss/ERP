@@ -13,8 +13,10 @@ import {
   LogOut,
   MapPinned,
   MessageSquareWarning,
+  PackageCheck,
   Radio,
   Receipt,
+  ShieldCheck,
   ShoppingCart,
   Users,
   Wallet,
@@ -84,6 +86,16 @@ const MENU_ITEMS = [
     label: "Project Details / Reports",
     path: "/admin/project-details-reports",
     icon: Briefcase,
+  },
+  {
+    label: "Students Kit Distribution",
+    path: "/admin/students-kit-distribution",
+    icon: PackageCheck,
+  },
+  {
+    label: "Student Insurance Details",
+    path: "/admin/student-insurance-details",
+    icon: ShieldCheck,
   },
   {
     label: "Approvals",
