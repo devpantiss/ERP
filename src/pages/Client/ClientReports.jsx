@@ -194,6 +194,15 @@ const REPORT_TYPES = [
   },
 ];
 
+const DOWNLOADABLE_LISTS = [
+  { id: "batch-list", label: "Batch List", icon: FileSpreadsheet },
+  { id: "candidate-list", label: "Candidate List", icon: Database },
+  { id: "placement-list", label: "Placement List", icon: BriefcaseBusiness },
+  { id: "invoice-list", label: "Invoice List", icon: FileText },
+  { id: "procurement-list", label: "Procurement List", icon: Settings2 },
+  { id: "gallery-list", label: "Evidence Gallery", icon: Eye },
+];
+
 export default function ClientReports() {
   const client = getStoredClient();
   const projects = getClientProjects(client.name);
@@ -280,6 +289,26 @@ export default function ClientReports() {
     }
   };
 
+  const downloadList = (listType) => {
+    if (!selectedProject || !selectedCenters.length) {
+      toast.error("Select a project and center to download a list.");
+      return;
+    }
+
+    const list = DOWNLOADABLE_LISTS.find((item) => item.id === listType);
+    const rows = buildDownloadableListRows(listType, selectedCenters, selectedProject);
+    if (!rows.length) {
+      toast.error("No records available for this list.");
+      return;
+    }
+
+    downloadCsv(
+      rows,
+      `${client.name}_${selectedProject.name}_${list?.label || "List"}_${month}_${year}`
+    );
+    toast.success(`${list?.label || "List"} downloaded.`);
+  };
+
   if (!selectedProject) {
     return (
       <section className="space-y-7">
@@ -361,8 +390,10 @@ export default function ClientReports() {
           <ReportPreviewPanel
             centers={selectedCenters}
             client={client}
+            downloadableLists={DOWNLOADABLE_LISTS}
             month={month}
             isGenerating={generatingReport === selectedReport.id}
+            onDownloadList={downloadList}
             onDownload={() => downloadReport(selectedReport.id)}
             project={selectedProject}
             report={selectedReport}
@@ -384,6 +415,121 @@ function finalizeReportPdf(doc, fileName, output = "download") {
 
   doc.save(safeName);
   return null;
+}
+
+function csvValue(value) {
+  const normalized = value === null || value === undefined ? "" : String(value);
+  return `"${normalized.replace(/"/g, '""')}"`;
+}
+
+function downloadCsv(rows, fileName) {
+  const headers = Object.keys(rows[0] || {});
+  const csv = [
+    headers.map(csvValue).join(","),
+    ...rows.map((row) => headers.map((header) => csvValue(row[header])).join(",")),
+  ].join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slugifyFileName(fileName)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function buildDownloadableListRows(listType, centers, project) {
+  const candidateRows = centers.flatMap((center) =>
+    center.batches.flatMap((batch) =>
+      batch.candidateRecords.map((candidate) => ({
+        Project: project.name,
+        Center: center.name,
+        Location: center.location,
+        Batch: batch.label,
+        Candidate: candidate.name,
+        Code: candidate.code,
+        "Job Role": candidate.jobRole,
+        Attendance: `${candidate.attendance}%`,
+        "Training Status": candidate.trainingStatus,
+        "Placement Status": candidate.placementStatus,
+        Company: candidate.company,
+        Designation: candidate.designation,
+        Salary: candidate.salary || "",
+      }))
+    )
+  );
+
+  if (listType === "candidate-list") return candidateRows;
+
+  if (listType === "batch-list") {
+    return centers.flatMap((center) =>
+      center.batches.map((batch) => ({
+        Project: project.name,
+        Center: center.name,
+        Location: center.location,
+        Batch: batch.label,
+        Track: batch.track,
+        Enrolled: batch.size,
+        "Completed Training": batch.completedTraining,
+        Certified: batch.certified,
+        Mapped: batch.mapped,
+        Placed: batch.placed,
+        Attendance: `${batch.attendanceRate}%`,
+        "Assessment Rate": `${batch.assessmentRate}%`,
+        Risks: batch.risks,
+      }))
+    );
+  }
+
+  if (listType === "placement-list") {
+    return candidateRows.filter((candidate) => candidate["Placement Status"] !== "Training");
+  }
+
+  if (listType === "invoice-list") {
+    return INVOICES_RAISED.filter((invoice) => invoice.project === project.name).map((invoice) => ({
+      Project: invoice.project,
+      Vendor: invoice.vendor,
+      Category: invoice.category,
+      Center: invoice.center,
+      Amount: invoice.amount,
+      "Raised On": invoice.raisedOn,
+      "Due On": invoice.dueOn,
+      Status: invoice.status,
+    }));
+  }
+
+  if (listType === "procurement-list") {
+    return PROCUREMENT_ITEMS.filter((item) =>
+      centers.some((center) => center.location === item.center)
+    ).map((item) => ({
+      Project: project.name,
+      Item: item.item,
+      "Requested By": item.requestedBy,
+      Center: item.center,
+      Quantity: item.quantity,
+      Budget: item.budget,
+      Urgency: item.urgency,
+      Status: item.status,
+    }));
+  }
+
+  if (listType === "gallery-list") {
+    return centers.flatMap((center) =>
+      buildGalleryItems(project, center).map((asset) => ({
+        Project: project.name,
+        Center: center.name,
+        Location: center.location,
+        Title: asset.title,
+        Category: getGalleryCategory(asset),
+        "Captured By": asset.capturedBy,
+        "Captured On": asset.capturedOn,
+        "Asset Path": asset.src,
+      }))
+    );
+  }
+
+  return [];
 }
 
 async function generateMonthlyProgressPdf({ centers, client, month, output, project, summary, year }) {
@@ -1307,7 +1453,19 @@ function MiniMetric({ label, value }) {
   );
 }
 
-function ReportPreviewPanel({ centers, client, isGenerating, month, onDownload, project, report, summary, year }) {
+function ReportPreviewPanel({
+  centers,
+  client,
+  downloadableLists,
+  isGenerating,
+  month,
+  onDownload,
+  onDownloadList,
+  project,
+  report,
+  summary,
+  year,
+}) {
   const [previewUrl, setPreviewUrl] = useState("");
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState("");
@@ -1415,6 +1573,35 @@ function ReportPreviewPanel({ centers, client, isGenerating, month, onDownload, 
             <Download size={16} />
             {isGenerating ? "Generating..." : "Download"}
           </button>
+        </div>
+      </div>
+
+      <div className="relative z-10 mb-5 rounded-[1.5rem] border border-white/10 bg-black/20 p-4">
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-200">Download Lists</p>
+            <h3 className="mt-1 text-base font-semibold text-white">Client-accessible list exports</h3>
+          </div>
+          <p className="text-xs text-white/40">CSV files follow the selected project and center scope.</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          {downloadableLists.map((list) => {
+            const ListIcon = list.icon;
+            return (
+              <button
+                key={list.id}
+                type="button"
+                onClick={() => onDownloadList(list.id)}
+                className="inline-flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 py-3 text-left text-sm font-semibold text-white/70 transition hover:border-cyan-300/35 hover:bg-cyan-300/10 hover:text-cyan-100"
+              >
+                <span className="inline-flex min-w-0 items-center gap-2">
+                  <ListIcon size={15} className="shrink-0 text-cyan-200" />
+                  <span className="truncate">{list.label}</span>
+                </span>
+                <Download size={14} className="shrink-0 text-white/35" />
+              </button>
+            );
+          })}
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   PlayCircle,
+  Radio,
   UserRound,
 } from "lucide-react";
 import MobileBottomDock from "../common/MobileBottomDock";
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { label: "Projects", path: "/client/projects", icon: FolderKanban },
   { label: "Reports", path: "/client/reports", icon: FileText },
   { label: "Success Story", shortLabel: "Story", path: "/client/success-story", icon: PlayCircle },
+  { label: "Live Feed", shortLabel: "Live", path: "/client/live-feed", icon: Radio },
 ];
 
 const ACCENT = {

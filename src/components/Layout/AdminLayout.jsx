@@ -13,9 +13,12 @@ import {
   ShoppingCart,
   Radio,
   Briefcase,
+  Award,
+  GraduationCap,
   MessageSquareWarning,
   MapPinned,
   PackageCheck,
+  Quote,
   ShieldCheck,
 } from "lucide-react";
 
@@ -56,8 +59,16 @@ const DRAWER_ITEMS = [
   },
   { label: "Live Feed", path: "/admin/live-feed", icon: Radio },
   { label: "Project Details / Reports", path: "/admin/project-details-reports", icon: Briefcase },
-  { label: "Students Kit Distribution", path: "/admin/students-kit-distribution", icon: PackageCheck },
-  { label: "Student Insurance Details", path: "/admin/student-insurance-details", icon: ShieldCheck },
+  {
+    label: "Students",
+    icon: GraduationCap,
+    children: [
+      { label: "Kit Distribution", path: "/admin/students-kit-distribution", icon: PackageCheck },
+      { label: "Insurance", path: "/admin/student-insurance-details", icon: ShieldCheck },
+      { label: "Batch Certification", path: "/admin/batch-certification", icon: Award },
+      { label: "Testimonials", path: "/admin/testimonials", icon: Quote },
+    ],
+  },
   { label: "Grievance Portal", path: "/admin/grievance-portal", icon: MessageSquareWarning },
 ];
 

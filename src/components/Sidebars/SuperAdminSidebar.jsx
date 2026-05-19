@@ -33,10 +33,7 @@ const SECTIONS = [
     title: "Operations",
     icon: FolderKanban,
     items: [
-      { label: "Dashboard", path: "/super-admin/dashboard", icon: LayoutDashboard },
       { label: "Candidate Details", path: "/super-admin/candidate-details", icon: Users },
-      { label: "Employee Management", path: "/super-admin/employee-management", icon: UserCog },
-      { label: "Leave Monitor", path: "/super-admin/leave-monitor", icon: CalendarDays },
       { heading: "Training" },
       { label: "Training Tracking", path: "/super-admin/training-tracking", icon: Activity },
       { label: "Exposure Visits", path: "/super-admin/exposure-visits", icon: Camera },
@@ -45,6 +42,15 @@ const SECTIONS = [
       { label: "Community Engagement Drives", path: "/super-admin/community-engagement-drives", icon: Megaphone },
       { heading: "Placements" },
       { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
+    ],
+  },
+  {
+    key: "hr",
+    title: "HR Operations",
+    icon: UserCog,
+    items: [
+      { label: "Employee Management", path: "/super-admin/employee-management", icon: UserCog },
+      { label: "Leave Monitor", path: "/super-admin/leave-monitor", icon: CalendarDays },
     ],
   },
   {
@@ -70,6 +76,7 @@ const SECTIONS = [
     icon: Lock,
     items: [
       { label: "User Management", path: "/super-admin/user-management", icon: UserPlus },
+      { label: "Create Projects", path: "/super-admin/create-projects", icon: FolderKanban },
     ],
   },
   {
@@ -121,6 +128,23 @@ const SuperAdminSidebar = () => {
 
       {/* Menu */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+        <NavLink
+          to="/super-admin/dashboard"
+          className={({ isActive }) =>
+            `relative mb-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
+              isActive ? "bg-red-500/10 text-red-500" : "text-white/60 hover:bg-transparent hover:text-white"
+            }`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              {isActive && <span className="absolute left-0 top-0 h-full w-0.5 rounded-r-md bg-red-500" />}
+              <LayoutDashboard size={16} className="shrink-0" />
+              <span className="perf-sidebar-label">Dashboard</span>
+            </>
+          )}
+        </NavLink>
+
         {SECTIONS.map((section) => {
           const isOpen = openSections.includes(section.key);
           const SectionIcon = section.icon;

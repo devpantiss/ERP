@@ -65,7 +65,7 @@ const MobilizerSidebar = () => {
         }`
       }
     >
-      <IconComponent size={18} className="shrink-0" />
+      <IconComponent size={18} className="h-[18px] w-[18px] shrink-0" />
       <span className="perf-sidebar-label">{label}</span>
     </NavLink>
     );
@@ -117,7 +117,7 @@ const MobilizerSidebar = () => {
                 : "text-white/80 hover:bg-white/5 hover:text-yellow-300"
               }`}
           >
-            <Briefcase size={18} />
+            <Briefcase size={18} className="h-[18px] w-[18px] shrink-0" />
               <>
                 <span className="perf-sidebar-label flex-1 text-left">HR Entitlement</span>
                 <ChevronDown
@@ -144,7 +144,7 @@ const MobilizerSidebar = () => {
                     }`
                   }
                 >
-                  <item.icon size={15} />
+                  <item.icon size={15} className="h-[15px] w-[15px] shrink-0" />
                   <span>{item.label}</span>
                 </NavLink>
               ))}
@@ -170,7 +170,7 @@ const MobilizerSidebar = () => {
           text-sm text-red-400 hover:bg-red-500/10
           hover:text-red-300 transition"
         >
-          <LogOut size={18} />
+          <LogOut size={18} className="h-[18px] w-[18px] shrink-0" />
           <span className="perf-sidebar-label">Log Out</span>
         </Link>
 

@@ -1,24 +1,29 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowUpRight,
   Award,
+  BookOpen,
+  Briefcase,
   Building2,
   CalendarDays,
   CheckCircle2,
   CircleAlert,
   Download,
   Eye,
+  FileText,
   GraduationCap,
   MapPin,
+  Search,
   Sparkles,
   Target,
   TrendingUp,
   Users,
   X,
 } from "lucide-react";
+import TableExportActions from "../../components/common/TableExportActions";
 import { Header, Stat } from "./ClientDashboard";
 import {
   buildClientProjectSnapshot,
@@ -53,6 +58,9 @@ export function ClientProjectDetail() {
   const client = getStoredClient();
   const project = getClientProjects(client.name).find((item) => item.id === projectId);
   const [selectedCenterId, setSelectedCenterId] = useState("");
+  const [selectedBatchId, setSelectedBatchId] = useState("");
+  const batchRefs = useRef({});
+  const snapshot = useMemo(() => (project ? buildClientProjectSnapshot(project) : null), [project]);
 
   if (!project) {
     return (
@@ -70,11 +78,31 @@ export function ClientProjectDetail() {
     );
   }
 
-  const snapshot = buildClientProjectSnapshot(project);
   const summary = snapshot.summary;
   const selectedCenter =
     snapshot.centers.find((center) => center.id === (selectedCenterId || snapshot.centers[0]?.id)) ||
     snapshot.centers[0];
+  const selectedBatch =
+    selectedCenter?.batches.find((batch) => batch.id === selectedBatchId) ||
+    null;
+
+  const handleCenterChange = (centerId) => {
+    setSelectedCenterId(centerId);
+    setSelectedBatchId("");
+  };
+
+  useEffect(() => {
+    if (!selectedBatchId) return undefined;
+
+    const frame = requestAnimationFrame(() => {
+      batchRefs.current[selectedBatchId]?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [selectedBatchId]);
 
   return (
     <section className="space-y-7">
@@ -122,7 +150,7 @@ export function ClientProjectDetail() {
               </label>
               <select
                 value={selectedCenterId}
-                onChange={(event) => setSelectedCenterId(event.target.value)}
+                onChange={(event) => handleCenterChange(event.target.value)}
                 className="mt-2 w-full rounded-2xl border border-violet-300/20 bg-black/25 px-4 py-3 text-sm text-white outline-none focus:border-violet-300/50"
               >
                 {snapshot.centers.map((center) => (
@@ -161,22 +189,48 @@ export function ClientProjectDetail() {
 
             <div className="mt-5 space-y-3">
               {selectedCenter.batches.map((batch) => (
-                <div key={batch.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-white">{batch.label}</p>
-                      <p className="mt-1 text-xs text-white/40">{batch.track} track</p>
+                <div
+                  key={batch.id}
+                  ref={(node) => {
+                    if (node) {
+                      batchRefs.current[batch.id] = node;
+                    } else {
+                      delete batchRefs.current[batch.id];
+                    }
+                  }}
+                  className={`overflow-hidden rounded-2xl border transition ${
+                    selectedBatch?.id === batch.id
+                      ? "border-violet-300/45 bg-violet-500/10 shadow-[0_0_28px_rgba(124,58,237,0.12)]"
+                      : "border-white/10 bg-black/20"
+                  } scroll-mt-5`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBatchId((current) => (current === batch.id ? "" : batch.id))}
+                    className="w-full p-4 text-left transition hover:bg-violet-500/10"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-white">{batch.label}</p>
+                        <p className="mt-1 text-xs text-white/40">{batch.track} track</p>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <Mini label="Learners" value={batch.size} compact />
+                        <Mini label="Certified" value={batch.certified} compact />
+                        <Mini label="Placed" value={batch.placed} compact />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-center">
-                      <Mini label="Learners" value={batch.size} compact />
-                      <Mini label="Certified" value={batch.certified} compact />
-                      <Mini label="Placed" value={batch.placed} compact />
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <Progress label="Attendance" value={batch.attendanceRate} />
+                      <Progress label="Assessment" value={batch.assessmentRate} />
                     </div>
-                  </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <Progress label="Attendance" value={batch.attendanceRate} />
-                    <Progress label="Assessment" value={batch.assessmentRate} />
-                  </div>
+                  </button>
+
+                  {selectedBatch?.id === batch.id && (
+                    <div className="border-t border-white/10 p-4">
+                      <ClientBatchStudentDetails batch={batch} center={selectedCenter} project={project} />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -187,6 +241,608 @@ export function ClientProjectDetail() {
       )}
     </section>
   );
+}
+
+function ClientBatchStudentDetails({
+  batch,
+  center,
+  project,
+}) {
+  const [activeView, setActiveView] = useState("training");
+  const candidates = useMemo(
+    () => (batch.candidateRecords || []).map((candidate, index) => normalizeClientCandidate(candidate, index, batch)),
+    [batch]
+  );
+
+  const tabs = [
+    { key: "enrollment", label: "Enrollment" },
+    { key: "training", label: "Training Detail" },
+    { key: "placements", label: "Placements" },
+  ];
+
+  return (
+    <section className="rounded-2xl border border-white/10 bg-[#090315]/70 p-4">
+      <div className="flex flex-col gap-4 border-b border-violet-200/10 pb-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">Candidate Roster</p>
+          <h2 className="mt-2 text-xl font-semibold text-white">{batch.label} student details</h2>
+          <p className="mt-1 text-sm text-white/45">
+            {formatNumber(candidates.length)} candidates in {center.name}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveView(tab.key)}
+              className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                activeView === tab.key
+                  ? "border-violet-400/40 bg-violet-500 text-white"
+                  : "border-white/10 bg-white/[0.04] text-white/45 hover:text-white"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeView === "enrollment" ? (
+        <ClientEnrollmentRoster candidates={candidates} center={center} project={project} batchLabel={batch.label} />
+      ) : activeView === "placements" ? (
+        <ClientPlacementRoster candidates={candidates} project={project} batchLabel={batch.label} />
+      ) : (
+        <ClientTrainingRoster candidates={candidates} project={project} batchLabel={batch.label} />
+      )}
+    </section>
+  );
+}
+
+const TRAINING_STATUS_ORDER = ["In Progress", "Assessment Due", "Certified"];
+
+function normalizeClientCandidate(candidate, index, batch) {
+  const seed = index + batch.label.length;
+  const isCertified = candidate.trainingStatus === "Certified";
+  const isPlaced = candidate.placementStatus === "Placed";
+  const isMapped = candidate.placementStatus === "Employer Mapped" || isPlaced;
+  const completedTrainingDays = Math.min(72, 30 + (seed % 8) * 6);
+  const totalTrainingDays = completedTrainingDays + 12;
+  const salary = candidate.salary || (isPlaced ? 15000 + (seed % 8) * 1800 : 0);
+
+  return {
+    ...candidate,
+    aadharNumber: `XXXX-XXXX-${String(3400 + seed).slice(-4)}`,
+    address: `${candidate.batch}, ${candidate.jobRole} learner address`,
+    candidateCode: candidate.code,
+    completedTrainingDays,
+    currentlyEmployed: isPlaced ? "Yes" : "No",
+    dateOfBirth: `200${seed % 6}-${String((seed % 9) + 1).padStart(2, "0")}-${String((seed % 24) + 1).padStart(2, "0")}`,
+    enrollmentDate: `2026-${String((seed % 6) + 1).padStart(2, "0")}-${String((seed % 24) + 1).padStart(2, "0")}`,
+    enrollmentStatus: isCertified ? "Approved" : "Pending",
+    experienceYears: `${seed % 3} Years`,
+    gender: seed % 2 ? "Female" : "Male",
+    hasBankStatement: isPlaced && seed % 5 !== 0,
+    hasM1: isPlaced,
+    hasM2: isPlaced && seed % 4 !== 0,
+    hasM3: isPlaced && seed % 3 !== 0,
+    hasOfferLetter: isPlaced,
+    isVerified: isPlaced && seed % 4 !== 0,
+    joiningDate: isPlaced ? `2026-${String((seed % 6) + 4).padStart(2, "0")}-${String((seed % 22) + 1).padStart(2, "0")}` : "",
+    mobilizer: ["Field Mobilizer", "Community Mobilizer", "Enrollment Desk"][seed % 3],
+    phone: `9${String(800000000 + seed * 1379).slice(0, 9)}`,
+    qualificationInstitute: ["ITI Angul", "Govt Polytechnic", "Skill Training Institute"][seed % 3],
+    qualificationLevel: ["10th Pass", "12th Pass", "ITI"][seed % 3],
+    qualificationTrade: candidate.jobRole,
+    qualificationYear: String(2021 + (seed % 5)),
+    salary,
+    totalPracticalHours: completedTrainingDays * 4 + (seed % 5) * 8,
+    totalTheoryHours: completedTrainingDays * 3 + (seed % 4) * 6,
+    totalTrainingDays,
+  };
+}
+
+function ClientTableToolbar({
+  children,
+  onClear,
+  onSearchChange,
+  resultCount,
+  searchPlaceholder,
+  searchTerm,
+}) {
+  return (
+    <div className="border-b border-white/10 bg-[#0b1220]/80 p-3">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-1 flex-wrap items-center gap-2">
+          <div className="relative min-w-[220px] flex-1 max-w-sm">
+            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={searchTerm}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="h-10 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-9 pr-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/40 focus:ring-1 focus:ring-violet-500/30"
+            />
+          </div>
+          {children}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            {formatNumber(resultCount)} rows
+          </span>
+          <button
+            type="button"
+            onClick={onClear}
+            className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-slate-400 transition hover:border-violet-400/30 hover:text-slate-200"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterControl({ label, onChange, options, value }) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-10 min-w-[150px] rounded-xl border border-white/10 bg-[#111827] px-3 text-sm font-medium text-slate-200 outline-none transition hover:border-violet-400/30 focus:border-violet-400/40 focus:ring-1 focus:ring-violet-500/30"
+    >
+      <option value="">{label}</option>
+      {options.map((option) => {
+        const optionValue = typeof option === "string" ? option : option.value;
+        const optionLabel = typeof option === "string" ? option : option.label;
+        return (
+          <option key={optionValue} value={optionValue}>
+            {optionLabel}
+          </option>
+        );
+      })}
+    </select>
+  );
+}
+
+function ClientTrainingRoster({ candidates, project, batchLabel }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const roleOptions = useMemo(() => Array.from(new Set(candidates.map((candidate) => candidate.jobRole))).sort(), [candidates]);
+  const filteredCandidates = useMemo(
+    () =>
+      candidates.filter((candidate) => {
+        const query = searchTerm.trim().toLowerCase();
+        const matchesSearch =
+          !query ||
+          candidate.name.toLowerCase().includes(query) ||
+          candidate.candidateCode.toLowerCase().includes(query) ||
+          candidate.jobRole.toLowerCase().includes(query);
+        const matchesStatus = !statusFilter || candidate.trainingStatus === statusFilter;
+        const matchesRole = !roleFilter || candidate.jobRole === roleFilter;
+
+        return matchesSearch && matchesStatus && matchesRole;
+      }),
+    [candidates, roleFilter, searchTerm, statusFilter]
+  );
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Name" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "jobRole", header: "Job Role" },
+      { key: "trainingStatus", header: "Training Status" },
+      { key: "completedTrainingDays", header: "Completed Days", type: "number" },
+      { key: "totalTrainingDays", header: "Total Days", type: "number" },
+      { key: "totalTheoryHours", header: "Theory Hours", type: "number" },
+      { key: "totalPracticalHours", header: "Practical Hours", type: "number" },
+      { key: "attendance", header: "Attendance %", type: "number" },
+    ],
+    [batchLabel, project.name]
+  );
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <ClientTableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search training candidates..."
+        resultCount={filteredCandidates.length}
+        onClear={() => {
+          setSearchTerm("");
+          setStatusFilter("");
+          setRoleFilter("");
+        }}
+      >
+        <FilterControl label="Status" value={statusFilter} onChange={setStatusFilter} options={TRAINING_STATUS_ORDER} />
+        <FilterControl label="Job Role" value={roleFilter} onChange={setRoleFilter} options={roleOptions} />
+        <TableExportActions
+          moduleName="Training Detail"
+          fileName="training_detail"
+          columns={exportColumns}
+          rows={filteredCandidates}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </ClientTableToolbar>
+      <div className="overflow-auto" style={{ maxHeight: "clamp(240px, calc(100vh - 420px), 420px)" }}>
+        <table className="w-full min-w-[960px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Name</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">Job Role</th>
+              <th className="px-4 py-3 font-medium">Duration Received</th>
+              <th className="px-4 py-3 font-medium">Theory Hours</th>
+              <th className="px-4 py-3 font-medium">Practical Hours</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredCandidates.map((candidate) => (
+              <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                <td className="px-4 py-4">
+                  <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                    {batchLabel}
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.completedTrainingDays} days</p>
+                  <p className="mt-1 text-xs text-slate-500">of {candidate.totalTrainingDays} days total</p>
+                  <div className="mt-2 h-1.5 w-20 overflow-hidden rounded-full bg-slate-800">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-400"
+                      style={{ width: `${Math.round((candidate.completedTrainingDays / candidate.totalTrainingDays) * 100)}%` }}
+                    />
+                  </div>
+                </td>
+                <td className="px-4 py-4">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-300">
+                    <BookOpen size={12} />
+                    {candidate.totalTheoryHours} hrs
+                  </span>
+                </td>
+                <td className="px-4 py-4">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-300">
+                    <Target size={12} />
+                    {candidate.totalPracticalHours} hrs
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ClientEnrollmentRoster({ candidates, center, project, batchLabel }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const roleOptions = useMemo(() => Array.from(new Set(candidates.map((candidate) => candidate.jobRole))).sort(), [candidates]);
+  const filteredCandidates = useMemo(
+    () =>
+      candidates.filter((candidate) => {
+        const status = candidate.enrollmentStatus;
+        const query = searchTerm.trim().toLowerCase();
+        const matchesSearch =
+          !query ||
+          candidate.name.toLowerCase().includes(query) ||
+          candidate.candidateCode.toLowerCase().includes(query) ||
+          candidate.phone.toLowerCase().includes(query) ||
+          candidate.mobilizer.toLowerCase().includes(query);
+        const matchesStatus = !statusFilter || status === statusFilter;
+        const matchesRole = !roleFilter || candidate.jobRole === roleFilter;
+
+        return matchesSearch && matchesStatus && matchesRole;
+      }),
+    [candidates, roleFilter, searchTerm, statusFilter]
+  );
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Candidate" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "phone", header: "Phone" },
+      { key: "mobilizer", header: "Mobilizer" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "centerName", header: "Center", exportValue: () => center.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "jobRole", header: "Job Role" },
+      { key: "aadharNumber", header: "Aadhaar" },
+      { key: "dateOfBirth", header: "DOB", type: "date" },
+      { key: "gender", header: "Gender" },
+      { key: "qualificationLevel", header: "Qualification" },
+      { key: "qualificationTrade", header: "Trade" },
+      { key: "qualificationInstitute", header: "Institute" },
+      { key: "qualificationYear", header: "Passing Year" },
+      { key: "experienceYears", header: "Experience" },
+      { key: "currentlyEmployed", header: "Currently Employed" },
+      { key: "enrollmentDate", header: "Enrolled On", type: "date" },
+      { key: "enrollmentStatus", header: "Status" },
+    ],
+    [batchLabel, center.name, project.name]
+  );
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <ClientTableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search enrollment candidates..."
+        resultCount={filteredCandidates.length}
+        onClear={() => {
+          setSearchTerm("");
+          setStatusFilter("");
+          setRoleFilter("");
+        }}
+      >
+        <FilterControl label="Status" value={statusFilter} onChange={setStatusFilter} options={["Pending", "Approved", "Rejected"]} />
+        <FilterControl label="Job Role" value={roleFilter} onChange={setRoleFilter} options={roleOptions} />
+        <TableExportActions
+          moduleName="Enrollment"
+          fileName="enrollment_report"
+          columns={exportColumns}
+          rows={filteredCandidates}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </ClientTableToolbar>
+      <div className="overflow-auto" style={{ maxHeight: "clamp(240px, calc(100vh - 420px), 420px)" }}>
+        <table className="w-full min-w-[1680px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Candidate</th>
+              <th className="px-4 py-3 font-medium">School / Center</th>
+              <th className="px-4 py-3 font-medium">Job Role</th>
+              <th className="px-4 py-3 font-medium">Aadhaar</th>
+              <th className="px-4 py-3 font-medium">DOB / Gender</th>
+              <th className="px-4 py-3 font-medium">Qualification</th>
+              <th className="px-4 py-3 font-medium">Experience</th>
+              <th className="px-4 py-3 font-medium">Documents</th>
+              <th className="px-4 py-3 font-medium">Submitted</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 text-right font-medium">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredCandidates.map((candidate) => (
+              <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode} • {candidate.phone}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.mobilizer}</p>
+                </td>
+                <td className="px-4 py-4">
+                  <p className="text-slate-300">{project.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{center.name} • {batchLabel}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
+                <td className="px-4 py-4 text-slate-300">{candidate.aadharNumber}</td>
+                <td className="px-4 py-4">
+                  <p className="text-slate-300">{candidate.dateOfBirth}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.gender}</p>
+                </td>
+                <td className="px-4 py-4">
+                  <p className="text-slate-300">{candidate.qualificationLevel}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {[candidate.qualificationTrade, candidate.qualificationInstitute, candidate.qualificationYear].filter(Boolean).join(" • ")}
+                  </p>
+                </td>
+                <td className="px-4 py-4">
+                  <p className="text-slate-300">{candidate.experienceYears}</p>
+                  <p className="mt-1 text-xs text-slate-500">Employed: {candidate.currentlyEmployed}</p>
+                </td>
+                <td className="px-4 py-4">
+                  <div className="flex flex-wrap gap-2">
+                    {["Aadhaar", "Qualification", "Experience", "License"].map((label, index) => (
+                      <span key={label} className="inline-flex items-center gap-1 rounded-md border border-violet-400/20 bg-violet-500/10 px-2 py-1 text-xs text-violet-200">
+                        <FileText size={12} />
+                        {index === 1 ? "Qual." : label}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{candidate.enrollmentDate}</td>
+                <td className="px-4 py-4">
+                  <StatusPill status={candidate.enrollmentStatus} />
+                </td>
+                <td className="px-4 py-4 text-right">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-200"
+                  >
+                    <Eye size={13} />
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ClientPlacementRoster({ candidates, project, batchLabel }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("");
+  const [verificationFilter, setVerificationFilter] = useState("");
+  const [docFilter, setDocFilter] = useState("");
+  const placedCandidates = candidates.filter((candidate) => candidate.placementStatus === "Placed");
+  const companyOptions = useMemo(() => Array.from(new Set(placedCandidates.map((candidate) => candidate.company))).sort(), [placedCandidates]);
+  const filteredCandidates = useMemo(
+    () =>
+      placedCandidates.filter((candidate) => {
+        const query = searchTerm.trim().toLowerCase();
+        const hasAllDocs = candidate.hasOfferLetter && candidate.hasM1 && candidate.hasM2 && candidate.hasM3 && candidate.hasBankStatement;
+        const matchesSearch =
+          !query ||
+          candidate.name.toLowerCase().includes(query) ||
+          candidate.candidateCode.toLowerCase().includes(query) ||
+          candidate.company.toLowerCase().includes(query) ||
+          candidate.designation.toLowerCase().includes(query);
+        const matchesCompany = !companyFilter || candidate.company === companyFilter;
+        const matchesVerification = !verificationFilter || (verificationFilter === "Verified" ? candidate.isVerified : !candidate.isVerified);
+        const matchesDocs = !docFilter || (docFilter === "complete" ? hasAllDocs : !hasAllDocs);
+
+        return matchesSearch && matchesCompany && matchesVerification && matchesDocs;
+      }),
+    [companyFilter, docFilter, placedCandidates, searchTerm, verificationFilter]
+  );
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Student Name" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "company", header: "Company" },
+      { key: "designation", header: "Designation" },
+      { key: "salary", header: "Salary", type: "currency" },
+      { key: "joiningDate", header: "Joining Date", type: "date" },
+      { key: "offer", header: "Offer Letter", exportValue: (candidate) => (candidate.hasOfferLetter ? "Available" : "Missing") },
+      { key: "m1", header: "M1", exportValue: (candidate) => (candidate.hasM1 ? "Available" : "Missing") },
+      { key: "m2", header: "M2", exportValue: (candidate) => (candidate.hasM2 ? "Available" : "Missing") },
+      { key: "m3", header: "M3", exportValue: (candidate) => (candidate.hasM3 ? "Available" : "Missing") },
+      { key: "bank", header: "Bank Statement", exportValue: (candidate) => (candidate.hasBankStatement ? "Available" : "Missing") },
+      { key: "verification", header: "Status", exportValue: (candidate) => (candidate.isVerified ? "Verified" : "Pending") },
+    ],
+    [batchLabel, project.name]
+  );
+
+  if (!placedCandidates.length) {
+    return (
+      <div className="mt-6 flex flex-col items-center justify-center rounded-[20px] border border-white/10 bg-black/20 py-16 text-center">
+        <Briefcase size={32} className="text-slate-600" />
+        <p className="mt-4 text-base font-medium text-slate-300">No placements recorded yet</p>
+        <p className="mt-2 text-sm text-slate-500">Candidates who get placed will appear here with their placement details.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <ClientTableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search placements..."
+        resultCount={filteredCandidates.length}
+        onClear={() => {
+          setSearchTerm("");
+          setCompanyFilter("");
+          setVerificationFilter("");
+          setDocFilter("");
+        }}
+      >
+        <FilterControl label="Company" value={companyFilter} onChange={setCompanyFilter} options={companyOptions} />
+        <FilterControl label="Verification" value={verificationFilter} onChange={setVerificationFilter} options={["Verified", "Pending"]} />
+        <FilterControl
+          label="Docs"
+          value={docFilter}
+          onChange={setDocFilter}
+          options={[
+            { label: "Complete Docs", value: "complete" },
+            { label: "Missing Docs", value: "missing" },
+          ]}
+        />
+        <TableExportActions
+          moduleName="Placements"
+          fileName="placements_report"
+          columns={exportColumns}
+          rows={filteredCandidates}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </ClientTableToolbar>
+      <div className="overflow-auto" style={{ maxHeight: "clamp(240px, calc(100vh - 420px), 420px)" }}>
+        <table className="w-full min-w-[1280px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Student Name</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">Company</th>
+              <th className="px-4 py-3 font-medium">Designation</th>
+              <th className="px-4 py-3 font-medium">Salary</th>
+              <th className="px-4 py-3 font-medium">Joining Date</th>
+              <th className="px-4 py-3 font-medium">Offer Letter</th>
+              <th className="px-4 py-3 font-medium">M1</th>
+              <th className="px-4 py-3 font-medium">M2</th>
+              <th className="px-4 py-3 font-medium">M3</th>
+              <th className="px-4 py-3 font-medium">Bank Stmt</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredCandidates.map((candidate) => (
+              <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                <td className="px-4 py-4">
+                  <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                    {batchLabel}
+                  </span>
+                </td>
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.company}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{candidate.designation}</td>
+                <td className="px-4 py-4">
+                  <span className="font-semibold text-emerald-300">₹{formatNumber(candidate.salary)}</span>
+                  <p className="mt-1 text-xs text-slate-500">/month</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{candidate.joiningDate ? formatDate(candidate.joiningDate) : "—"}</td>
+                <td className="px-4 py-4"><DocBadge available={candidate.hasOfferLetter} label="Offer" /></td>
+                <td className="px-4 py-4"><DocBadge available={candidate.hasM1} label="M1" /></td>
+                <td className="px-4 py-4"><DocBadge available={candidate.hasM2} label="M2" /></td>
+                <td className="px-4 py-4"><DocBadge available={candidate.hasM3} label="M3" /></td>
+                <td className="px-4 py-4"><DocBadge available={candidate.hasBankStatement} label="Bank" /></td>
+                <td className="px-4 py-4">
+                  <span className={`text-xs font-semibold ${candidate.isVerified ? "text-emerald-300" : "text-slate-500"}`}>
+                    {candidate.isVerified ? "Verified" : "Pending"}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function DocBadge({ available, label }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
+        available
+          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+          : "border-slate-500/20 bg-slate-500/10 text-slate-500"
+      }`}
+    >
+      {available ? <Eye size={10} /> : <X size={10} />}
+      {label}
+    </span>
+  );
+}
+
+function StatusPill({ status }) {
+  const tone =
+    status === "Placed" || status === "Certified" || status === "Approved"
+      ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
+      : status === "Pending" || status === "Assessment Due" || status === "Employer Mapped"
+        ? "border-amber-400/20 bg-amber-500/10 text-amber-300"
+        : "border-violet-400/20 bg-violet-500/10 text-violet-200";
+
+  return <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${tone}`}>{status}</span>;
 }
 
 const CLIENT_GALLERY_ASSETS = [

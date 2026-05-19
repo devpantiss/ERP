@@ -6,6 +6,7 @@ import {
   WorkspaceHeader,
 } from "../../components/Admin/ProjectWorkspace";
 import { buildProjectSummaries } from "../../components/Admin/projectWorkspaceUtils";
+import { buildSalaryWorkEvidence, SalaryWorkEvidence } from "../shared/salaryWorkEvidence";
 import { EMPLOYEES, SALARY_APPROVALS } from "./adminPortalData";
 
 const employeeProjectByName = EMPLOYEES.reduce((map, employee) => {
@@ -27,6 +28,7 @@ const buildSalaryRows = () =>
       target2,
       achievement1,
       achievement2,
+      evidence: buildSalaryWorkEvidence(item, index),
       salaryApproved: item.status === "Approved",
       bonusApproved: false,
     };
@@ -97,6 +99,12 @@ export default function AdminSalaryApprovals() {
       },
     },
     {
+      key: "evidence",
+      label: "Work Done / Proof",
+      cellClassName: "p-4 align-top text-white/75",
+      render: (row) => <SalaryWorkEvidence evidence={row.evidence} tone="violet" />,
+    },
+    {
       key: "salaryApproved",
       label: "Salary Approval",
       render: (row) => (
@@ -132,7 +140,7 @@ export default function AdminSalaryApprovals() {
       />
 
       {selectedProject ? (
-        <DataTable columns={columns} rows={projectRows} minWidth="1320px" />
+        <DataTable columns={columns} rows={projectRows} minWidth="1620px" />
       ) : (
         <ProjectCards projects={projects} onSelect={setSelectedProject} />
       )}

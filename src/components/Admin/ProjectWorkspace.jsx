@@ -123,7 +123,7 @@ export function ApprovalToggle({ checked, onChange, approveLabel = "Approve", ho
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`inline-flex min-w-[112px] items-center justify-between rounded-full border px-2 py-1 text-xs font-semibold transition ${
+      className={`inline-flex min-w-[132px] items-center justify-between whitespace-nowrap rounded-full border px-2 py-1 text-xs font-semibold transition ${
         checked
           ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
           : "border-amber-400/30 bg-amber-500/15 text-amber-200"

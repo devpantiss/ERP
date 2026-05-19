@@ -16,6 +16,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { EMPLOYEES, SALARY_APPROVALS } from "../Admin/adminPortalData";
+import { buildSalaryWorkEvidence, SalaryWorkEvidence } from "../shared/salaryWorkEvidence";
 import { Breadcrumb, PageHeader } from "./SuperAdminSharedComponents";
 
 const ADMIN_SALARY_LINK = {
@@ -45,6 +46,7 @@ function buildSalaryRecords() {
       target2,
       achievement1: salary.achievement,
       achievement2,
+      evidence: buildSalaryWorkEvidence(salary, index),
       adminApproved,
       superAdminStatus: adminApproved ? "Pending Review" : "Waiting Admin",
     };
@@ -311,7 +313,7 @@ export default function SuperAdminFinanceManagement() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm" style={{ minWidth: 1260 }}>
+              <table className="w-full text-left text-sm" style={{ minWidth: 1580 }}>
                 <thead className="bg-[#0b1220] text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
                   <tr>
                     <th className="px-5 py-4">Employee</th>
@@ -322,6 +324,7 @@ export default function SuperAdminFinanceManagement() {
                     <th className="px-5 py-4">Salary</th>
                     <th className="px-5 py-4">Admin Approval</th>
                     <th className="px-5 py-4">Super Admin</th>
+                    <th className="px-5 py-4">Work Done / Proof</th>
                     <th className="px-5 py-4 text-right">Action</th>
                   </tr>
                 </thead>
@@ -338,7 +341,7 @@ export default function SuperAdminFinanceManagement() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={9} className="px-5 py-12 text-center text-sm text-slate-500">
+                      <td colSpan={10} className="px-5 py-12 text-center text-sm text-slate-500">
                         No salary records match the selected filters.
                       </td>
                     </tr>
@@ -446,13 +449,16 @@ function SalaryRow({ row, onApprove, onReturn, onReopen }) {
           {row.decidedOn ? `Updated ${row.decidedOn}` : row.adminApproved ? "Ready for decision" : "Locked until Admin clears"}
         </p>
       </td>
-      <td className="px-5 py-4 text-right">
+      <td className="px-5 py-4 align-top">
+        <SalaryWorkEvidence evidence={row.evidence} tone="red" />
+      </td>
+      <td className="px-5 py-4 text-right align-top">
         {row.superAdminStatus === "Pending Review" ? (
-          <div className="flex justify-end gap-2">
+          <div className="flex min-w-[230px] justify-end gap-3">
             <button
               type="button"
               onClick={onApprove}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-500/15 px-3 py-2 text-xs font-black text-emerald-200 transition hover:bg-emerald-500/25"
+              className="inline-flex min-w-[104px] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-emerald-500/15 px-4 py-2.5 text-xs font-black text-emerald-200 transition hover:bg-emerald-500/25"
             >
               <CheckCircle2 size={14} />
               Approve
@@ -460,7 +466,7 @@ function SalaryRow({ row, onApprove, onReturn, onReopen }) {
             <button
               type="button"
               onClick={onReturn}
-              className="inline-flex items-center gap-2 rounded-xl bg-red-500/10 px-3 py-2 text-xs font-black text-red-200 transition hover:bg-red-500/20"
+              className="inline-flex min-w-[104px] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-red-500/10 px-4 py-2.5 text-xs font-black text-red-200 transition hover:bg-red-500/20"
             >
               <Ban size={14} />
               Return
@@ -470,13 +476,13 @@ function SalaryRow({ row, onApprove, onReturn, onReopen }) {
           <button
             type="button"
             onClick={onReopen}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2 text-xs font-black text-white/65 transition hover:border-red-400/35 hover:text-white"
+            className="inline-flex min-w-[112px] items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-700 bg-[#0b1220] px-4 py-2.5 text-xs font-black text-white/65 transition hover:border-red-400/35 hover:text-white"
           >
             <Clock size={14} />
             Reopen
           </button>
         ) : (
-          <span className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2 text-xs font-black text-slate-500">
+          <span className="inline-flex min-w-[142px] items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-700 bg-[#0b1220] px-4 py-2.5 text-xs font-black text-slate-500">
             <Clock size={14} />
             Awaiting Admin
           </span>

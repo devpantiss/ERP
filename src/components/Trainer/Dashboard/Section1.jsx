@@ -7,7 +7,6 @@ import {
   Building2,
   MapPin,
 } from "lucide-react";
-import Marquee from "react-fast-marquee";
 import {
   PieChart,
   Pie,
@@ -108,13 +107,11 @@ export default function TrainerPerformanceSection({
       {/* ================= PROJECT MARQUEE ================= */}
 
       <div className="mb-6">
-
-        <Marquee speed={40} pauseOnHover gradient={false}>
-          {PROJECT_CARDS.map((item, i) => (
-            <ProjectCard key={i} data={item} />
+        <ProjectTicker>
+          {[...PROJECT_CARDS, ...PROJECT_CARDS].map((item, i) => (
+            <ProjectCard key={`${item.project}-${i}`} data={item} />
           ))}
-        </Marquee>
-
+        </ProjectTicker>
       </div>
 
       {/* SUBTLE GRID */}
@@ -191,6 +188,16 @@ export default function TrainerPerformanceSection({
         </div>
       </div>
     </section>
+  );
+}
+
+function ProjectTicker({ children }) {
+  return (
+    <div className="dashboard-project-ticker overflow-hidden">
+      <div className="dashboard-project-ticker-track flex w-max items-stretch">
+        {children}
+      </div>
+    </div>
   );
 }
 

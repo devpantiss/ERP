@@ -2,6 +2,7 @@ import { memo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   Briefcase,
+  Award,
   CalendarCheck,
   CalendarDays,
   ChevronDown,
@@ -14,10 +15,12 @@ import {
   MapPinned,
   MessageSquareWarning,
   PackageCheck,
+  Quote,
   Radio,
   Receipt,
   ShieldCheck,
   ShoppingCart,
+  GraduationCap,
   Users,
   Wallet,
 } from "lucide-react";
@@ -88,14 +91,31 @@ const MENU_ITEMS = [
     icon: Briefcase,
   },
   {
-    label: "Students Kit Distribution",
-    path: "/admin/students-kit-distribution",
-    icon: PackageCheck,
-  },
-  {
-    label: "Student Insurance Details",
-    path: "/admin/student-insurance-details",
-    icon: ShieldCheck,
+    label: "Students",
+    icon: GraduationCap,
+    key: "students",
+    children: [
+      {
+        label: "Kit Distribution",
+        path: "/admin/students-kit-distribution",
+        icon: PackageCheck,
+      },
+      {
+        label: "Insurance",
+        path: "/admin/student-insurance-details",
+        icon: ShieldCheck,
+      },
+      {
+        label: "Batch Certification",
+        path: "/admin/batch-certification",
+        icon: Award,
+      },
+      {
+        label: "Testimonials",
+        path: "/admin/testimonials",
+        icon: Quote,
+      },
+    ],
   },
   {
     label: "Approvals",

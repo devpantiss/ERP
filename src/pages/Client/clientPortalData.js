@@ -155,7 +155,7 @@ export const buildClientProjectSnapshot = (project) => {
       const placed = Math.round(parsed.size * (center.placementRate / 100) * (0.72 + (batchIndex % 3) * 0.08));
       const mapped = Math.min(parsed.size, Math.round(placed * 1.22));
 
-      const candidateRecords = Array.from({ length: Math.min(parsed.size, 18) }, (_, learnerIndex) => {
+      const candidateRecords = Array.from({ length: parsed.size }, (_, learnerIndex) => {
         const seed = centerIndex * 19 + batchIndex * 11 + learnerIndex;
         const isMapped = learnerIndex < mapped;
         const isPlaced = learnerIndex < placed;

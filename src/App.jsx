@@ -27,6 +27,7 @@ const ClientProjects = lazy(() => import("./pages/Client/ClientProjects"));
 const ClientPerformance = lazy(() => import("./pages/Client/ClientPerformance"));
 const ClientSuccessStory = lazy(() => import("./pages/Client/ClientSuccessStory"));
 const ClientReports = lazy(() => import("./pages/Client/ClientReports"));
+const ClientLiveFeed = lazy(() => import("./pages/Client/ClientLiveFeed"));
 const ClientProjectDetail = lazy(() =>
   import("./pages/Client/ClientProjects").then((module) => ({
     default: module.ClientProjectDetail,
@@ -105,6 +106,8 @@ const AdminInvoiceManagement = lazy(() => import("./pages/Admin/AdminInvoiceMana
 const AdminGrievancePortal = lazy(() => import("./pages/Admin/AdminGrievancePortal"));
 const AdminStudentsKitDistribution = lazy(() => import("./pages/Admin/AdminStudentsKitDistribution"));
 const AdminStudentInsuranceDetails = lazy(() => import("./pages/Admin/AdminStudentInsuranceDetails"));
+const AdminBatchCertification = lazy(() => import("./pages/Admin/AdminBatchCertification"));
+const AdminTestimonials = lazy(() => import("./pages/Admin/AdminTestimonials"));
 
 // Super Admin
 const SuperAdminDashboard = lazy(() => import("./pages/SuperAdmin/SuperAdminDashboard"));
@@ -131,6 +134,7 @@ const SuperAdminExposureVisits = lazy(() => import("./pages/SuperAdmin/SuperAdmi
 const SuperAdminEmployeeManagement = lazy(() => import("./pages/SuperAdmin/SuperAdminEmployeeManagement"));
 const SuperAdminGrievancePortal = lazy(() => import("./pages/SuperAdmin/SuperAdminGrievancePortal"));
 const SuperAdminLeaveMonitor = lazy(() => import("./pages/SuperAdmin/SuperAdminLeaveMonitor"));
+const SuperAdminCreateProjects = lazy(() => import("./pages/SuperAdmin/SuperAdminCreateProjects"));
 
 // ─── Suspense fallback ───────────────────────────────────────────────────────
 const PageFallback = (
@@ -163,6 +167,7 @@ function App() {
               <Route path="performance" element={<ClientPerformance />} />
               <Route path="reports" element={<ClientReports />} />
               <Route path="success-story" element={<ClientSuccessStory />} />
+              <Route path="live-feed" element={<ClientLiveFeed />} />
             </Route>
           </Route>
 
@@ -261,6 +266,8 @@ function App() {
             <Route path="project-details-reports" element={<AdminProjectManagement />} />
             <Route path="students-kit-distribution" element={<AdminStudentsKitDistribution />} />
             <Route path="student-insurance-details" element={<AdminStudentInsuranceDetails />} />
+            <Route path="batch-certification" element={<AdminBatchCertification />} />
+            <Route path="testimonials" element={<AdminTestimonials />} />
             <Route path="hr/attendance" element={<AdminTrainerAttendance />} />
             <Route path="hr/leave" element={<LeaveManagement />} />
             <Route path="hr/salary" element={<SalaryDashboard />} />
@@ -321,6 +328,7 @@ function App() {
 
             {/* Access Control */}
             <Route path="user-management" element={<SuperAdminUserManagement />} />
+            <Route path="create-projects" element={<SuperAdminCreateProjects />} />
             <Route path="project-assignment" element={<SuperAdminProjectAssignment />} />
             <Route path="trainer-assignment" element={<SuperAdminTrainerAssignment />} />
             <Route path="placement-assignment" element={<SuperAdminPlacementAssignment />} />

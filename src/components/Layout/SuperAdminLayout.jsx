@@ -42,8 +42,15 @@ const DRAWER_ITEMS = [
       { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
     ],
   },
+  {
+    label: "HR Operations",
+    icon: UserCog,
+    children: [
+      { label: "Employee Management", path: "/super-admin/employee-management", icon: UserCog },
+      { label: "Leave Monitor", path: "/super-admin/leave-monitor", icon: CalendarDays },
+    ],
+  },
   { label: "Grievance Tracker", path: "/super-admin/grievance-tracker", icon: MessageSquareWarning },
-  { label: "Leave Monitor", path: "/super-admin/leave-monitor", icon: CalendarDays },
   {
     label: "Finances",
     icon: Wallet,
@@ -52,7 +59,14 @@ const DRAWER_ITEMS = [
       { label: "Invoices", path: "/super-admin/invoices", icon: ReceiptText },
     ],
   },
-  { label: "User Management", path: "/super-admin/user-management", icon: UserPlus },
+  {
+    label: "Access Control",
+    icon: UserPlus,
+    children: [
+      { label: "User Management", path: "/super-admin/user-management", icon: UserPlus },
+      { label: "Create Projects", path: "/super-admin/create-projects", icon: FolderKanban },
+    ],
+  },
   { label: "Platform Settings", path: "/super-admin/settings", icon: Settings },
   { label: "Profile", path: "/super-admin/profile", icon: UserRoundPen },
 ];
