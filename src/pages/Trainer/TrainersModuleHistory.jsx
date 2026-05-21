@@ -4,42 +4,15 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import SlidePanel from "../../components/common/SlidePanel";
-
-/* ================= REAL TRAINING IMAGES ================= */
-
-const TRAINING_IMAGES = [
-  "https://images.unsplash.com/photo-1581092921461-eab62e97a780",
-  "https://images.unsplash.com/photo-1581091215367-59ab6b3d8d7c",
-  "https://images.unsplash.com/photo-1581090700227-1e8c7a4dfe2b",
-  "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc",
-  "https://images.unsplash.com/photo-1581091870622-1e7a3a1e4b9a",
-  "https://images.unsplash.com/photo-1581092335397-9583eb92d232",
-  "https://images.unsplash.com/photo-1605902711622-cfb43c4437d1",
-];
-
-/* ================= DUMMY DATA ================= */
-
-const MODULE_HISTORY = Array.from({ length: 30 }, (_, i) => ({
-  id: i + 1,
-  date: `2026-02-${10 + (i % 10)}`,
-  department: "Mines, Steel & Aluminium",
-  center: "Angul",
-  jobRole: "Underground Mining Technician",
-  batch: `BATCH-${101 + (i % 3)}`,
-  module: `Module ${i + 1}`,
-  type: i % 2 === 0 ? "Study" : "Lab",
-  trainer: "Rahul Sharma",
-  photos: [
-    TRAINING_IMAGES[i % TRAINING_IMAGES.length],
-    TRAINING_IMAGES[(i + 2) % TRAINING_IMAGES.length],
-  ],
-}));
-
-const TOTAL_MODULES_PER_BATCH = 45;
+import { useAuthStore } from "../../stores/authStore";
+import { selectTrainerModuleHistory } from "../../stores/selectors/trainingSelectors";
 
 /* ================= COMPONENT ================= */
 
 export default function TrainerModuleHistoryEnterprise() {
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const trainerEmployeeId = currentUser?.employeeId || "EMP-0001";
+  const moduleHistory = useMemo(() => selectTrainerModuleHistory(trainerEmployeeId), [trainerEmployeeId]);
   const [view, setView] = useState("table");
   const [typeFilter, setTypeFilter] = useState("All");
   const [selectedBatch, setSelectedBatch] = useState(null);
@@ -48,11 +21,11 @@ export default function TrainerModuleHistoryEnterprise() {
   /* ================= FILTERED DATA ================= */
 
   const filteredData = useMemo(() => {
-    let data = MODULE_HISTORY;
+    let data = moduleHistory;
     if (typeFilter !== "All") data = data.filter((item) => item.type === typeFilter);
     if (selectedBatch) data = data.filter((item) => item.batch === selectedBatch);
     return data;
-  }, [typeFilter, selectedBatch]);
+  }, [moduleHistory, typeFilter, selectedBatch]);
 
   /* ================= BATCH PROGRESS ================= */
 
@@ -60,14 +33,15 @@ export default function TrainerModuleHistoryEnterprise() {
     const map = {};
 
     filteredData.forEach((item) => {
-      if (!map[item.batch]) map[item.batch] = 0;
-      map[item.batch]++;
+      if (!map[item.batch]) map[item.batch] = { completed: 0, total: item.totalModules || 1 };
+      map[item.batch].completed++;
     });
 
-    return Object.entries(map).map(([batch, completed]) => ({
+    return Object.entries(map).map(([batch, { completed, total }]) => ({
       batch,
       completed,
-      percent: Math.round((completed / TOTAL_MODULES_PER_BATCH) * 100),
+      total,
+      percent: Math.round((completed / total) * 100),
     }));
   }, [filteredData]);
 
@@ -196,7 +170,7 @@ export default function TrainerModuleHistoryEnterprise() {
               </div>
 
               <p className="text-xs text-slate-500 mt-2">
-                {b.completed}/{TOTAL_MODULES_PER_BATCH} modules
+                {b.completed}/{b.total} modules
               </p>
             </div>
           ))}

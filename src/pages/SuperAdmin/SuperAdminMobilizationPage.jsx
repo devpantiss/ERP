@@ -1,10 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Megaphone, UserPlus, UserMinus, Users, Search, ChevronRight } from "lucide-react";
-import { SA_PROJECTS } from "./superAdminData";
 import {
   ProjectCard, BackButton, PageHeader, Breadcrumb, ProgressBar,
   usePagination, Pagination,
 } from "./SuperAdminSharedComponents";
+import { useProjectStore } from "../../stores/projectStore";
+import {
+  selectMobilizedRows,
+  selectSuperAdminProjectHierarchy,
+} from "../../stores/selectors/superAdminSelectors";
 
 const MOB_STATUS_BADGE = {
   Enrolled: "bg-emerald-500/10 text-emerald-400",
@@ -12,10 +16,8 @@ const MOB_STATUS_BADGE = {
   Pending: "bg-amber-500/10 text-amber-400",
 };
 
-const formatPhone = (seed) =>
-  `+91 ${9870000000 + ((seed * 7919) % 9999999)}`.replace(/(\d{2})(\d{5})(\d{5})/, "$1 $2 $3");
-
 export default function SuperAdminMobilization() {
+  const { records: projectRecords, fetchAll: fetchProjects } = useProjectStore();
   const [projectId, setProjectId] = useState(null);
   const [centerId, setCenterId] = useState(null);
   const [search, setSearch] = useState("");
@@ -23,17 +25,23 @@ export default function SuperAdminMobilization() {
   const [courseFilter, setCourseFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  const project = SA_PROJECTS.find((p) => p.id === projectId);
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const projects = useMemo(() => selectSuperAdminProjectHierarchy(projectRecords), [projectRecords]);
+  const project = projects.find((p) => p.id === projectId);
   const center = project?.centers.find((c) => c.id === centerId);
 
-  const mobilizedList = buildMobilizedList(center);
+  const mobilizedList = selectMobilizedRows(center);
   const filtered = filterMobilizedList(mobilizedList, { search, batchFilter, courseFilter, statusFilter });
   const batchOptions = ["All", ...new Set(mobilizedList.map((c) => c.batch))];
   const courseOptions = ["All", ...new Set(mobilizedList.map((c) => c.course))];
   const statusOptions = ["All", ...new Set(mobilizedList.map((c) => c.mobStatus))];
 
   const pg = usePagination(filtered);
-  useEffect(() => { pg.setPage(1); }, [search, centerId, batchFilter, courseFilter, statusFilter]);
+  const resetPage = pg.setPage;
+  useEffect(() => { resetPage(1); }, [resetPage, search, centerId, batchFilter, courseFilter, statusFilter]);
 
   const breadcrumb = ["All Projects"];
   if (project) breadcrumb.push(project.name);
@@ -47,7 +55,7 @@ export default function SuperAdminMobilization() {
       {/* LEVEL 1: Projects */}
       {!project && (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {SA_PROJECTS.map((p) => {
+          {projects.map((p) => {
             const totMob = p.centers.reduce((s, c) => s + c.mobilization.mobilized, 0);
             const totEnr = p.centers.reduce((s, c) => s + c.mobilization.enrolled, 0);
             const totDrop = p.centers.reduce((s, c) => s + c.mobilization.dropoffs, 0);
@@ -279,46 +287,6 @@ export default function SuperAdminMobilization() {
       )}
     </div>
   );
-}
-
-function buildMobilizedList(center) {
-  if (!center) return [];
-  const { mobilized, enrolled, dropoffs } = center.mobilization;
-  const batchCandidates = center.batches.flatMap((batch) => batch.candidates);
-
-  const list = batchCandidates.map((candidate, index) => ({
-    id: `MOB-${center.name.slice(0, 3).toUpperCase()}-${String(index + 1).padStart(3, "0")}`,
-    name: candidate.name,
-    center: center.name,
-    batch: candidate.batch,
-    course: candidate.course,
-    mobilizationDate: candidate.enrollmentDate,
-    mobStatus: candidate.status === "Dropped" ? "Dropped" : "Enrolled",
-    phone: formatPhone(index + 1),
-  }));
-
-  const pending = mobilized - enrolled - dropoffs;
-  const extraNames = [
-    "Tapan Rout", "Prakash Majhi", "Kabita Das", "Lopamudra Deo", "Dinesh Pradhan",
-    "Rina Pattnaik", "Aparna Sethy", "Rahul Pradhan", "Subrat Jena", "Ranjita Mohanta",
-    "Monalisa Mohanty", "Sneha Swain", "Priyanka Behera", "Nihar Ranjan", "Pallavi Nayak",
-    "Sanjay Das", "Aditya Sahu", "Bikash Naik", "Suresh Naik", "Ritu Mohapatra",
-  ];
-
-  for (let index = 0; index < Math.max(0, pending); index++) {
-    list.push({
-      id: `MOB-${center.name.slice(0, 3).toUpperCase()}-P${String(index + 1).padStart(3, "0")}`,
-      name: extraNames[index % extraNames.length],
-      center: center.name,
-      batch: "—",
-      course: "—",
-      mobilizationDate: `2025-${String(3 + (index % 8)).padStart(2, "0")}-${String(1 + (index % 28)).padStart(2, "0")}`,
-      mobStatus: "Pending",
-      phone: formatPhone(batchCandidates.length + index + 1),
-    });
-  }
-
-  return list;
 }
 
 function filterMobilizedList(candidates, filters) {

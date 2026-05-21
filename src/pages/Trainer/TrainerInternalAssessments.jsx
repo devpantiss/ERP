@@ -1,43 +1,40 @@
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import * as XLSX from "xlsx";
 import { Upload, Download } from "lucide-react";
 import SlidePanel from "../../components/common/SlidePanel";
+import { useAuthStore } from "../../stores/authStore";
+import { useAssessmentStore } from "../../stores/assessmentStore";
+import {
+  selectAssessmentCandidates,
+  selectTrainerAssessmentRows,
+  selectTrainingCatalog,
+} from "../../stores/selectors/trainingSelectors";
 
 /* ================= CONFIG ================= */
 
-const BATCHES = ["BATCH-101", "BATCH-102", "BATCH-103", "BATCH-104"];
-const TRADES = ["Electrical", "Fitter", "Safety", "Welder"];
 const TYPES = ["Theory", "Practical", "Viva", "Mock Final"];
-
-/* ================= DUMMY DATA ================= */
-
-function generateAssessments() {
-  const list = [];
-
-  for (let i = 1; i <= 20; i++) {
-    list.push({
-      id: i,
-      batch: BATCHES[Math.floor(Math.random() * BATCHES.length)],
-      trade: TRADES[Math.floor(Math.random() * TRADES.length)],
-      type: TYPES[Math.floor(Math.random() * TYPES.length)],
-      date: `${10 + (i % 15)} Feb 2026`,
-      totalMarks: 100,
-      passingMarks: 40,
-      status: "Scheduled",
-      questionnaire: null,
-    });
-  }
-
-  return list;
-}
 
 /* ================= MAIN COMPONENT ================= */
 
 export default function TrainerInternalAssessments() {
-  const [assessments, setAssessments] = useState(generateAssessments());
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const trainerEmployeeId = currentUser?.employeeId || "EMP-0001";
+  const assessmentRecords = useAssessmentStore((state) => state.records);
+  const fetchAssessments = useAssessmentStore((state) => state.fetchAll);
+  const createAssessment = useAssessmentStore((state) => state.create);
+  const updateAssessment = useAssessmentStore((state) => state.update);
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState("All");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const catalog = useMemo(() => selectTrainingCatalog(trainerEmployeeId), [trainerEmployeeId]);
+  const assessments = useMemo(
+    () => selectTrainerAssessmentRows(assessmentRecords, trainerEmployeeId),
+    [assessmentRecords, trainerEmployeeId]
+  );
+
+  useEffect(() => {
+    fetchAssessments();
+  }, [fetchAssessments]);
 
   /* SUMMARY */
 
@@ -146,15 +143,7 @@ export default function TrainerInternalAssessments() {
 
                     {a.status === "Scheduled" && (
                       <button
-                        onClick={() =>
-                          setAssessments(prev =>
-                            prev.map(item =>
-                              item.id === a.id
-                                ? { ...item, status: "Conducted" }
-                                : item
-                            )
-                          )
-                        }
+                        onClick={() => updateAssessment(a.id, { status: "CONDUCTED" })}
                         className="px-3 py-1 text-xs bg-blue-500/20 text-blue-400 rounded-md"
                       >
                         Mark Conducted
@@ -182,13 +171,9 @@ export default function TrainerInternalAssessments() {
       {/* CREATE MODAL */}
       {showCreateModal && (
         <CreateAssessmentModal
+          catalog={catalog}
           onClose={() => setShowCreateModal(false)}
-          onCreate={(data) =>
-            setAssessments(prev => [
-              ...prev,
-              { ...data, id: Date.now(), status: "Scheduled" },
-            ])
-          }
+          onCreate={createAssessment}
         />
       )}
 
@@ -196,6 +181,10 @@ export default function TrainerInternalAssessments() {
       {selected && (
         <MarksModal
           assessment={selected}
+          onSubmit={() => {
+            updateAssessment(selected.id, { status: "SUBMITTED" });
+            setSelected(null);
+          }}
           onClose={() => setSelected(null)}
         />
       )}
@@ -205,12 +194,13 @@ export default function TrainerInternalAssessments() {
 
 /* ================= CREATE MODAL ================= */
 
-function CreateAssessmentModal({ onClose, onCreate }) {
+function CreateAssessmentModal({ catalog, onClose, onCreate }) {
   const fileRef = useRef(null);
+  const initialBatch = catalog.batches[0];
 
   const [form, setForm] = useState({
-    batch: BATCHES[0],
-    trade: TRADES[0],
+    batchId: initialBatch?.id || "",
+    trade: initialBatch?.trade || "",
     type: TYPES[0],
     date: "",
     totalMarks: 100,
@@ -239,7 +229,20 @@ function CreateAssessmentModal({ onClose, onCreate }) {
 
   const handleSubmit = () => {
     if (!isValid) return;
-    onCreate(form);
+    const candidate = selectAssessmentCandidates(form.batchId)[0];
+    onCreate({
+      candidateId: candidate?.id || "CND-0001",
+      batchId: form.batchId,
+      assessor: "Internal Trainer",
+      score: 0,
+      status: "SCHEDULED",
+      type: form.type,
+      scheduledOn: form.date,
+      totalMarks: Number(form.totalMarks),
+      passingMarks: Number(form.passingMarks),
+      questionnaire: form.questionnaire,
+      fileName: form.fileName,
+    });
     onClose();
   };
 
@@ -249,13 +252,24 @@ function CreateAssessmentModal({ onClose, onCreate }) {
 
           <div className="grid md:grid-cols-3 gap-4">
 
-            <FormSelect label="Batch" value={form.batch} options={BATCHES}
-              onChange={(v) => setForm({ ...form, batch: v })} />
+            <FormSelect
+              label="Batch"
+              value={form.batchId}
+              options={catalog.batches.map((batch) => ({ value: batch.id, label: batch.label }))}
+              onChange={(v) => {
+                const batch = catalog.batches.find((item) => item.id === v);
+                setForm({ ...form, batchId: v, trade: batch?.trade || form.trade });
+              }}
+            />
 
-            <FormSelect label="Trade" value={form.trade} options={TRADES}
-              onChange={(v) => setForm({ ...form, trade: v })} />
+            <FormSelect
+              label="Trade"
+              value={form.trade}
+              options={catalog.trades.map((trade) => ({ value: trade, label: trade }))}
+              onChange={(v) => setForm({ ...form, trade: v })}
+            />
 
-            <FormSelect label="Type" value={form.type} options={TYPES}
+            <FormSelect label="Type" value={form.type} options={TYPES.map((type) => ({ value: type, label: type }))}
               onChange={(v) => setForm({ ...form, type: v })} />
 
             <FormInput label="Date" type="date"
@@ -331,16 +345,12 @@ function CreateAssessmentModal({ onClose, onCreate }) {
 
 /* ================= MARKS MODAL ================= */
 
-function MarksModal({ assessment, onClose }) {
+function MarksModal({ assessment, onSubmit, onClose }) {
   const totalMarks = assessment.totalMarks || 100;
   const passingMarks = assessment.passingMarks || 40;
 
   const [students, setStudents] = useState(
-    Array.from({ length: 30 }, (_, i) => ({
-      id: `STD-${100 + i}`,
-      name: `Student ${i + 1}`,
-      marks: "",
-    }))
+    selectAssessmentCandidates(assessment.batchId)
   );
 
   const updateMarks = (index, value) => {
@@ -486,7 +496,7 @@ function MarksModal({ assessment, onClose }) {
             Save Draft
           </button>
 
-          <button className="px-5 py-2 bg-emerald-500 text-black rounded-md">
+          <button onClick={onSubmit} className="px-5 py-2 bg-emerald-500 text-black rounded-md">
             Submit Marks
           </button>
 
@@ -522,7 +532,7 @@ function FormSelect({ label, value, options, onChange }) {
         className="w-full bg-transparent border border-slate-600 rounded-md px-3 py-2 text-white/90"
       >
         {options.map((o) => (
-          <option key={o}>{o}</option>
+          <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
     </div>

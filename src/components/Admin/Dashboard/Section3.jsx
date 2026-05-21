@@ -1,65 +1,6 @@
-/* ===================== PROJECT STATUS DATA ===================== */
-
-const PROJECTS = [
-  {
-    name: "PMKVY 4.0",
-    center: "Pantiss Skill Resort, Angul",
-    status: "Active",
-    progress: 78,
-    enrolled: 240,
-    certified: 212,
-    placed: 185,
-  },
-  {
-    name: "CSR – Tata Steel",
-    center: "Jajpur Training Center",
-    status: "Ongoing",
-    progress: 62,
-    enrolled: 180,
-    certified: 146,
-    placed: 112,
-  },
-  {
-    name: "DDUGKY",
-    center: "Kalahandi Center",
-    status: "Active",
-    progress: 45,
-    enrolled: 320,
-    certified: 218,
-    placed: 144,
-  },
-  {
-    name: "State Skill Mission",
-    center: "Jharsuguda Campus",
-    status: "Ongoing",
-    progress: 88,
-    enrolled: 150,
-    certified: 141,
-    placed: 132,
-  },
-  {
-    name: "DMF Keonjhar",
-    center: "Keonjhar Training Hub",
-    status: "Active",
-    progress: 34,
-    enrolled: 200,
-    certified: 116,
-    placed: 68,
-  },
-  {
-    name: "Shaksham Sundargarh",
-    center: "Sundargarh Skill Center",
-    status: "Active",
-    progress: 55,
-    enrolled: 280,
-    certified: 206,
-    placed: 154,
-  },
-];
-
 /* ===================== MAIN COMPONENT ===================== */
 
-export default function AdminDashboardSection3() {
+export default function AdminDashboardSection3({ projects = [] }) {
   return (
     <section className="relative mt-6 overflow-hidden rounded-[28px] border border-cyan-400/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(8,13,25,0.98))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.13),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(139,92,246,0.14),transparent_26%)]" />
@@ -70,7 +11,7 @@ export default function AdminDashboardSection3() {
           Project Status Overview
         </h3>
         <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-400">
-          {PROJECTS.length} active projects
+          {projects.length} active projects
         </span>
       </div>
 
@@ -90,7 +31,7 @@ export default function AdminDashboardSection3() {
           </thead>
 
           <tbody className="divide-y divide-white/8">
-            {PROJECTS.map((project) => (
+            {projects.map((project) => (
               <tr
                 key={project.name}
                 className="transition hover:bg-cyan-400/[0.035]"

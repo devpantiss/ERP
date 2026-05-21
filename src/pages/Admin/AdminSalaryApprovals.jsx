@@ -1,56 +1,43 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ApprovalToggle,
   DataTable,
   ProjectCards,
   WorkspaceHeader,
 } from "../../components/Admin/ProjectWorkspace";
-import { buildProjectSummaries } from "../../components/Admin/projectWorkspaceUtils";
 import { buildSalaryWorkEvidence, SalaryWorkEvidence } from "../shared/salaryWorkEvidence";
-import { EMPLOYEES, SALARY_APPROVALS } from "./adminPortalData";
-
-const employeeProjectByName = EMPLOYEES.reduce((map, employee) => {
-  map[employee.name] = employee.project;
-  return map;
-}, {});
-
-const buildSalaryRows = () =>
-  SALARY_APPROVALS.map((item, index) => {
-    const target1 = item.target;
-    const target2 = item.role === "Placement Officer" ? 40 + index * 2 : 80 + index * 4;
-    const achievement1 = item.achievement;
-    const achievement2 = Math.max(Math.round(target2 * (item.attendance / 100)) - (index % 3), 0);
-
-    return {
-      ...item,
-      project: employeeProjectByName[item.employee] || "Unassigned Project",
-      target1,
-      target2,
-      achievement1,
-      achievement2,
-      evidence: buildSalaryWorkEvidence(item, index),
-      salaryApproved: item.status === "Approved",
-      bonusApproved: false,
-    };
-  });
+import { useSalaryStore } from "../../stores/salaryStore.js";
+import {
+  selectProjectCardsFromSalaries,
+  selectSalaryRows,
+} from "../../stores/selectors/salarySelectors.js";
 
 export default function AdminSalaryApprovals() {
+  const { salaries, fetchSalaries, updateSalary } = useSalaryStore();
   const [selectedProject, setSelectedProject] = useState(null);
-  const [salaryRows, setSalaryRows] = useState(buildSalaryRows);
 
-  const projects = useMemo(() => buildProjectSummaries(salaryRows), [salaryRows]);
+  useEffect(() => {
+    fetchSalaries();
+  }, [fetchSalaries]);
+
+  const salaryRows = useMemo(
+    () => selectSalaryRows(salaries).map((item, index) => ({
+      ...item,
+      evidence: buildSalaryWorkEvidence(item, index),
+    })),
+    [salaries]
+  );
+  const projects = useMemo(() => selectProjectCardsFromSalaries(salaries), [salaries]);
   const projectRows = useMemo(
     () =>
       selectedProject
-        ? salaryRows.filter((row) => row.project === selectedProject.name)
+        ? salaryRows.filter((row) => row.projectId === selectedProject.id)
         : [],
     [salaryRows, selectedProject]
   );
 
   const updateApproval = (id, key, value) => {
-    setSalaryRows((current) =>
-      current.map((row) => (row.id === id ? { ...row, [key]: value } : row))
-    );
+    updateSalary(id, key === "salaryApproved" ? { status: value ? "APPROVED" : "SUBMITTED" } : { [key]: value });
   };
 
   const columns = [

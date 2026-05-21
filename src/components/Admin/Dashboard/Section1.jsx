@@ -14,36 +14,6 @@ import {
   Tooltip,
 } from "recharts";
 
-/* ===================== PROJECT DATA ===================== */
-
-const PROJECT_CARDS = [
-  {
-    project: "PMKVY 4.0",
-    center: "Pantiss Skill Resort, Angul",
-    status: "Active",
-  },
-  {
-    project: "CSR – Tata Steel",
-    center: "Jajpur Training Center",
-    status: "Ongoing",
-  },
-  {
-    project: "DDUGKY",
-    center: "Kalahandi Center",
-    status: "Active",
-  },
-  {
-    project: "State Skill Mission",
-    center: "Jharsuguda Campus",
-    status: "Ongoing",
-  },
-  {
-    project: "DMF Keonjhar",
-    center: "Keonjhar Training Hub",
-    status: "Active",
-  },
-];
-
 /* ===================== COUNT UP HOOK ===================== */
 
 function useCountUp(value, duration = 1200) {
@@ -94,6 +64,7 @@ export default function AdminDashboardSection1({
     overallAttendance: 91,
     attendanceTarget: 95,
   },
+  projectCards = [],
 }) {
   const [view, setView] = useState("total");
   const data = view === "total" ? totalData : lastMonthData;
@@ -115,7 +86,7 @@ export default function AdminDashboardSection1({
 
       <div className="mb-6">
         <ProjectTicker>
-          {[...PROJECT_CARDS, ...PROJECT_CARDS].map((item, i) => (
+          {[...projectCards, ...projectCards].map((item, i) => (
             <ProjectCard key={`${item.project}-${i}`} data={item} />
           ))}
         </ProjectTicker>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import {
   IndianRupee,
@@ -12,6 +12,7 @@ import {
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
+import { selectRevenueWorkflows } from "../../stores/selectors/analyticsSelectors";
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -26,22 +27,6 @@ const TARGET_VISITS     = 4;      // per month
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
-];
-
-/* ── Demo data — would come from API ─────────────────────────── */
-const MONTHLY_DATA = {
-  "2026-03": { hoursClocked: 142, visitsCompleted: 3 },
-  "2026-02": { hoursClocked: 160, visitsCompleted: 4 },
-  "2026-01": { hoursClocked: 128, visitsCompleted: 2 },
-  "2025-12": { hoursClocked: 155, visitsCompleted: 4 },
-  "2025-11": { hoursClocked: 160, visitsCompleted: 3 },
-  "2025-10": { hoursClocked: 148, visitsCompleted: 4 },
-};
-
-const INVOICES = [
-  { id: "INV-T-0042", month: "February 2026", amount: 25000, status: "Paid",     raisedOn: "2026-03-01" },
-  { id: "INV-T-0041", month: "January 2026",  amount: 19375, status: "Approved", raisedOn: "2026-02-01" },
-  { id: "INV-T-0040", month: "December 2025", amount: 24219, status: "Paid",     raisedOn: "2026-01-01" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -71,13 +56,15 @@ const statusBg = (s) =>
 ═══════════════════════════════════════════════════════════════ */
 
 export default function TrainerRevenue() {
+  const workflow = selectRevenueWorkflows().trainer;
+  const monthlyData = workflow.monthlyData;
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey());
   const [invoiceModal, setInvoiceModal]   = useState(false);
   const [invoiceNotes, setInvoiceNotes]   = useState("");
-  const [invoices, setInvoices]           = useState(INVOICES);
+  const [invoices, setInvoices]           = useState(workflow.invoices);
 
-  const data     = MONTHLY_DATA[selectedMonth] || { hoursClocked: 0, visitsCompleted: 0 };
-  const earnings = useMemo(() => calcEarnings(data), [selectedMonth]);
+  const data     = monthlyData[selectedMonth] || { hoursClocked: 0, visitsCompleted: 0 };
+  const earnings = calcEarnings(data);
 
   const monthLabel = (() => {
     const [y, m] = selectedMonth.split("-");
@@ -124,7 +111,7 @@ export default function TrainerRevenue() {
                          px-4 py-3 text-sm text-white/90 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 focus:outline-none
                          cursor-pointer pr-10 hover:bg-white/[0.06] transition-colors shadow-lg shadow-black/20"
             >
-              {Object.keys(MONTHLY_DATA).map((k) => {
+              {Object.keys(monthlyData).map((k) => {
                 const [y, m] = k.split("-");
                 return <option key={k} value={k} className="bg-[#0b1220]">{MONTHS[parseInt(m) - 1]} {y}</option>;
               })}

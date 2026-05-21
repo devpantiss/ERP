@@ -1,17 +1,15 @@
+import { useEffect, useMemo } from "react";
 import { ShieldAlert, Settings, Building2, FolderKanban, Users, Database, Globe, Activity, Rocket } from "lucide-react";
-
-/* ===================== MOCK DATA ===================== */
-
-const PROJECTS = [
-  { id: "P1", name: "PMKVY 4.0", status: "Active", center: "Multiple", health: "Good" },
-  { id: "P2", name: "Tata Steel CSR", status: "Active", center: "Angul", health: "Excellent" },
-  { id: "P3", name: "DDUGKY", status: "Paused", center: "Sundargarh", health: "Warning" },
-  { id: "P4", name: "State Skill Mission", status: "Active", center: "Keonjhar", health: "Good" },
-];
-
-/* ===================== COMPONENT ===================== */
+import { useProjectStore } from "../../stores/projectStore";
+import { selectOperationalControlProjects } from "../../stores/selectors/superAdminSelectors";
 
 export default function SuperAdminControlCenter() {
+  const { records: projectRecords, fetchAll } = useProjectStore();
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+  const projects = useMemo(() => selectOperationalControlProjects(projectRecords), [projectRecords]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -60,7 +58,7 @@ export default function SuperAdminControlCenter() {
            </h3>
            
            <div className="space-y-4">
-             {PROJECTS.map((project) => (
+             {projects.map((project) => (
                <div key={project.id} className="p-4 rounded-xl border border-white/[0.08] hover:border-slate-700 transition group relative">
                  <div className="flex items-center justify-between">
                    <div className="flex items-center gap-3">

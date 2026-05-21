@@ -1,62 +1,28 @@
 import Pagination from "../../components/common/Pagination";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, BookOpen, Users, TrendingUp, CheckCircle2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ALL_USERS } from "./superAdminUsers";
-
-const TRN_MAP = {};
-ALL_USERS.filter(u => u.role === "Trainer").forEach(u => { TRN_MAP[u.id] = u; });
-
-const TRN_KPIS = {
-  "PSU-TRN-001": {
-    batchCount: 4, modulesCompleted: 78, totalModules: 135, attendance: "96%", exposureVisits: 5,
-    batches: [{ batch: "B-01", completed: 32, total: 45 },{ batch: "B-02", completed: 28, total: 45 },{ batch: "B-05", completed: 10, total: 45 },{ batch: "B-08", completed: 8, total: 45 }],
-    sessionSplit: [{ name: "Theory", value: 55, color: "#ef4444" },{ name: "Lab", value: 45, color: "#22d3ee" }],
-    weekly: [{ day: "Mon", modules: 4 },{ day: "Tue", modules: 5 },{ day: "Wed", modules: 2 },{ day: "Thu", modules: 6 },{ day: "Fri", modules: 3 },{ day: "Sat", modules: 2 }],
-  },
-  "PSU-TRN-002": {
-    batchCount: 3, modulesCompleted: 62, totalModules: 105, attendance: "93%", exposureVisits: 3,
-    batches: [{ batch: "B-03", completed: 25, total: 35 },{ batch: "B-04", completed: 22, total: 35 },{ batch: "B-06", completed: 15, total: 35 }],
-    sessionSplit: [{ name: "Theory", value: 60, color: "#ef4444" },{ name: "Lab", value: 40, color: "#22d3ee" }],
-    weekly: [{ day: "Mon", modules: 3 },{ day: "Tue", modules: 4 },{ day: "Wed", modules: 3 },{ day: "Thu", modules: 5 },{ day: "Fri", modules: 4 },{ day: "Sat", modules: 1 }],
-  },
-  "PSU-TRN-003": {
-    batchCount: 2, modulesCompleted: 45, totalModules: 70, attendance: "97%", exposureVisits: 4,
-    batches: [{ batch: "B-07", completed: 28, total: 35 },{ batch: "B-09", completed: 17, total: 35 }],
-    sessionSplit: [{ name: "Theory", value: 50, color: "#ef4444" },{ name: "Lab", value: 50, color: "#22d3ee" }],
-    weekly: [{ day: "Mon", modules: 2 },{ day: "Tue", modules: 3 },{ day: "Wed", modules: 4 },{ day: "Thu", modules: 3 },{ day: "Fri", modules: 5 },{ day: "Sat", modules: 2 }],
-  },
-  "PSU-TRN-004": {
-    batchCount: 2, modulesCompleted: 38, totalModules: 70, attendance: "71%", exposureVisits: 2,
-    batches: [{ batch: "B-02", completed: 22, total: 35 },{ batch: "B-10", completed: 16, total: 35 }],
-    sessionSplit: [{ name: "Theory", value: 65, color: "#ef4444" },{ name: "Lab", value: 35, color: "#22d3ee" }],
-    weekly: [{ day: "Mon", modules: 1 },{ day: "Tue", modules: 3 },{ day: "Wed", modules: 2 },{ day: "Thu", modules: 4 },{ day: "Fri", modules: 2 },{ day: "Sat", modules: 0 }],
-  },
-};
-
-const ATTENDANCE = [
-  { date: "05 Mar", s1: "P", s2: "P", s3: "P" },
-  { date: "04 Mar", s1: "P", s2: "P", s3: "A" },
-  { date: "03 Mar", s1: "P", s2: "P", s3: "P" },
-  { date: "02 Mar", s1: "A", s2: "P", s3: "P" },
-  { date: "01 Mar", s1: "P", s2: "P", s3: "P" },
-];
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { selectTrainerDetail } from "../../stores/selectors/superAdminSelectors";
 
 const tooltipStyle = {  border: "1px solid #334155", borderRadius: "12px" };
 
 export default function SuperAdminTrainerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const trainer = TRN_MAP[id] || ALL_USERS.find(u => u.role === "Trainer");
-  const kpi = TRN_KPIS[id] || TRN_KPIS["PSU-TRN-001"];
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  useEffect(() => {
+    fetchWithAssignments();
+  }, [fetchWithAssignments]);
+  const { employee: trainer, kpi, attendanceRows } = useMemo(() => selectTrainerDetail(id, employees), [employees, id]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return ATTENDANCE.slice(start, start + itemsPerPage);
-  }, [currentPage]);
-  const totalPages = Math.ceil(ATTENDANCE.length / itemsPerPage);
+    return attendanceRows.slice(start, start + itemsPerPage);
+  }, [attendanceRows, currentPage]);
+  const totalPages = Math.ceil(attendanceRows.length / itemsPerPage);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">

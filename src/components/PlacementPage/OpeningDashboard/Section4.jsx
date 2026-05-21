@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -9,64 +9,12 @@ import {
   CartesianGrid,
   LabelList,
 } from "recharts";
-
-/* ================= DATA ================= */
-
-const companies = [
-  "Tata Steel",
-  "JSW",
-  "Adani",
-  "L&T",
-  "Reliance",
-  "Vedanta",
-  "Jindal",
-  "Ultratech",
-  "Siemens",
-  "ABB",
-];
-
-const segments = [
-  "Mines",
-  "Shipping",
-  "Furniture",
-  "Green Jobs",
-  "Construction",
-  "Power",
-];
-
-const roles = [
-  "Technician",
-  "Operator",
-  "Supervisor",
-  "Electrician",
-  "Welder",
-  "Fitter",
-];
-
-const locations = [
-  "Odisha",
-  "Gujarat",
-  "Jharkhand",
-  "Maharashtra",
-  "West Bengal",
-  "UAE",
-  "Qatar",
-];
-
-/* ================= HELPERS ================= */
-
-const generateTrendData = (labels) =>
-  labels.map((name) => ({
-    name,
-    value: Math.floor(Math.random() * 120 + 20),
-    growth: Math.floor(Math.random() * 40 - 10),
-  }));
-
-const generateRetentionData = () =>
-  companies.map((c) => ({
-    name: c,
-    retention: Math.floor(Math.random() * 40 + 60),
-  }));
+import { usePlacementStore } from "../../../stores/placementStore";
+import {
+  selectCompanyRetentionRows,
+  selectJobOpeningRows,
+  selectPlacementTrendRows,
+} from "../../../stores/selectors/placementSelectors";
 
 /* ================= LABEL ================= */
 
@@ -92,26 +40,22 @@ const GrowthLabel = ({ x, y, payload }) => {
 /* ================= MAIN ================= */
 
 export default function Section4() {
+  const { drives, fetchDrives } = usePlacementStore();
   const [tab, setTab] = useState("joining");
 
+  useEffect(() => {
+    fetchDrives();
+  }, [fetchDrives]);
+
+  const openings = useMemo(() => selectJobOpeningRows(drives), [drives]);
+
   const trendData = useMemo(() => {
-    let base = [];
-
-    if (tab === "joining") base = generateTrendData(companies);
-    if (tab === "segment") base = generateTrendData(segments);
-    if (tab === "location") base = generateTrendData(locations);
-    if (tab === "role") base = generateTrendData(roles);
-
-    return base
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 10);
-  }, [tab]);
+    return selectPlacementTrendRows(openings, tab);
+  }, [openings, tab]);
 
   const retentionData = useMemo(() => {
-    return generateRetentionData()
-      .sort((a, b) => b.retention - a.retention)
-      .slice(0, 10);
-  }, []);
+    return selectCompanyRetentionRows(openings);
+  }, [openings]);
 
   const tabs = [
     { id: "joining", label: "Joining Trend" },

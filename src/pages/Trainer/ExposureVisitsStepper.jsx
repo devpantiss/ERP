@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import SlidePanel from "../../components/common/SlidePanel";
 import {
@@ -13,53 +13,33 @@ import {
   ChevronLeft,
   ImageIcon,
 } from "lucide-react";
-
-/* ================= CONFIG ================= */
-
-const STORAGE_KEY = "exposure-visit-draft-v2";
-
-const PROJECTS = [
-  "PMKVY",
-  "CSR - Tata Steel",
-  "DDUGKY",
-  "State Skill Mission",
-];
-
-const TRADES = ["Electrical", "Fitter", "Safety", "Welder"];
+import { selectTrainingCatalog } from "../../stores/selectors/trainingSelectors";
 
 /* ================= MAIN ================= */
 
-export default function ExposureVisitEnterprisePro({ onClose }) {
+export default function ExposureVisitEnterprisePro({ trainerEmployeeId = "EMP-0001", onClose, onSubmit }) {
   const webcamRef = useRef(null);
+  const catalog = useMemo(() => selectTrainingCatalog(trainerEmployeeId), [trainerEmployeeId]);
+  const initialBatch = catalog.batches[0];
+  const initialProject = catalog.projects.find((project) => project.id === initialBatch?.projectId) || catalog.projects[0];
 
   const [step, setStep] = useState(1);
   const [showCamera, setShowCamera] = useState(false);
   const [loadingGPS, setLoadingGPS] = useState(false);
 
   const [form, setForm] = useState({
-    industry: "",
+    companyId: catalog.companies[0]?.id || "",
     spocName: "",
     spocPhone: "",
-    project: PROJECTS[0],
-    batch: "",
-    trade: TRADES[0],
+    projectId: initialProject?.id || "",
+    batchId: initialBatch?.id || "",
+    trade: initialBatch?.trade || "",
     date: "",
     candidates: "",
     attended: "",
     images: [],
     location: null,
   });
-
-  /* ================= AUTO SAVE ================= */
-
-  useEffect(() => {
-    const draft = localStorage.getItem(STORAGE_KEY);
-    if (draft) setForm(JSON.parse(draft));
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
-  }, [form]);
 
   /* ================= GPS ================= */
 
@@ -110,6 +90,24 @@ export default function ExposureVisitEnterprisePro({ onClose }) {
 
   const next = () => setStep((s) => Math.min(4, s + 1));
   const prev = () => setStep((s) => Math.max(1, s - 1));
+  const submit = () => {
+    const batch = catalog.batches.find((item) => item.id === form.batchId);
+    onSubmit?.({
+      projectId: form.projectId || batch?.projectId,
+      centerId: batch?.centerId,
+      batchId: form.batchId,
+      companyId: form.companyId,
+      visitDate: form.date,
+      status: "SUBMITTED",
+      spocName: form.spocName,
+      spocPhone: form.spocPhone,
+      candidates: Number(form.candidates || 0),
+      attended: Number(form.attended || 0),
+      images: form.images,
+      location: form.location,
+    });
+    onClose?.();
+  };
 
   /* ================= UI ================= */
 
@@ -127,11 +125,11 @@ export default function ExposureVisitEnterprisePro({ onClose }) {
           <div className="p-8">
 
             {step === 1 && (
-              <IndustryStep form={form} setForm={setForm} />
+              <IndustryStep form={form} setForm={setForm} catalog={catalog} />
             )}
 
             {step === 2 && (
-              <TrainingStep form={form} setForm={setForm} />
+              <TrainingStep form={form} setForm={setForm} catalog={catalog} />
             )}
 
             {step === 3 && (
@@ -171,7 +169,7 @@ export default function ExposureVisitEnterprisePro({ onClose }) {
                 Continue <ChevronRight size={16} />
               </button>
             ) : (
-              <button className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-black rounded-md font-semibold">
+              <button onClick={submit} className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-black rounded-md font-semibold">
                 Submit <CheckCircle2 size={18} />
               </button>
             )}
@@ -243,7 +241,7 @@ function Header({ step }) {
 
 /* ================= STEP 1 ================= */
 
-function IndustryStep({ form, setForm }) {
+function IndustryStep({ form, setForm, catalog }) {
   return (
     <FormCard
       title="Industry Information"
@@ -251,10 +249,11 @@ function IndustryStep({ form, setForm }) {
       icon={Building2}
     >
       <Grid>
-        <Input
-          label="Industry Name"
-          value={form.industry}
-          onChange={(v) => setForm({ ...form, industry: v })}
+        <Select
+          label="Industry"
+          value={form.companyId}
+          options={catalog.companies}
+          onChange={(v) => setForm({ ...form, companyId: v })}
         />
 
         <Input
@@ -275,7 +274,7 @@ function IndustryStep({ form, setForm }) {
 
 /* ================= STEP 2 ================= */
 
-function TrainingStep({ form, setForm }) {
+function TrainingStep({ form, setForm, catalog }) {
   return (
     <FormCard
       title="Training Details"
@@ -285,21 +284,25 @@ function TrainingStep({ form, setForm }) {
       <Grid>
         <Select
           label="Project"
-          value={form.project}
-          options={PROJECTS}
-          onChange={(v) => setForm({ ...form, project: v })}
+          value={form.projectId}
+          options={catalog.projects}
+          onChange={(v) => setForm({ ...form, projectId: v })}
         />
 
-        <Input
+        <Select
           label="Batch"
-          value={form.batch}
-          onChange={(v) => setForm({ ...form, batch: v })}
+          value={form.batchId}
+          options={catalog.batches.map((batch) => ({ id: batch.id, label: batch.label }))}
+          onChange={(v) => {
+            const batch = catalog.batches.find((item) => item.id === v);
+            setForm({ ...form, batchId: v, trade: batch?.trade || form.trade, projectId: batch?.projectId || form.projectId });
+          }}
         />
 
         <Select
           label="Trade"
           value={form.trade}
-          options={TRADES}
+          options={catalog.trades.map((trade) => ({ id: trade, label: trade }))}
           onChange={(v) => setForm({ ...form, trade: v })}
         />
 
@@ -319,6 +322,7 @@ function TrainingStep({ form, setForm }) {
 
 function EvidenceStep({
   form,
+  setForm,
   handleUpload,
   captureLocation,
   loadingGPS,
@@ -331,8 +335,8 @@ function EvidenceStep({
       icon={Camera}
     >
       <Grid>
-        <Input label="Total Candidates" />
-        <Input label="Attended" />
+        <Input label="Total Candidates" value={form.candidates} onChange={(v) => setForm({ ...form, candidates: v })} />
+        <Input label="Attended" value={form.attended} onChange={(v) => setForm({ ...form, attended: v })} />
       </Grid>
 
       {/* UPLOAD AREA */}
@@ -483,7 +487,7 @@ function Select({ label, value, options, onChange }) {
         className="input"
       >
         {options.map((o) => (
-          <option key={o}>{o}</option>
+          <option key={o.id} value={o.id}>{o.label}</option>
         ))}
       </select>
     </div>

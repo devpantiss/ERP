@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   CalendarDays,
@@ -11,6 +11,8 @@ import {
   Send,
   X,
 } from "lucide-react";
+import { useHrStore } from "../../stores/hrStore.js";
+import { selectTourRows } from "../../stores/selectors/hrSelectors.js";
 
 const ACCENT_MAP = {
   mobilizer: {
@@ -34,30 +36,9 @@ const ROLE_LABEL = {
   "placement-officer": "Placement Officer",
 };
 
-const INITIAL_TOURS = [
-  {
-    id: "TOUR-001",
-    title: "Community Mobilization Visit",
-    destination: "Angul rural cluster",
-    startDate: "2026-05-15",
-    endDate: "2026-05-17",
-    purpose: "Beneficiary counselling, document verification, and village-level mobilization follow-up.",
-    estimate: 8400,
-    status: "Pending",
-    submittedOn: "2026-05-10",
-  },
-  {
-    id: "TOUR-002",
-    title: "Employer Connect Visit",
-    destination: "Bhubaneswar industrial area",
-    startDate: "2026-05-21",
-    endDate: "2026-05-21",
-    purpose: "Employer onboarding, job role validation, and placement drive planning.",
-    estimate: 3600,
-    status: "Approved",
-    submittedOn: "2026-05-06",
-  },
-];
+const ROLE_EMPLOYEE = { mobilizer: "EMP-0003", "placement-officer": "EMP-0002" };
+const ROLE_PROJECT = { mobilizer: "PRJ-0001", "placement-officer": "PRJ-0001" };
+const ROLE_CENTER = { mobilizer: "CTR-0001", "placement-officer": "CTR-0001" };
 
 const STATUS_CLASS = {
   Pending: "border-amber-400/25 bg-amber-500/10 text-amber-300",
@@ -70,7 +51,8 @@ export default function TourApplication() {
   const roleKey = location.pathname.split("/")[1];
   const accent = ACCENT_MAP[roleKey] || ACCENT_MAP.mobilizer;
   const roleLabel = ROLE_LABEL[roleKey] || "Employee";
-  const [requests, setRequests] = useState(INITIAL_TOURS);
+  const { tours, fetchTours, createTour } = useHrStore();
+  const requests = useMemo(() => selectTourRows(tours), [tours]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -80,6 +62,10 @@ export default function TourApplication() {
     purpose: "",
     estimate: "",
   });
+
+  useEffect(() => {
+    fetchTours({ filters: { employeeId: ROLE_EMPLOYEE[roleKey] } });
+  }, [fetchTours, roleKey]);
 
   const summary = useMemo(
     () => ({
@@ -109,19 +95,22 @@ export default function TourApplication() {
 
   const submitTour = (event) => {
     event.preventDefault();
-    const nextRequest = {
-      id: `TOUR-${String(requests.length + 1).padStart(3, "0")}`,
+    createTour({
+      employeeId: ROLE_EMPLOYEE[roleKey],
+      projectId: ROLE_PROJECT[roleKey],
+      centerId: ROLE_CENTER[roleKey],
       title: form.title || "Tour Request",
       destination: form.destination || "Data Not Available",
       startDate: form.startDate,
       endDate: form.endDate || form.startDate,
+      fromDate: form.startDate,
+      toDate: form.endDate || form.startDate,
       purpose: form.purpose || "Data Not Available",
       estimate: Number(form.estimate) || 0,
-      status: "Pending",
+      estimatedAmount: Number(form.estimate) || 0,
+      status: "SUBMITTED",
       submittedOn: new Date().toISOString().slice(0, 10),
-    };
-
-    setRequests((current) => [nextRequest, ...current]);
+    });
     resetForm();
   };
 

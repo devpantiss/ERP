@@ -1,106 +1,30 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import {
   Building2,
   MapPin,
   Users,
   BookOpen,
-  Plus,
   Eye,
   X,
 } from "lucide-react";
-
-/* ===================== MOCK DATA ===================== */
-
-const CENTERS = [
-  {
-    id: 1,
-    name: "Pantiss Skill Resort",
-    location: "Angul, Odisha",
-    trainers: 8,
-    activeBatches: 4,
-    totalCapacity: 200,
-    currentStrength: 160,
-    status: "Active",
-    projects: ["PMKVY 4.0", "State Skill Mission"],
-    contact: "+91 9876543200",
-    head: "Mr. Sanjay Panda",
-  },
-  {
-    id: 2,
-    name: "Jajpur Training Center",
-    location: "Jajpur, Odisha",
-    trainers: 5,
-    activeBatches: 3,
-    totalCapacity: 150,
-    currentStrength: 120,
-    status: "Active",
-    projects: ["CSR – Tata Steel"],
-    contact: "+91 9876543201",
-    head: "Ms. Ritu Sharma",
-  },
-  {
-    id: 3,
-    name: "Kalahandi Center",
-    location: "Kalahandi, Odisha",
-    trainers: 10,
-    activeBatches: 5,
-    totalCapacity: 300,
-    currentStrength: 220,
-    status: "Active",
-    projects: ["DDUGKY", "DMF Kalahandi"],
-    contact: "+91 9876543202",
-    head: "Mr. Bijay Nayak",
-  },
-  {
-    id: 4,
-    name: "Jharsuguda Campus",
-    location: "Jharsuguda, Odisha",
-    trainers: 4,
-    activeBatches: 2,
-    totalCapacity: 120,
-    currentStrength: 85,
-    status: "Active",
-    projects: ["State Skill Mission"],
-    contact: "+91 9876543203",
-    head: "Mr. Ashok Mohanty",
-  },
-  {
-    id: 5,
-    name: "Keonjhar Training Hub",
-    location: "Keonjhar, Odisha",
-    trainers: 6,
-    activeBatches: 3,
-    totalCapacity: 180,
-    currentStrength: 140,
-    status: "Active",
-    projects: ["DMF Keonjhar"],
-    contact: "+91 9876543204",
-    head: "Ms. Sunita Majhi",
-  },
-  {
-    id: 6,
-    name: "Sundargarh Skill Center",
-    location: "Sundargarh, Odisha",
-    trainers: 7,
-    activeBatches: 4,
-    totalCapacity: 250,
-    currentStrength: 195,
-    status: "Active",
-    projects: ["Shaksham Sundargarh"],
-    contact: "+91 9876543205",
-    head: "Mr. Praveen Das",
-  },
-];
+import { useProjectStore } from "../../stores/projectStore.js";
+import { selectCenterDirectory } from "../../stores/selectors/projectSelectors.js";
 
 /* ===================== MAIN COMPONENT ===================== */
 
 export default function AdminCenterManagement() {
+  const { fetchAll } = useProjectStore();
   const [viewCenter, setViewCenter] = useState(null);
+  const centers = useMemo(() => selectCenterDirectory(), []);
 
-  const totalTrainers = CENTERS.reduce((a, c) => a + c.trainers, 0);
-  const totalCapacity = CENTERS.reduce((a, c) => a + c.totalCapacity, 0);
-  const totalStrength = CENTERS.reduce((a, c) => a + c.currentStrength, 0);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const totalTrainers = centers.reduce((a, c) => a + c.trainers, 0);
+  const totalCapacity = centers.reduce((a, c) => a + c.totalCapacity, 0);
+  const totalStrength = centers.reduce((a, c) => a + c.currentStrength, 0);
 
   return (
     <div className="space-y-6">
@@ -120,7 +44,7 @@ export default function AdminCenterManagement() {
       {/* ================= SUMMARY ================= */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Centers", value: CENTERS.length, icon: Building2 },
+          { label: "Total Centers", value: centers.length, icon: Building2 },
           { label: "Total Trainers", value: totalTrainers, icon: Users },
           { label: "Total Capacity", value: totalCapacity, icon: BookOpen },
           { label: "Current Strength", value: totalStrength, icon: Users },
@@ -140,9 +64,9 @@ export default function AdminCenterManagement() {
 
       {/* ================= CENTER CARDS ================= */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {CENTERS.map((center) => {
+        {centers.map((center) => {
           const occupancy = Math.round(
-            (center.currentStrength / center.totalCapacity) * 100
+            (center.currentStrength / Math.max(center.totalCapacity, 1)) * 100
           );
 
           return (
@@ -231,7 +155,9 @@ export default function AdminCenterManagement() {
       </div>
 
       {/* ================= VIEW MODAL ================= */}
-      <SlidePanel open={!!viewCenter} onClose={() => setViewCenter(null)} title="viewCenter.name}" width="md">
+      <SlidePanel open={!!viewCenter} onClose={() => setViewCenter(null)} title={viewCenter?.name || "Center Details"} width="md">
+        {viewCenter && (
+          <>
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-slate-100">
                 {viewCenter.name}
@@ -267,6 +193,8 @@ export default function AdminCenterManagement() {
             >
               Close
             </button>
+          </>
+        )}
       </SlidePanel>
     </div>
   );

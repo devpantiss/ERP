@@ -29,10 +29,10 @@ import {
   X,
   Download,
 } from "lucide-react";
-import { PROJECT_REPORTS } from "./adminPortalData";
 import SlidePanel from "../../components/common/SlidePanel";
 import TableExportActions from "../../components/common/TableExportActions";
-import { getSubmittedEnrollments } from "../../components/utils/enrollmentStorage";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectAdminProjectReports } from "../../stores/selectors/projectSelectors";
 
 const STAFF_LANES = [
   "Lead Trainer",
@@ -475,8 +475,10 @@ const buildCenterSnapshot = (center, projectName) => {
       Math.round((readiness / 100) * parsed.size * 0.62)
     );
     const riskCount = Math.max(0, Math.round((100 - attendanceRate) / 7));
-    const candidateRecords = Array.from({ length: parsed.size }, (_, learnerIndex) => {
-      const candidateName = buildCandidateName(center, index, learnerIndex);
+    const sourceCandidates = center.normalizedCandidatesByBatch?.[parsed.label] || [];
+    const candidateRecords = Array.from({ length: sourceCandidates.length || parsed.size }, (_, learnerIndex) => {
+      const sourceCandidate = sourceCandidates[learnerIndex];
+      const candidateName = sourceCandidate?.name || buildCandidateName(center, index, learnerIndex);
       const attendanceScore = clamp(
         attendanceRate + 6 - (learnerIndex % 11) * 2 + (learnerIndex % 3),
         58,
@@ -633,7 +635,7 @@ const buildCenterSnapshot = (center, projectName) => {
       };
 
       return {
-        id: `${center.id}-${parsed.id}-candidate-${learnerIndex + 1}`,
+        id: sourceCandidate?.id || `${center.id}-${parsed.id}-candidate-${learnerIndex + 1}`,
         title: candidateName,
         subtitle: `${parsed.label} / ${track}`,
         meta: `Attendance ${attendanceScore}% / Training ${trainingStatus} / Placement ${placementStatus}`,
@@ -644,18 +646,18 @@ const buildCenterSnapshot = (center, projectName) => {
         candidateCode: `${center.location.slice(0, 3).toUpperCase()}-${String(
           learnerIndex + 1
         ).padStart(3, "0")}`,
-        jobRole: center.jobRoles[(learnerIndex + index) % center.jobRoles.length],
-        phone: `+91 98${String(70000000 + placementSeed + learnerIndex).slice(-8)}`,
+        jobRole: sourceCandidate?.jobRole || center.jobRoles[(learnerIndex + index) % center.jobRoles.length],
+        phone: sourceCandidate?.phone || `+91 98${String(70000000 + placementSeed + learnerIndex).slice(-8)}`,
         aadharNumber: `XXXX-XXXX-${aadharLastFour}`,
         dateOfBirth: `199${learnerIndex % 6}-0${(learnerIndex % 8) + 1}-15`,
-        gender: learnerIndex % 2 === 0 ? "Male" : "Female",
+        gender: sourceCandidate?.gender || (learnerIndex % 2 === 0 ? "Male" : "Female"),
         qualificationLevel,
         qualificationTrade,
         qualificationInstitute,
         qualificationYear,
         experienceYears: String(learnerIndex % 5),
         currentlyEmployed: learnerIndex % 4 === 0 ? "Yes" : "No",
-        address: `${12 + learnerIndex}, ${center.location} main road, Odisha`,
+        address: `${12 + learnerIndex}, ${sourceCandidate?.district || center.location} main road, Odisha`,
         livePhoto: enrollmentSampleImage(placementSeed + learnerIndex),
         liveLocation: {
           lat: 20.2961 + learnerIndex / 1000,
@@ -664,20 +666,21 @@ const buildCenterSnapshot = (center, projectName) => {
           place: `${center.location}, Odisha`,
         },
         enrollmentDocuments,
-        mobilizer: ["Priya Mishra", "Vikram Singh", "Rajan Nayak", "Sunita Patra"][
+        mobilizer: sourceCandidate?.mobilizer || ["Priya Mishra", "Vikram Singh", "Rajan Nayak", "Sunita Patra"][
           (placementSeed + learnerIndex) % 4
         ],
-        enrollmentDate: new Date(
+        enrollmentDate: sourceCandidate?.enrollmentDate || new Date(
           Date.now() - (22 + learnerIndex + index * 3) * 24 * 60 * 60 * 1000
         )
           .toISOString()
           .split("T")[0],
         enrollmentStatus:
-          learnerIndex % 7 === 0
+          sourceCandidate?.enrollmentStatus ||
+          (learnerIndex % 7 === 0
             ? "Pending"
             : learnerIndex % 11 === 0
             ? "Rejected"
-            : "Approved",
+            : "Approved"),
         attendanceRate: attendanceScore,
         trainingProgress,
         trainingStatus,
@@ -1020,9 +1023,16 @@ const buildProjectSnapshot = (project) => {
 };
 
 export default function AdminProjectManagement() {
+  const projectRecords = useProjectStore((state) => state.records);
+  const fetchProjects = useProjectStore((state) => state.fetchAll);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
   const projectSnapshots = useMemo(
-    () => PROJECT_REPORTS.map(buildProjectSnapshot),
-    []
+    () => selectAdminProjectReports(projectRecords).map(buildProjectSnapshot),
+    [projectRecords]
   );
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -1769,13 +1779,9 @@ function CandidateRosterTabs({
   onBatchSelect,
 }) {
   const [activeTab, setActiveTab] = useState("training");
-  const submittedEnrollmentCandidates = useMemo(
-    () => getSubmittedEnrollments().map(normalizeSubmittedEnrollmentForProject),
-    []
-  );
   const enrollmentCandidates = useMemo(
-    () => [...submittedEnrollmentCandidates, ...selectedBatch.candidateRecords],
-    [selectedBatch, submittedEnrollmentCandidates]
+    () => selectedBatch.candidateRecords.map(normalizeSubmittedEnrollmentForProject),
+    [selectedBatch]
   );
   const [verificationState, setVerificationState] = useState(() => {
     const initial = {};

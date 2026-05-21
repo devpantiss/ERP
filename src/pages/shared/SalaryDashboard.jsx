@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
   IndianRupee,
@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { useSalaryStore } from "../../stores/salaryStore.js";
+import { selectSalaryHistoryForEmployee } from "../../stores/selectors/salarySelectors.js";
 
 /* ═══════════════════════════════════════════════════════════════
    ROLE-AWARE CONFIG
@@ -45,50 +47,7 @@ const MONTHS = [
   "July","August","September","October","November","December",
 ];
 
-/* ── Mock salary data (common across roles) ───────────────── */
-const SALARY_DATA = {
-  "2026-04": {
-    baseSalary: 18000,
-    targetKPI: 30,
-    achievedKPI: 22,
-    deductions: 600,
-    bonus: 0,
-    status: "Pending",
-  },
-  "2026-03": {
-    baseSalary: 18000,
-    targetKPI: 30,
-    achievedKPI: 28,
-    deductions: 450,
-    bonus: 1500,
-    status: "Paid",
-  },
-  "2026-02": {
-    baseSalary: 18000,
-    targetKPI: 25,
-    achievedKPI: 25,
-    deductions: 400,
-    bonus: 2000,
-    status: "Paid",
-  },
-  "2026-01": {
-    baseSalary: 17000,
-    targetKPI: 25,
-    achievedKPI: 20,
-    deductions: 500,
-    bonus: 0,
-    status: "Paid",
-  },
-};
-
-/* ── Mock incentive data ──────────────────────────────────── */
-const INCENTIVES = [
-  { id: 1, type: "Monthly Target Overachieve", target: 30, achieved: 35, amount: 2500, month: "March 2026", status: "Paid" },
-  { id: 2, type: "Quarterly Performance Bonus", target: 80, achieved: 92, amount: 5000, month: "Q1 2026", status: "Paid" },
-  { id: 3, type: "Monthly Target Overachieve", target: 30, achieved: 22, amount: 0, month: "April 2026", status: "Not Eligible" },
-  { id: 4, type: "Referral Incentive", target: 5, achieved: 3, amount: 1500, month: "February 2026", status: "Paid" },
-  { id: 5, type: "Monthly Target Overachieve", target: 25, achieved: 25, amount: 1000, month: "February 2026", status: "Pending" },
-];
+const ROLE_EMPLOYEE = { mobilizer: "EMP-0003", trainer: "EMP-0001", "placement-officer": "EMP-0002" };
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
@@ -201,13 +160,38 @@ export default function SalaryDashboard() {
   const roleKey = location.pathname.split("/")[1]; // mobilizer | trainer | placement-officer
   const roleConfig = ROLE_CONFIG[roleKey] || ROLE_CONFIG.mobilizer;
   const a = ACCENT[roleConfig.accent];
+  const { salaries, fetchSalaries } = useSalaryStore();
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey());
   const [activeTab, setActiveTab] = useState("salary"); // salary | incentives
   const [expandedRow, setExpandedRow] = useState(null);
 
-  const data = SALARY_DATA[selectedMonth] || { baseSalary: 0, targetKPI: 1, achievedKPI: 0, deductions: 0, bonus: 0, status: "N/A" };
-  const calc = useMemo(() => calcSalary(data), [selectedMonth]);
+  useEffect(() => {
+    fetchSalaries({ filters: { employeeId: ROLE_EMPLOYEE[roleKey] } });
+  }, [fetchSalaries, roleKey]);
+
+  const salaryData = useMemo(
+    () => selectSalaryHistoryForEmployee(salaries, ROLE_EMPLOYEE[roleKey]),
+    [salaries, roleKey]
+  );
+  const monthOptions = useMemo(() => Object.keys(salaryData), [salaryData]);
+  const data = useMemo(
+    () => salaryData[selectedMonth] || salaryData[monthOptions[0]] || { baseSalary: 0, targetKPI: 1, achievedKPI: 0, deductions: 0, bonus: 0, status: "N/A" },
+    [monthOptions, salaryData, selectedMonth]
+  );
+  const calc = useMemo(() => calcSalary(data), [data]);
+  const incentives = useMemo(
+    () => Object.entries(salaryData).map(([month, row], index) => ({
+      id: `${month}-${index}`,
+      type: row.achievedKPI >= row.targetKPI ? "Monthly Target Overachieve" : "Performance Review",
+      target: row.targetKPI,
+      achieved: row.achievedKPI,
+      amount: row.bonus || 0,
+      month: getMonthLabel(month),
+      status: row.bonus ? row.status : "Not Eligible",
+    })),
+    [salaryData]
+  );
 
   /* ═══════════════════════════════════════════════════════════
      RENDER
@@ -255,7 +239,7 @@ export default function SalaryDashboard() {
                              px-4 py-3 text-sm text-white/90 focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/50 focus:outline-none
                              cursor-pointer pr-10 hover:bg-white/[0.06] transition-colors shadow-lg shadow-black/20"
                 >
-                  {Object.keys(SALARY_DATA).map((k) => (
+                  {monthOptions.map((k) => (
                     <option key={k} value={k} className="bg-[#0b1220]">{getMonthLabel(k)}</option>
                   ))}
                 </select>
@@ -340,7 +324,7 @@ export default function SalaryDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.05]">
-                    {Object.entries(SALARY_DATA).map(([key, row]) => {
+                    {Object.entries(salaryData).map(([key, row]) => {
                       const c = calcSalary(row);
                       const isExpanded = expandedRow === key;
                       return (
@@ -378,19 +362,19 @@ export default function SalaryDashboard() {
               <StatCard
                 icon={Award}
                 label="Total Earned"
-                value={`₹${INCENTIVES.filter(i => i.status === "Paid").reduce((s, i) => s + i.amount, 0).toLocaleString("en-IN")}`}
+                value={`₹${incentives.filter(i => i.status === "Paid").reduce((s, i) => s + i.amount, 0).toLocaleString("en-IN")}`}
                 accent={a}
               />
               <StatCard
                 icon={Clock}
                 label="Pending"
-                value={`₹${INCENTIVES.filter(i => i.status === "Pending").reduce((s, i) => s + i.amount, 0).toLocaleString("en-IN")}`}
+                value={`₹${incentives.filter(i => i.status === "Pending").reduce((s, i) => s + i.amount, 0).toLocaleString("en-IN")}`}
                 accent={a}
               />
               <StatCard
                 icon={Sparkles}
                 label="Incentive Schemes"
-                value={new Set(INCENTIVES.map(i => i.type)).size}
+                value={new Set(incentives.map(i => i.type)).size}
                 sub="Active schemes"
                 accent={a}
               />
@@ -416,7 +400,7 @@ export default function SalaryDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.05]">
-                    {INCENTIVES.map((inc) => (
+                    {incentives.map((inc) => (
                       <tr key={inc.id} className="hover:bg-white/[0.02] transition-colors">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">

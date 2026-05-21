@@ -62,6 +62,19 @@ export function ClientProjectDetail() {
   const batchRefs = useRef({});
   const snapshot = useMemo(() => (project ? buildClientProjectSnapshot(project) : null), [project]);
 
+  useEffect(() => {
+    if (!selectedBatchId) return undefined;
+
+    const frame = requestAnimationFrame(() => {
+      batchRefs.current[selectedBatchId]?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [selectedBatchId]);
+
   if (!project) {
     return (
       <section className="space-y-5">
@@ -90,19 +103,6 @@ export function ClientProjectDetail() {
     setSelectedCenterId(centerId);
     setSelectedBatchId("");
   };
-
-  useEffect(() => {
-    if (!selectedBatchId) return undefined;
-
-    const frame = requestAnimationFrame(() => {
-      batchRefs.current[selectedBatchId]?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [selectedBatchId]);
 
   return (
     <section className="space-y-7">
@@ -305,7 +305,6 @@ function normalizeClientCandidate(candidate, index, batch) {
   const seed = index + batch.label.length;
   const isCertified = candidate.trainingStatus === "Certified";
   const isPlaced = candidate.placementStatus === "Placed";
-  const isMapped = candidate.placementStatus === "Employer Mapped" || isPlaced;
   const completedTrainingDays = Math.min(72, 30 + (seed % 8) * 6);
   const totalTrainingDays = completedTrainingDays + 12;
   const salary = candidate.salary || (isPlaced ? 15000 + (seed % 8) * 1800 : 0);

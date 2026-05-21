@@ -1,4 +1,5 @@
-import { PROJECT_REPORTS } from "../Admin/adminPortalData";
+import { selectAdminProjectReports } from "../../stores/selectors/projectSelectors";
+import { mockDb } from "../../mock-db";
 
 export const CLIENT_ACCOUNTS = [
   {
@@ -97,7 +98,9 @@ const odishaDistrictPool = ["Angul", "Bolangir", "Jharsuguda", "Khurda", "Cuttac
 const outsideStatePool = ["Telangana", "Karnataka", "Maharashtra", "Gujarat", "Tamil Nadu"];
 
 export const getClientProjects = (clientName) =>
-  PROJECT_REPORTS.filter((project) => project.fundingAgency === clientName);
+  selectAdminProjectReports().filter(
+    (project) => project.fundingAgency === clientName || project.fundingAgencyName === clientName
+  );
 
 export const getProjectSummary = (project) => {
   const centers = project.centers || [];
@@ -155,17 +158,19 @@ export const buildClientProjectSnapshot = (project) => {
       const placed = Math.round(parsed.size * (center.placementRate / 100) * (0.72 + (batchIndex % 3) * 0.08));
       const mapped = Math.min(parsed.size, Math.round(placed * 1.22));
 
-      const candidateRecords = Array.from({ length: parsed.size }, (_, learnerIndex) => {
+      const sourceCandidates = center.normalizedCandidatesByBatch?.[parsed.label] || [];
+      const candidateRecords = Array.from({ length: sourceCandidates.length || parsed.size }, (_, learnerIndex) => {
+        const sourceCandidate = sourceCandidates[learnerIndex];
         const seed = centerIndex * 19 + batchIndex * 11 + learnerIndex;
         const isMapped = learnerIndex < mapped;
         const isPlaced = learnerIndex < placed;
 
         return {
-          id: `${center.id}-${parsed.id}-${learnerIndex + 1}`,
-          name: `${firstNames[seed % firstNames.length]} ${lastNames[(seed + 3) % lastNames.length]}`,
+          id: sourceCandidate?.id || `${center.id}-${parsed.id}-${learnerIndex + 1}`,
+          name: sourceCandidate?.name || `${firstNames[seed % firstNames.length]} ${lastNames[(seed + 3) % lastNames.length]}`,
           code: `${center.location.slice(0, 3).toUpperCase()}-${batchIndex + 1}${String(learnerIndex + 1).padStart(3, "0")}`,
           batch: parsed.label,
-          jobRole: center.jobRoles[seed % center.jobRoles.length],
+          jobRole: sourceCandidate?.jobRole || center.jobRoles[seed % center.jobRoles.length],
           trainingStatus:
             learnerIndex < certified
               ? "Certified"
@@ -231,6 +236,38 @@ export const buildClientProjectSnapshot = (project) => {
     mapped: centers.reduce((sum, center) => sum + center.mapped, 0),
     placed: centers.reduce((sum, center) => sum + center.placed, 0),
   };
+};
+
+export const getClientLiveFeeds = (clientName) =>
+  getClientProjects(clientName).flatMap((project) =>
+    project.centers.flatMap((center) => {
+      const owner = center.employeeList?.[0] || center.manager || "Center Team";
+      return [
+        {
+          id: `LIVE-${center.id}`,
+          owner,
+          role: "Trainer",
+          center: center.name,
+          project: project.name,
+          stream: `${center.name} training floor`,
+          startedAt: "09:40 AM",
+          status: project.status === "Active" ? "Live" : "Queued",
+        },
+      ];
+    })
+  );
+
+export const getClientFinanceRecords = (projectName, centers = []) => {
+  const project = Object.values(mockDb.projects.byId).find((item) => item.name === projectName);
+  const centerIds = new Set(centers.map((center) => center.id));
+  const projectInvoices = mockDb.invoices.allIds
+    .map((id) => mockDb.invoices.byId[id])
+    .filter((invoice) => invoice.projectId === project?.id && (!centerIds.size || centerIds.has(invoice.centerId)));
+  const projectProcurements = mockDb.procurements.allIds
+    .map((id) => mockDb.procurements.byId[id])
+    .filter((item) => item.projectId === project?.id && (!centerIds.size || centerIds.has(item.centerId)));
+
+  return { projectInvoices, projectProcurements };
 };
 
 export const getClientDeliveryMetrics = (projects) => {

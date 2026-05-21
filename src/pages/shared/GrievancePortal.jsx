@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import MentionInput from "../../components/common/MentionInput";
 import { useLocation } from "react-router-dom";
-import { GRIEVANCE_PEOPLE_DIRECTORY } from "./grievanceData";
 import {
   MessageSquareWarning,
   Plus,
@@ -20,6 +19,11 @@ import {
   MessageCircle,
   Filter,
 } from "lucide-react";
+import { useGrievanceStore } from "../../stores/grievanceStore.js";
+import {
+  selectGrievanceRows,
+  selectPeopleDirectory,
+} from "../../stores/selectors/grievanceSelectors.js";
 
 /* ═══════════════════════════════════════════════════════════════
    ACCENT PALETTE
@@ -59,57 +63,9 @@ const STATUS_CONFIG = {
   Escalated: { icon: ArrowUpRight, bg: "bg-red-500/10 border-red-500/20", text: "text-red-400" },
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   MOCK DATA
-═══════════════════════════════════════════════════════════════ */
-
-const INITIAL_GRIEVANCES = [
-  {
-    id: "GRV-001",
-    category: "Payment Issue",
-    subject: "March salary credited late",
-    description: "My March 2026 salary was credited 10 days after the usual pay date. This caused financial difficulties. Please ensure timely processing.",
-    priority: "High",
-    status: "Resolved",
-    submittedOn: "2026-03-15",
-    resolvedOn: "2026-03-20",
-    anonymous: false,
-    timeline: [
-      { date: "2026-03-15", status: "Open", note: "Grievance submitted" },
-      { date: "2026-03-16", status: "Under Review", note: "Assigned to HR team" },
-      { date: "2026-03-20", status: "Resolved", note: "Salary processing delay fixed. Compensation applied." },
-    ],
-  },
-  {
-    id: "GRV-002",
-    category: "Work Environment",
-    subject: "Insufficient travel allowance for remote areas",
-    description: "The current travel allowance does not adequately cover costs when visiting remote mining colonies. Fuel and accommodation costs have increased significantly.",
-    priority: "Medium",
-    status: "Under Review",
-    submittedOn: "2026-04-02",
-    resolvedOn: null,
-    anonymous: false,
-    timeline: [
-      { date: "2026-04-02", status: "Open", note: "Grievance submitted" },
-      { date: "2026-04-05", status: "Under Review", note: "Operations team reviewing travel policy" },
-    ],
-  },
-  {
-    id: "GRV-003",
-    category: "Policy Concern",
-    subject: "Unclear leave policy for field staff",
-    description: "The current leave policy does not clearly define provisions for field staff who work on weekends during community drives. Need clarification on compensatory offs.",
-    priority: "Low",
-    status: "Open",
-    submittedOn: "2026-04-10",
-    resolvedOn: null,
-    anonymous: true,
-    timeline: [
-      { date: "2026-04-10", status: "Open", note: "Grievance submitted anonymously" },
-    ],
-  },
-];
+const ROLE_EMPLOYEE = { mobilizer: "EMP-0003", trainer: "EMP-0001", "placement-officer": "EMP-0002" };
+const ROLE_PROJECT = { mobilizer: "PRJ-0001", trainer: "PRJ-0001", "placement-officer": "PRJ-0001" };
+const ROLE_CENTER = { mobilizer: "CTR-0001", trainer: "CTR-0001", "placement-officer": "CTR-0001" };
 
 /* ═══════════════════════════════════════════════════════════════
    COMPONENT
@@ -119,8 +75,8 @@ export default function GrievancePortal() {
   const location = useLocation();
   const roleKey = location.pathname.split("/")[1];
   const a = ACCENT_MAP[roleKey] || ACCENT_MAP.mobilizer;
+  const { records, fetchAll, create } = useGrievanceStore();
 
-  const [grievances, setGrievances] = useState(INITIAL_GRIEVANCES);
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [filterStatus, setFilterStatus] = useState("All");
@@ -135,26 +91,35 @@ export default function GrievancePortal() {
   const [attachFile, setAttachFile] = useState(null);
   const [addressedTo, setAddressedTo] = useState([]);
 
+  useEffect(() => {
+    fetchAll({ filters: { raisedById: ROLE_EMPLOYEE[roleKey] } });
+  }, [fetchAll, roleKey]);
+
+  const grievances = useMemo(() => selectGrievanceRows(records), [records]);
+  const peopleDirectory = useMemo(() => selectPeopleDirectory(), []);
+
   const resetForm = () => {
     setCategory(""); setSubject(""); setDescription(""); setPriority("Medium"); setIsAnonymous(false); setAttachFile(null); setAddressedTo([]);
     setShowForm(false);
   };
 
   const handleSubmit = () => {
-    const newGrievance = {
-      id: `GRV-${String(grievances.length + 4).padStart(3, "0")}`,
+    create({
+      raisedByType: "EMPLOYEE",
+      raisedById: ROLE_EMPLOYEE[roleKey],
+      projectId: ROLE_PROJECT[roleKey],
+      centerId: ROLE_CENTER[roleKey],
       category,
       subject,
       description,
       priority,
       addressedTo: addressedTo.length > 0 ? addressedTo.map((p) => p.name).join(", ") : "Admin",
-      status: "Open",
+      status: "OPEN",
       submittedOn: new Date().toISOString().split("T")[0],
       resolvedOn: null,
       anonymous: isAnonymous,
       timeline: [{ date: new Date().toISOString().split("T")[0], status: "Open", note: isAnonymous ? "Grievance submitted anonymously" : "Grievance submitted" }],
-    };
-    setGrievances([newGrievance, ...grievances]);
+    });
     resetForm();
   };
 
@@ -326,7 +291,7 @@ export default function GrievancePortal() {
             <MentionInput
               values={addressedTo}
               onChange={setAddressedTo}
-              people={GRIEVANCE_PEOPLE_DIRECTORY}
+              people={peopleDirectory}
               placeholder="Type @ to search people..."
               accentColor={roleKey === "trainer" ? "emerald" : roleKey === "placement-officer" ? "cyan" : "yellow"}
               label="Addressed To *"

@@ -1,60 +1,28 @@
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import ExposureVisitEnterprisePro from "./ExposureVisitsStepper";
-
-/* ===================== CONFIG ===================== */
-
-const PROJECTS = [
-  "PMKVY",
-  "CSR - Tata Steel",
-  "DDUGKY",
-  "State Skill Mission",
-];
-
-const INDUSTRIES = [
-  "Tata Power Substation",
-  "JSW Steel Plant",
-  "Aditya Aluminium Ltd",
-  "Odisha Hydro Power Corp",
-  "L&T Construction Yard",
-];
-
-function generateVisits() {
-  const visits = [];
-
-  for (let i = 1; i <= 50; i++) {
-    visits.push({
-      industry: INDUSTRIES[Math.floor(Math.random() * INDUSTRIES.length)],
-      spocName: ["Rajesh Mishra", "Priya Sahu", "Amit Das", "Sonal Behera"][
-        Math.floor(Math.random() * 4)
-      ],
-      spocPhone: "9" + Math.floor(100000000 + Math.random() * 900000000),
-      project: PROJECTS[Math.floor(Math.random() * PROJECTS.length)],
-      batch: `BATCH-${100 + i}`,
-      trade: ["Electrical", "Fitter", "Safety", "Welder"][
-        Math.floor(Math.random() * 4)
-      ],
-      date: `${10 + (i % 15)} Feb 2026`,
-      candidates: 30,
-      attended: 26,
-      status: ["Planned", "Approved"][
-        Math.floor(Math.random() * 2)
-      ],
-      image: null,
-    });
-  }
-
-  return visits;
-}
+import { useAuthStore } from "../../stores/authStore";
+import { useExposureVisitStore } from "../../stores/exposureVisitStore";
+import { selectExposureVisitRows } from "../../stores/selectors/trainingSelectors";
 
 /* ===================== COMPONENT ===================== */
 
 export default function ExposureVisitReportTable() {
-  const [visits, setVisits] = useState(generateVisits());
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const trainerEmployeeId = currentUser?.employeeId || "EMP-0001";
+  const visitRecords = useExposureVisitStore((state) => state.records);
+  const fetchVisits = useExposureVisitStore((state) => state.fetchAll);
+  const createVisit = useExposureVisitStore((state) => state.create);
+  const updateVisit = useExposureVisitStore((state) => state.update);
   const [previewImage, setPreviewImage] = useState(null);
   const fileRefs = useRef({});
 
   const [showExposureForm, setShowExposureForm] = useState(false);
+  const visits = useMemo(() => selectExposureVisitRows(visitRecords), [visitRecords]);
+
+  useEffect(() => {
+    fetchVisits();
+  }, [fetchVisits]);
 
   /* ===================== FILTERS ===================== */
   const [filterIndustry, setFilterIndustry] = useState("");
@@ -72,6 +40,10 @@ export default function ExposureVisitReportTable() {
     });
   }, [visits, filterIndustry, filterProject, filterTrade, filterStatus]);
 
+  const industries = useMemo(() => [...new Set(visits.map((visit) => visit.industry))], [visits]);
+  const projects = useMemo(() => [...new Set(visits.map((visit) => visit.project))], [visits]);
+  const trades = useMemo(() => [...new Set(visits.map((visit) => visit.trade))], [visits]);
+
   /* ===================== UPLOAD ===================== */
 
   const handleUploadClick = (index) => {
@@ -84,13 +56,7 @@ export default function ExposureVisitReportTable() {
 
     const imageURL = URL.createObjectURL(file);
 
-    setVisits((prev) =>
-      prev.map((v, i) =>
-        i === index
-          ? { ...v, image: imageURL, status: "Submitted" }
-          : v
-      )
-    );
+    updateVisit(filteredVisits[index].id, { image: imageURL, status: "SUBMITTED" });
   };
 
   /* ===================== SUMMARY ===================== */
@@ -146,7 +112,7 @@ export default function ExposureVisitReportTable() {
             className="bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-emerald-400/50 focus:outline-none appearance-none cursor-pointer"
           >
             <option value="">All Industries</option>
-            {INDUSTRIES.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
+            {industries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
           </select>
 
           <select
@@ -155,7 +121,7 @@ export default function ExposureVisitReportTable() {
             className="bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-emerald-400/50 focus:outline-none appearance-none cursor-pointer"
           >
             <option value="">All Projects</option>
-            {PROJECTS.map((p) => <option key={p} value={p}>{p}</option>)}
+            {projects.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
 
           <select
@@ -164,7 +130,7 @@ export default function ExposureVisitReportTable() {
             className="bg-[#0f172a] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white/90 focus:border-emerald-400/50 focus:outline-none appearance-none cursor-pointer"
           >
             <option value="">All Trades</option>
-            {["Electrical", "Fitter", "Safety", "Welder"].map((t) => <option key={t} value={t}>{t}</option>)}
+            {trades.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
 
           <select
@@ -199,7 +165,7 @@ export default function ExposureVisitReportTable() {
 
               {filteredVisits.map((report, index) => (
                 <tr
-                  key={index}
+                  key={report.id}
                   className="hover:bg-transparent/60 transition"
                 >
                   <td className="px-4 py-3 text-white/90 font-medium">
@@ -253,15 +219,7 @@ export default function ExposureVisitReportTable() {
                     {/* APPROVED */}
                     {report.status === "Approved" && (
                       <button
-                        onClick={() =>
-                          setVisits((prev) =>
-                            prev.map((v, i) =>
-                              i === index
-                                ? { ...v, status: "Completed" }
-                                : v
-                            )
-                          )
-                        }
+                        onClick={() => updateVisit(report.id, { status: "COMPLETED" })}
                         className="px-3 py-1.5 text-xs rounded-md
                         bg-blue-500/20 text-blue-400
                         hover:bg-blue-500/30 transition"
@@ -330,7 +288,11 @@ export default function ExposureVisitReportTable() {
       </SlidePanel>
 
       {showExposureForm && (
-        <ExposureVisitEnterprisePro onClose={() => setShowExposureForm(false)} />
+        <ExposureVisitEnterprisePro
+          trainerEmployeeId={trainerEmployeeId}
+          onClose={() => setShowExposureForm(false)}
+          onSubmit={createVisit}
+        />
       )}
     </>
   );

@@ -1,61 +1,33 @@
 import Pagination from "../../components/common/Pagination";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, CalendarCheck, MapPin, TrendingUp, CheckCircle2 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import { ALL_USERS } from "./superAdminUsers";
-
-const MOB_MAP = {};
-ALL_USERS.filter(u => u.role === "Mobilizer").forEach(u => { MOB_MAP[u.id] = u; });
-
-const MOB_KPIS = {
-  "PSU-MOB-001": { mobilized: 280, events: 18, attendance: "94%", enrollmentRate: "76%", enrolled: 213, pending: 48, rejected: 19 },
-  "PSU-MOB-002": { mobilized: 195, events: 12, attendance: "91%", enrollmentRate: "72%", enrolled: 140, pending: 38, rejected: 17 },
-  "PSU-MOB-003": { mobilized: 320, events: 22, attendance: "87%", enrollmentRate: "81%", enrolled: 259, pending: 42, rejected: 19 },
-};
-
-const WEEKLY_ACTIVITY = [
-  { day: "Mon", candidates: 5 }, { day: "Tue", candidates: 8 }, { day: "Wed", candidates: 3 },
-  { day: "Thu", candidates: 7 }, { day: "Fri", candidates: 6 }, { day: "Sat", candidates: 4 },
-];
-
-const RECENT_EVENTS = [
-  { name: "Community Awareness Drive", location: "Binjharpur GP", date: "28 Feb 2026", participants: 45, status: "Completed" },
-  { name: "Skill India Campaign", location: "Jajpur Road GP", date: "22 Feb 2026", participants: 62, status: "Completed" },
-  { name: "Youth Mobilization Camp", location: "Dharmasala GP", date: "15 Feb 2026", participants: 38, status: "Completed" },
-  { name: "Door-to-Door Survey", location: "Sukinda GP", date: "08 Feb 2026", participants: 28, status: "Completed" },
-];
-
-const ATTENDANCE = [
-  { date: "05 Mar", s1: "P", s2: "P", s3: "P" },
-  { date: "04 Mar", s1: "P", s2: "P", s3: "A" },
-  { date: "03 Mar", s1: "P", s2: "P", s3: "P" },
-  { date: "02 Mar", s1: "A", s2: "P", s3: "P" },
-  { date: "01 Mar", s1: "P", s2: "P", s3: "P" },
-];
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { selectMobilizerDetail } from "../../stores/selectors/superAdminSelectors";
 
 const tooltipStyle = {  border: "1px solid #334155", borderRadius: "12px" };
 
 export default function SuperAdminMobilizerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const mob = MOB_MAP[id] || ALL_USERS.find(u => u.role === "Mobilizer");
-  const kpi = MOB_KPIS[id] || MOB_KPIS["PSU-MOB-001"];
-
-  const enrollmentStatus = [
-    { name: "Enrolled", value: kpi.enrolled, color: "#ef4444" },
-    { name: "Pending", value: kpi.pending, color: "#f59e0b" },
-    { name: "Rejected", value: kpi.rejected, color: "#64748b" },
-  ];
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  useEffect(() => {
+    fetchWithAssignments();
+  }, [fetchWithAssignments]);
+  const { employee: mob, kpi, enrollmentStatus, weeklyActivity, recentEvents, attendance } = useMemo(
+    () => selectMobilizerDetail(id, employees),
+    [employees, id]
+  );
 
   
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return RECENT_EVENTS?.slice(start, start + itemsPerPage) || [];
-  }, [RECENT_EVENTS, currentPage]);
-  const totalPages = Math.ceil((RECENT_EVENTS?.length || 0) / itemsPerPage);
+    return recentEvents?.slice(start, start + itemsPerPage) || [];
+  }, [recentEvents, currentPage]);
+  const totalPages = Math.ceil((recentEvents?.length || 0) / itemsPerPage);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -124,7 +96,7 @@ export default function SuperAdminMobilizerDetail() {
           <h3 className="text-sm font-black text-red-400 uppercase tracking-widest mb-4">Weekly Candidate Activity</h3>
           <div className="h-48">
             <ResponsiveContainer>
-              <BarChart data={WEEKLY_ACTIVITY}>
+              <BarChart data={weeklyActivity}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis dataKey="day" stroke="#475569" fontSize={11} axisLine={false} tickLine={false} />
                 <YAxis stroke="#475569" fontSize={11} axisLine={false} tickLine={false} />
@@ -167,7 +139,7 @@ export default function SuperAdminMobilizerDetail() {
             <tr><th className="p-3 text-left">Date</th><th className="p-3 text-center">Session 1 (9–11)</th><th className="p-3 text-center">Session 2 (11:30–1:30)</th><th className="p-3 text-center">Session 3 (2:30–4:30)</th></tr>
           </thead>
           <tbody>
-            {ATTENDANCE.map((a, i) => (
+            {attendance.map((a, i) => (
               <tr key={i} className="border-t border-white/[0.08]">
                 <td className="p-3 text-white/80 text-xs font-bold">{a.date}</td>
                 {["s1", "s2", "s3"].map((s) => (

@@ -19,10 +19,10 @@ import {
 import { Header } from "./ClientDashboard";
 import {
   buildClientProjectSnapshot,
+  getClientFinanceRecords,
   getClientProjects,
   getStoredClient,
 } from "./clientPortalData";
-import { INVOICES_RAISED, PROCUREMENT_ITEMS } from "../Admin/adminPortalData";
 import { imageUrlToDataUrl, slugifyFileName } from "../../utils/export/tableExportUtils";
 
 const REPORT_GALLERY_ASSETS = [
@@ -125,12 +125,9 @@ const buildReportAnalytics = (centers, project) => {
   const placed = centers.reduce((sum, center) => sum + center.placed, 0);
   const completed = centers.reduce((sum, center) => sum + center.completedTraining, 0);
   const approvedBudget = Math.max(learners * 26000, project.summary?.candidates * 21000 || 0);
-  const projectInvoices = INVOICES_RAISED.filter((invoice) => invoice.project === project.name);
-  const projectProcurements = PROCUREMENT_ITEMS.filter((item) =>
-    centers.some((center) => center.location === item.center)
-  );
+  const { projectInvoices, projectProcurements } = getClientFinanceRecords(project.name, centers);
   const currentMonthUtilization = projectInvoices.reduce((sum, invoice) => sum + invoice.amount, 0);
-  const committedProcurement = projectProcurements.reduce((sum, item) => sum + item.budget, 0);
+  const committedProcurement = projectProcurements.reduce((sum, item) => sum + item.estimatedAmount, 0);
   const cumulativeUtilization = Math.min(
     approvedBudget,
     currentMonthUtilization + committedProcurement + Math.round(approvedBudget * 0.48)
@@ -237,11 +234,6 @@ export default function ClientReports() {
           : 0,
     };
   }, [selectedCenters]);
-
-  const reportAnalytics = useMemo(
-    () => (selectedProject ? buildReportAnalytics(selectedCenters, selectedProject) : null),
-    [selectedCenters, selectedProject]
-  );
 
   const selectedReport = REPORT_TYPES.find((report) => report.id === selectedReportId) || REPORT_TYPES[0];
 
@@ -487,29 +479,27 @@ function buildDownloadableListRows(listType, centers, project) {
   }
 
   if (listType === "invoice-list") {
-    return INVOICES_RAISED.filter((invoice) => invoice.project === project.name).map((invoice) => ({
-      Project: invoice.project,
-      Vendor: invoice.vendor,
+    return getClientFinanceRecords(project.name, centers).projectInvoices.map((invoice) => ({
+      Project: project.name,
+      Vendor: invoice.vendorName,
       Category: invoice.category,
-      Center: invoice.center,
+      Center: centers.find((center) => center.id === invoice.centerId)?.name || invoice.centerId,
       Amount: invoice.amount,
-      "Raised On": invoice.raisedOn,
-      "Due On": invoice.dueOn,
+      "Raised On": invoice.createdAt || "Data Not Available",
+      "Due On": invoice.dueOn || "Data Not Available",
       Status: invoice.status,
     }));
   }
 
   if (listType === "procurement-list") {
-    return PROCUREMENT_ITEMS.filter((item) =>
-      centers.some((center) => center.location === item.center)
-    ).map((item) => ({
+    return getClientFinanceRecords(project.name, centers).projectProcurements.map((item) => ({
       Project: project.name,
-      Item: item.item,
-      "Requested By": item.requestedBy,
-      Center: item.center,
+      Item: item.itemName,
+      "Requested By": item.requestedByEmployeeId,
+      Center: centers.find((center) => center.id === item.centerId)?.name || item.centerId,
       Quantity: item.quantity,
-      Budget: item.budget,
-      Urgency: item.urgency,
+      Budget: item.estimatedAmount,
+      Urgency: item.urgency || "Data Not Available",
       Status: item.status,
     }));
   }
@@ -1693,6 +1683,8 @@ function ReportTable({ rows }) {
   );
 }
 
+// Reserved for the report-book UI variant; PDF preview currently renders directly.
+// eslint-disable-next-line no-unused-vars
 function getReportBookPages({ analytics, centers, month, project, report, summary, year }) {
   const scope = centers.length === project.centers.length ? "All project centers" : centers.map((center) => center.name).join(", ");
   const basePages = [
@@ -1818,6 +1810,8 @@ function PreviewStat({ icon: Icon, label, tone, value }) {
   );
 }
 
+// Reserved for compact preview tables used by the report-book UI variant.
+// eslint-disable-next-line no-unused-vars
 function getPreviewRows(reportId, analytics, centers, summary) {
   if (!analytics) return [];
 

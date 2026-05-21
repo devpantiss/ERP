@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { UserCog, ChevronLeft, ChevronRight, Check, User, Building2, Layers, FileCheck, CheckCircle2 } from "lucide-react";
-import { ALL_USERS } from "./superAdminUsers";
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectEmployeeDirectory } from "../../stores/selectors/employeeSelectors";
+import { selectEnrollmentCatalog } from "../../stores/selectors/projectSelectors";
 
 const STEPS = [
   { label: "Select Trainer", icon: User },
@@ -10,16 +13,33 @@ const STEPS = [
   { label: "Review & Confirm", icon: FileCheck },
 ];
 
-const CENTERS = ["Angul", "Sundargarh", "Keonjhar", "Jharsuguda", "Kalahandi"];
-const BATCHES = ["B-01", "B-02", "B-03", "B-04", "B-05", "B-06", "B-07", "B-08", "B-09", "B-10"];
-const TRAINERS = ALL_USERS.filter(u => u.role === "Trainer");
-
 export default function SuperAdminTrainerAssignment() {
   const navigate = useNavigate();
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  const { records: projects, fetchAll: fetchProjects } = useProjectStore();
   const [step, setStep] = useState(0);
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [selectedCenter, setSelectedCenter] = useState("");
   const [selectedBatches, setSelectedBatches] = useState([]);
+
+  useEffect(() => {
+    fetchWithAssignments();
+    fetchProjects();
+  }, [fetchProjects, fetchWithAssignments]);
+
+  const trainers = useMemo(() => selectEmployeeDirectory(employees).filter((employee) => employee.role === "Trainer"), [employees]);
+  const catalog = useMemo(() => selectEnrollmentCatalog(projects), [projects]);
+  const centers = useMemo(
+    () => catalog.flatMap((project) => project.centers.map((center) => center.name)),
+    [catalog]
+  );
+  const batches = useMemo(
+    () => catalog
+      .flatMap((project) => project.centers)
+      .filter((center) => center.name === selectedCenter)
+      .flatMap((center) => center.batches.map((batch) => batch.code)),
+    [catalog, selectedCenter]
+  );
 
   const toggleBatch = (b) => setSelectedBatches(selectedBatches.includes(b) ? selectedBatches.filter(x => x !== b) : [...selectedBatches, b]);
 
@@ -80,7 +100,7 @@ export default function SuperAdminTrainerAssignment() {
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-red-400">Select Trainer</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              {TRAINERS.map((t) => (
+              {trainers.map((t) => (
                 <button key={t.id} onClick={() => setSelectedTrainer(t)}
                   className={`p-5 rounded-xl text-left border transition ${selectedTrainer?.id === t.id ? "bg-red-500/10 border-red-500/50" : "bg-transparent/50 border-slate-700 hover:border-slate-600"}`}>
                   <div className="flex items-center gap-3">
@@ -89,7 +109,7 @@ export default function SuperAdminTrainerAssignment() {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-white/90">{t.name}</p>
-                      <p className="text-[10px] text-slate-500 font-bold">{t.id} • {t.center} • {t.department}</p>
+                      <p className="text-[10px] text-slate-500 font-bold">{t.id} • {t.center} • {t.project}</p>
                     </div>
                     {selectedTrainer?.id === t.id && <CheckCircle2 size={18} className="text-red-400" />}
                   </div>
@@ -104,8 +124,8 @@ export default function SuperAdminTrainerAssignment() {
             <h3 className="text-lg font-bold text-red-400">Assign Center</h3>
             <p className="text-xs text-slate-500">Select the center for <span className="text-red-400 font-bold">{selectedTrainer?.name}</span>.</p>
             <div className="grid md:grid-cols-3 gap-3">
-              {CENTERS.map(c => (
-                <button key={c} onClick={() => setSelectedCenter(c)}
+              {centers.map(c => (
+                <button key={c} onClick={() => { setSelectedCenter(c); setSelectedBatches([]); }}
                   className={`px-5 py-4 rounded-xl text-sm font-bold transition border flex items-center gap-3 ${
                     selectedCenter === c ? "bg-blue-500/15 border-blue-500/50 text-blue-400" : "bg-transparent/50 border-slate-700 text-white/60 hover:border-slate-600"
                   }`}>
@@ -122,7 +142,7 @@ export default function SuperAdminTrainerAssignment() {
             <h3 className="text-lg font-bold text-red-400">Assign Batches</h3>
             <p className="text-xs text-slate-500">Select the batches for <span className="text-red-400 font-bold">{selectedTrainer?.name}</span> at <span className="text-blue-400 font-bold">{selectedCenter}</span>.</p>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {BATCHES.map(b => (
+              {batches.map(b => (
                 <button key={b} onClick={() => toggleBatch(b)}
                   className={`px-4 py-3 rounded-xl text-sm font-bold transition border text-center ${
                     selectedBatches.includes(b) ? "bg-red-500/15 border-red-500/50 text-red-400" : "bg-transparent/50 border-slate-700 text-white/60 hover:border-slate-600"

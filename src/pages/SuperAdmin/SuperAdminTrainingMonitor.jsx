@@ -1,38 +1,21 @@
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  BookOpen, Building2, Users, ExternalLink, TrendingUp
+  BookOpen, Building2, Users, ExternalLink
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ALL_USERS } from "./superAdminUsers";
-
-const TRAINERS = ALL_USERS.filter(u => u.role === "Trainer");
-
-const TRAINER_DETAILS = {
-  "PSU-TRN-001": { batchesAssigned: 4, modulesCompleted: 78, totalModules: 135, attendanceRate: "96%" },
-  "PSU-TRN-002": { batchesAssigned: 3, modulesCompleted: 62, totalModules: 105, attendanceRate: "93%" },
-  "PSU-TRN-003": { batchesAssigned: 2, modulesCompleted: 45, totalModules: 70, attendanceRate: "97%" },
-  "PSU-TRN-004": { batchesAssigned: 2, modulesCompleted: 38, totalModules: 70, attendanceRate: "71%" },
-};
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { selectTrainingMonitorData } from "../../stores/selectors/superAdminSelectors";
 
 const tooltipStyle = {  border: "1px solid #334155", borderRadius: "12px" };
 
-const STATS = [
-  { label: "Training Centers", value: "5", color: "text-blue-500" },
-  { label: "Active Trainers", value: TRAINERS.length.toString(), color: "text-emerald-500" },
-  { label: "Avg Completion", value: "72%", color: "text-red-500" },
-  { label: "Modules Delivered", value: "223", color: "text-violet-500" },
-];
-
-const CENTER_COMPLETION = [
-  { center: "Angul", completion: 78 },
-  { center: "Sundargarh", completion: 82 },
-  { center: "Keonjhar", completion: 68 },
-  { center: "Jharsuguda", completion: 59 },
-  { center: "Kalahandi", completion: 74 },
-];
-
 export default function SuperAdminTrainingMonitor() {
   const navigate = useNavigate();
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  useEffect(() => {
+    fetchWithAssignments();
+  }, [fetchWithAssignments]);
+  const { stats, centerCompletion, trainers } = useMemo(() => selectTrainingMonitorData(employees), [employees]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -45,7 +28,7 @@ export default function SuperAdminTrainingMonitor() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {STATS.map(s => (
+        {stats.map(s => (
           <div key={s.label} className="bg-[#111827]/80 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-sm">
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">{s.label}</p>
             <h3 className={`text-2xl font-black ${s.color}`}>{s.value}</h3>
@@ -60,7 +43,7 @@ export default function SuperAdminTrainingMonitor() {
         </h3>
         <div className="h-[220px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={CENTER_COMPLETION} layout="vertical">
+            <BarChart data={centerCompletion} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
               <XAxis type="number" stroke="#475569" fontSize={10} domain={[0, 100]} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="center" stroke="#94a3b8" fontSize={11} axisLine={false} tickLine={false} width={90} />
@@ -87,9 +70,8 @@ export default function SuperAdminTrainingMonitor() {
               <th className="px-6 py-3 text-right">Action</th>
             </tr></thead>
             <tbody className="divide-y divide-slate-800">
-              {TRAINERS.map((t) => {
-                const d = TRAINER_DETAILS[t.id];
-                const pct = Math.round((d.modulesCompleted / d.totalModules) * 100);
+              {trainers.map((t) => {
+                const pct = Math.round((t.modulesCompleted / t.totalModules) * 100);
                 return (
                   <tr key={t.id} className="hover:bg-transparent/30 transition">
                     <td className="px-6 py-4">
@@ -104,7 +86,7 @@ export default function SuperAdminTrainingMonitor() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-white/60">{t.center}</td>
-                    <td className="px-6 py-4 text-xs font-bold text-white/90">{d.batchesAssigned}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-white/90">{t.batchesAssigned}</td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-16 h-2 bg-slate-700 rounded-full overflow-hidden">
@@ -113,7 +95,7 @@ export default function SuperAdminTrainingMonitor() {
                         <span className="text-[10px] font-bold text-white/60">{pct}%</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-xs font-bold text-blue-400">{d.attendanceRate}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-blue-400">{t.attendanceRate}</td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${t.status === "Active" ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-500"}`}>
                         {t.status}

@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FolderKanban, ChevronLeft, ChevronRight, Check, User, Briefcase, Building2, FileCheck, CheckCircle2 } from "lucide-react";
-import { ALL_USERS } from "./superAdminUsers";
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectEmployeeDirectory } from "../../stores/selectors/employeeSelectors";
+import { selectEnrollmentCatalog } from "../../stores/selectors/projectSelectors";
 
 const STEPS = [
   { label: "Select Admin", icon: User },
@@ -10,16 +13,29 @@ const STEPS = [
   { label: "Review & Confirm", icon: FileCheck },
 ];
 
-const PROJECTS = ["DDU-GKY Phase IV", "PMKVY 4.0", "CSR Skill Program", "State Skill Mission", "World Bank Skills Loan"];
-const CENTERS = ["Angul", "Sundargarh", "Keonjhar", "Jharsuguda", "Kalahandi"];
-const ADMINS = ALL_USERS.filter(u => u.role === "Admin");
-
 export default function SuperAdminProjectAssignment() {
   const navigate = useNavigate();
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  const { records: projects, fetchAll: fetchProjects } = useProjectStore();
   const [step, setStep] = useState(0);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [selectedProjects, setSelectedProjects] = useState([]);
   const [selectedCenters, setSelectedCenters] = useState([]);
+
+  useEffect(() => {
+    fetchWithAssignments();
+    fetchProjects();
+  }, [fetchProjects, fetchWithAssignments]);
+
+  const admins = useMemo(() => selectEmployeeDirectory(employees).filter((employee) => employee.role === "Admin"), [employees]);
+  const catalog = useMemo(() => selectEnrollmentCatalog(projects), [projects]);
+  const projectOptions = useMemo(() => catalog.map((project) => project.name), [catalog]);
+  const centerOptions = useMemo(
+    () => catalog
+      .filter((project) => selectedProjects.length === 0 || selectedProjects.includes(project.name))
+      .flatMap((project) => project.centers.map((center) => center.name)),
+    [catalog, selectedProjects]
+  );
 
   const toggle = (item, list, setList) => setList(list.includes(item) ? list.filter(i => i !== item) : [...list, item]);
 
@@ -82,7 +98,7 @@ export default function SuperAdminProjectAssignment() {
             <h3 className="text-lg font-bold text-red-400">Select Project Lead / Admin</h3>
             <p className="text-xs text-slate-500">Choose the admin to assign projects and centers to.</p>
             <div className="grid md:grid-cols-3 gap-4">
-              {ADMINS.map((admin) => (
+              {admins.map((admin) => (
                 <button key={admin.id} onClick={() => setSelectedAdmin(admin)}
                   className={`p-5 rounded-xl text-left border transition ${selectedAdmin?.id === admin.id ? "bg-red-500/10 border-red-500/50" : "bg-transparent/50 border-slate-700 hover:border-slate-600"}`}>
                   <div className="flex items-center gap-3 mb-3">
@@ -94,7 +110,7 @@ export default function SuperAdminProjectAssignment() {
                       <p className="text-[10px] text-slate-500 font-bold">{admin.id}</p>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase">{admin.center} • {admin.department}</p>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase">{admin.center} • {admin.project}</p>
                   {selectedAdmin?.id === admin.id && <CheckCircle2 size={16} className="text-red-400 mt-2" />}
                 </button>
               ))}
@@ -107,7 +123,7 @@ export default function SuperAdminProjectAssignment() {
             <h3 className="text-lg font-bold text-red-400">Assign Projects</h3>
             <p className="text-xs text-slate-500">Select the projects to assign to <span className="text-red-400 font-bold">{selectedAdmin?.name}</span>.</p>
             <div className="grid md:grid-cols-2 gap-3">
-              {PROJECTS.map(p => (
+              {projectOptions.map(p => (
                 <button key={p} onClick={() => toggle(p, selectedProjects, setSelectedProjects)}
                   className={`px-5 py-4 rounded-xl text-sm font-bold transition border text-left flex items-center gap-3 ${
                     selectedProjects.includes(p) ? "bg-red-500/15 border-red-500/50 text-red-400" : "bg-transparent/50 border-slate-700 text-white/60 hover:border-slate-600"
@@ -125,7 +141,7 @@ export default function SuperAdminProjectAssignment() {
             <h3 className="text-lg font-bold text-red-400">Assign Centers</h3>
             <p className="text-xs text-slate-500">Select the centers <span className="text-red-400 font-bold">{selectedAdmin?.name}</span> will manage.</p>
             <div className="grid md:grid-cols-3 gap-3">
-              {CENTERS.map(c => (
+              {centerOptions.map(c => (
                 <button key={c} onClick={() => toggle(c, selectedCenters, setSelectedCenters)}
                   className={`px-5 py-4 rounded-xl text-sm font-bold transition border text-left flex items-center gap-3 ${
                     selectedCenters.includes(c) ? "bg-blue-500/15 border-blue-500/50 text-blue-400" : "bg-transparent/50 border-slate-700 text-white/60 hover:border-slate-600"

@@ -5,49 +5,8 @@ import {
   Building2, Filter, X, Check, Ban, CreditCard, ScrollText,
   FolderKanban, Utensils, GraduationCap, Megaphone, Briefcase, FileBadge, TrendingUp
 } from "lucide-react";
-
-/* ═══════════════════════════════════════════════════════════════
-   DEMO DATA
-═══════════════════════════════════════════════════════════════ */
-
-const ALL_INVOICES = [
-  { 
-    id: "INV-AF-0102", type: "Food Billing", project: "L&T Skill India", center: "Bhubaneswar Hub", adminName: "Ananya Mishra", 
-    month: "January 2026", amount: 330000, status: "Pending", raisedOn: "2026-02-02", 
-    details: { students: 110, rate: 3000, attendance: 78 }, notes: "",
-    evidence: { label: "Attendance Log", value: "78% (Threshold: 70%)", icon: CheckSquare, color: "emerald" }
-  },
-  { 
-    id: "INV-AF-0099", type: "Food Billing", project: "NALCO CSR Skilling", center: "Angul Training Center", adminName: "Priyadarshini Sahu", 
-    month: "March 2026", amount: 480000, status: "Approved", raisedOn: "2026-04-01", 
-    details: { students: 160, rate: 3000, attendance: 88 }, notes: "Includes extra provision for medical camp day.",
-    evidence: { label: "Attendance Log", value: "88% (Threshold: 70%)", icon: CheckSquare, color: "emerald" }
-  },
-  { 
-    id: "INV-T-0041", type: "Trainer Salary", project: "L&T Skill India", center: "Bhubaneswar Hub", adminName: "Suresh Kumar", 
-    month: "February 2026", amount: 25000, status: "Approved", raisedOn: "2026-03-01", 
-    details: { base: 25000, hoursPct: 100, visitsPct: 100 }, notes: "Verified by Center Admin.",
-    evidence: { label: "Training Log", value: "160/160h logged, 4/4 visits", icon: GraduationCap, color: "purple" }
-  },
-  { 
-    id: "INV-T-0039", type: "Trainer Salary", project: "NALCO CSR Skilling", center: "Angul Training Center", adminName: "Anita Mohanty", 
-    month: "March 2026", amount: 23125, status: "Pending", raisedOn: "2026-03-15", 
-    details: { base: 25000, hoursPct: 94, visitsPct: 100 }, notes: "Early submission verified by Admin.",
-    evidence: { label: "Training Log", value: "150/160h logged, 4/4 visits", icon: GraduationCap, color: "purple" }
-  },
-  { 
-    id: "INV-M-0020", type: "Mobilizer Comm.", project: "OMC Mining Ops", center: "Keonjhar Tech", adminName: "Sunita Hembram", 
-    month: "February 2026", amount: 5500, status: "Approved", raisedOn: "2026-03-01", 
-    details: { enrolled: 7, drives: 2 }, notes: "Admin signed off on candidate enrollments.",
-    evidence: { label: "Mobilization Proof", value: "7 Enrolled, 2 Drives", icon: Megaphone, color: "yellow" }
-  },
-  { 
-    id: "INV-P-0017", type: "Placement Salary", project: "L&T Skill India", center: "Bhubaneswar Hub", adminName: "Vikram Das", 
-    month: "February 2026", amount: 30000, status: "Paid", raisedOn: "2026-03-01", 
-    details: { base: 30000, placedPct: 100, drivesPct: 100 }, notes: "Placements confirmed with HRs.", paidOn: "2026-03-04", txnRef: "TXN-20260304-8812",
-    evidence: { label: "Offer Letters", value: "20/20 Placed, 3/3 Drives", icon: Briefcase, color: "cyan" }
-  },
-];
+import { useFinanceStore } from "../../stores/financeStore";
+import { selectInvoiceRows } from "../../stores/selectors/invoiceSelectors";
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS & STYLING META
@@ -65,23 +24,17 @@ const TYPE_META = {
   "Trainer Salary":   { icon: GraduationCap, color: "text-purple-400", bg: "bg-purple-500/10" },
   "Mobilizer Comm.":  { icon: Megaphone,     color: "text-yellow-400", bg: "bg-yellow-500/10" },
   "Placement Salary": { icon: Briefcase,     color: "text-cyan-400",   bg: "bg-cyan-500/10" },
+  "Operations Billing": { icon: FileText, color: "text-blue-400", bg: "bg-blue-500/10" },
 };
-
-function CheckSquare(props) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <polyline points="9 11 12 14 22 4"></polyline>
-      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-    </svg>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 
 export default function SuperAdminInvoiceTracking() {
-  const [invoices, setInvoices]           = useState(ALL_INVOICES);
+  const { invoices: invoiceRecords, fetchInvoices, updateInvoice } = useFinanceStore();
+  const normalizedInvoices = useMemo(() => selectInvoiceRows(invoiceRecords), [invoiceRecords]);
+  const [invoices, setInvoices]           = useState([]);
   const [search, setSearch]               = useState("");
   const [projectFilter, setProjectFilter] = useState("All");
   const [monthFilter, setMonthFilter]     = useState("All");
@@ -93,11 +46,17 @@ export default function SuperAdminInvoiceTracking() {
   const [txnRef, setTxnRef]               = useState("");
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    fetchInvoices();
+  }, [fetchInvoices]);
+  useEffect(() => {
+    setInvoices((current) => (current.length ? current : normalizedInvoices));
+  }, [normalizedInvoices]);
 
-  const uniqueProjects = useMemo(() => ["All", ...new Set(ALL_INVOICES.map(i => i.project))], []);
-  const uniqueMonths   = useMemo(() => ["All", ...new Set(ALL_INVOICES.map(i => i.month))], []);
-  const types          = ["All", "Food Billing", "Trainer Salary", "Mobilizer Comm.", "Placement Salary"];
+  const uniqueProjects = useMemo(() => ["All", ...new Set(invoices.map(i => i.project))], [invoices]);
+  const uniqueMonths   = useMemo(() => ["All", ...new Set(invoices.map(i => i.month))], [invoices]);
+  const types          = ["All", ...new Set(invoices.map(i => i.type))];
   const statuses       = ["All", "Pending", "Approved", "Paid", "Rejected"];
 
   /* ── FILTERING ── */
@@ -136,9 +95,11 @@ export default function SuperAdminInvoiceTracking() {
 
   /* ── ACTIONS ── */
   const updateStatus = (id, newStatus, extra = {}) => {
+    const statusMap = { Pending: "SUBMITTED", Approved: "APPROVED", Paid: "PAID", Rejected: "REJECTED" };
     setInvoices((prev) =>
       prev.map((inv) => (inv.id === id ? { ...inv, status: newStatus, ...extra } : inv))
     );
+    updateInvoice(id, { status: statusMap[newStatus] || newStatus, ...extra });
     setDetailInv(null);
     setPayModal(null);
     setTxnRef("");

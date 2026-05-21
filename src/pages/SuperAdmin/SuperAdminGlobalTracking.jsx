@@ -1,25 +1,23 @@
+import { useEffect, useMemo } from "react";
 import { Globe, Activity, MapPin, Building2, Users, CheckCircle2, Clock, AlertCircle, BarChart3, Layers, Zap } from "lucide-react";
-
-/* ===================== MOCK DATA ===================== */
-
-const REGIONS = [
-  { name: "Angul", status: "Active", progress: 78, activeBatches: 12, users: 450, alert: null },
-  { name: "Sundargarh", status: "Active", progress: 62, activeBatches: 8, users: 310, alert: "Doc Pending" },
-  { name: "Keonjhar", status: "Active", progress: 85, activeBatches: 15, users: 520, alert: null },
-  { name: "Jharsuguda", status: "Maintenance", progress: 40, activeBatches: 3, users: 85, alert: "System Update" },
-  { name: "Kalahandi", status: "Active", progress: 55, activeBatches: 6, users: 190, alert: null },
-];
-
-const GLOBAL_MILESTONES = [
-  { id: 1, title: "Q1 Mobilization Goal", target: "5,000 Candidates", current: "4,250", pct: 85, status: "On Track" },
-  { id: 2, title: "Trainer Certification", target: "100 Trainers", current: "92", pct: 92, status: "Near Completion" },
-  { id: 3, title: "Industry Partnerships", target: "50 Companies", current: "32", pct: 64, status: "In Progress" },
-  { id: 4, title: "Infrastructure Expansion", target: "30 Centers", current: "24", pct: 80, status: "Expanding" },
-];
-
-/* ===================== COMPONENT ===================== */
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectGlobalTrackingData } from "../../stores/selectors/superAdminSelectors";
 
 export default function SuperAdminGlobalTracking() {
+  const { records: projects, fetchAll } = useProjectStore();
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+
+  useEffect(() => {
+    fetchAll();
+    fetchWithAssignments();
+  }, [fetchAll, fetchWithAssignments]);
+
+  const { totalNodes, regions, milestones, sessions } = useMemo(
+    () => selectGlobalTrackingData(projects, employees),
+    [employees, projects]
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -32,7 +30,7 @@ export default function SuperAdminGlobalTracking() {
         </div>
         <div className="flex items-center gap-2">
            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-transparent text-white/60 text-xs font-bold border border-slate-700">
-             <Zap size={14} className="text-amber-500" /> Total Nodes: 24
+             <Zap size={14} className="text-amber-500" /> Total Nodes: {totalNodes}
            </span>
            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20">
              <Activity size={14} className="animate-pulse" /> Live Pulse
@@ -49,7 +47,7 @@ export default function SuperAdminGlobalTracking() {
             </h3>
             
             <div className="grid md:grid-cols-2 gap-4">
-              {REGIONS.map((region) => (
+              {regions.map((region) => (
                 <div key={region.name} className="p-5 rounded-2xl bg-transparent/20 border border-slate-700/50 hover:bg-transparent/40 transition group cursor-pointer">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -111,7 +109,7 @@ export default function SuperAdminGlobalTracking() {
             </h3>
             
             <div className="space-y-6">
-              {GLOBAL_MILESTONES.map((mile) => (
+              {milestones.map((mile) => (
                 <div key={mile.id} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
@@ -162,15 +160,15 @@ export default function SuperAdminGlobalTracking() {
             <div className="space-y-3">
               <div className="flex justify-between text-xs">
                 <span className="text-white/60">Mobilizers Live</span>
-                <span className="text-white/90 font-bold">124</span>
+                <span className="text-white/90 font-bold">{sessions.mobilizers}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-white/60">Trainer Feed Active</span>
-                <span className="text-white/90 font-bold">58</span>
+                <span className="text-white/90 font-bold">{sessions.trainers}</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-white/60">Admin Portals Open</span>
-                <span className="text-white/90 font-bold">12</span>
+                <span className="text-white/90 font-bold">{sessions.admins}</span>
               </div>
             </div>
           </div>

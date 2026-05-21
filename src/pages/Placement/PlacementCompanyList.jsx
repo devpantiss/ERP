@@ -1,57 +1,23 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import PlacementCompanyDatabaseStepper from "./PlacementCompanyDatabaseStepper";
-
-/* ================= SEGMENTS ================= */
-
-const SEGMENTS = [
-  "Mining, Steel & Aluminium",
-  "Shipping & Logistics",
-  "Power & Green Energy",
-  "Green Jobs",
-  "Construction Tech & Infra Equipment",
-  "Furniture & Fittings",
-];
-
-const LOCATION_TYPES = ["Odisha", "India", "International"];
-
-/* ================= DUMMY DATA ================= */
-
-const COMPANY_NAMES = [
-  "Tata Steel Ltd",
-  "JSW Steel",
-  "Vedanta Aluminium",
-  "Adani Power",
-  "Larsen & Toubro",
-  "Reliance Industries",
-  "Jindal Steel & Power",
-  "NTPC Limited",
-  "Ashok Leyland",
-  "Mahindra Logistics",
-];
-
-function generateCompanies() {
-  return COMPANY_NAMES.map((name, i) => ({
-    id: i + 1,
-    companyName: name,
-    segment: SEGMENTS[i % SEGMENTS.length],
-    locationType: LOCATION_TYPES[i % LOCATION_TYPES.length],
-    location: "Khordha",
-    website: "https://example.com",
-    spoc: "Rajesh Mishra",
-    contact: "9876543210",
-    loi: null,
-    loiExpiry: null,
-    mou: null,
-  }));
-}
+import { usePlacementStore } from "../../stores/placementStore.js";
+import {
+  LOCATION_TYPES,
+  PLACEMENT_SEGMENTS,
+  selectCompanyRows,
+} from "../../stores/selectors/placementSelectors.js";
 
 /* ================= COMPONENT ================= */
 
 export default function CompanyDatabase() {
   const fileRefs = useRef({});
+  const { companies: companyRecords, fetchCompanies, updateCompany } = usePlacementStore();
+  const companies = useMemo(() => selectCompanyRows(companyRecords), [companyRecords]);
 
-  const [companies, setCompanies] = useState(generateCompanies());
+  useEffect(() => {
+    fetchCompanies();
+  }, [fetchCompanies]);
 
   /* ================= FILTERS ================= */
 
@@ -127,9 +93,7 @@ export default function CompanyDatabase() {
 
     const url = URL.createObjectURL(file);
 
-    setCompanies((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, mou: url } : c))
-    );
+    updateCompany(id, { mou: url });
   };
 
   /* ================= LOI FUNCTIONS ================= */
@@ -165,17 +129,10 @@ export default function CompanyDatabase() {
       issueDate: new Date().toLocaleDateString(),
     };
 
-    setCompanies((prev) =>
-      prev.map((c) =>
-        c.id === loiModal.companyId
-          ? {
-              ...c,
-              loi: loiData,
-              loiExpiry: loiForm.validTill,
-            }
-          : c
-      )
-    );
+    updateCompany(loiModal.companyId, {
+      loi: loiData,
+      loiExpiry: loiForm.validTill,
+    });
 
     setLoiModal({ open: false, companyId: null });
   }
@@ -226,7 +183,7 @@ export default function CompanyDatabase() {
           className="bg-[#0f172a] border border-slate-600 rounded-md px-3 py-2 text-white/90"
         >
           <option value="">All Segments</option>
-          {SEGMENTS.map((s) => (
+          {PLACEMENT_SEGMENTS.map((s) => (
             <option key={s}>{s}</option>
           ))}
         </select>

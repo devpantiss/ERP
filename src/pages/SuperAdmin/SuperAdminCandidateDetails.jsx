@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Users, Search } from "lucide-react";
-import { SA_PROJECTS } from "./superAdminData";
 import {
   ProjectCard, CenterCard, BatchCard, BackButton, PageHeader, Breadcrumb,
   usePagination, Pagination,
 } from "./SuperAdminSharedComponents";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectSuperAdminProjectHierarchy } from "../../stores/selectors/superAdminSelectors";
 
 const STATUS_BADGE = {
   Active: "bg-emerald-500/10 text-emerald-400",
@@ -17,6 +18,7 @@ const STATUS_BADGE = {
 };
 
 export default function SuperAdminCandidateDetails() {
+  const { records: projects, fetchAll } = useProjectStore();
   const [projectId, setProjectId] = useState(null);
   const [centerId, setCenterId] = useState(null);
   const [batchId, setBatchId] = useState(null);
@@ -25,7 +27,12 @@ export default function SuperAdminCandidateDetails() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [placementFilter, setPlacementFilter] = useState("All");
 
-  const project = SA_PROJECTS.find((p) => p.id === projectId);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const projectHierarchy = useMemo(() => selectSuperAdminProjectHierarchy(projects), [projects]);
+  const project = projectHierarchy.find((p) => p.id === projectId);
   const center = project?.centers.find((c) => c.id === centerId);
   const batch = center?.batches.find((b) => b.id === batchId);
 
@@ -40,9 +47,10 @@ export default function SuperAdminCandidateDetails() {
   const placementOptions = ["All", ...new Set((batch?.candidates || []).map((c) => c.placementStatus))];
 
   const pg = usePagination(candidates);
+  const { setPage } = pg;
 
   // Reset page on search change
-  useEffect(() => { pg.setPage(1); }, [search, courseFilter, statusFilter, placementFilter]);
+  useEffect(() => { setPage(1); }, [search, courseFilter, statusFilter, placementFilter, setPage]);
 
   const breadcrumb = ["All Projects"];
   if (project) breadcrumb.push(project.name);
@@ -57,7 +65,7 @@ export default function SuperAdminCandidateDetails() {
       {/* LEVEL 1: Projects */}
       {!project && (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {SA_PROJECTS.map((p) => {
+          {projectHierarchy.map((p) => {
             const totalCandidates = p.centers.reduce((s, c) => s + c.batches.reduce((s2, b) => s2 + b.learners, 0), 0);
             const totalCenters = p.centers.length;
             return (
@@ -103,7 +111,7 @@ export default function SuperAdminCandidateDetails() {
           <BackButton onClick={() => setCenterId(null)} label={`Back to ${project.name} centers`} />
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {center.batches.map((b) => (
-              <BatchCard key={b.id} batch={b} onClick={() => { setBatchId(b.id); setSearch(""); setCourseFilter("All"); setStatusFilter("All"); setPlacementFilter("All"); pg.setPage(1); }} />
+              <BatchCard key={b.id} batch={b} onClick={() => { setBatchId(b.id); setSearch(""); setCourseFilter("All"); setStatusFilter("All"); setPlacementFilter("All"); setPage(1); }} />
             ))}
           </div>
         </>

@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import SlidePanel from "../../components/common/SlidePanel";
+import { useAttendanceStore } from "../../stores/attendanceStore.js";
 
 /* ================= CONFIG ================= */
 
-const STORAGE_KEY = "placement-attendance";
 const SHIFT_START = "10:00";
 const LATE_AFTER_MINUTES = 15;
+const MOCK_EMPLOYEE_ID = "EMP-0001";
+const MOCK_PROJECT_ID = "PRJ-0001";
+const MOCK_CENTER_ID = "CTR-0001";
+const MOCK_BATCH_ID = "BTH-0001";
 
 const todayKey = () => new Date().toISOString().split("T")[0];
 const monthKey = (date) => date.slice(0, 7);
@@ -49,22 +53,31 @@ const getStatus = (timeStr) => {
 
 const AttendancePage = () => {
   const webcamRef = useRef(null);
+  const { records, fetchAll, create, update } = useAttendanceStore();
 
-  const [attendance, setAttendance] = useState({});
   const [activePunch, setActivePunch] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [mapLocation, setMapLocation] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    setAttendance(stored);
-  }, []);
+    fetchAll({ filters: { subjectType: "EMPLOYEE", subjectId: MOCK_EMPLOYEE_ID } });
+  }, [fetchAll]);
 
-  const saveAttendance = (data) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    setAttendance(data);
-  };
+  const attendance = records.reduce((acc, record) => {
+    acc[record.date] = {
+      id: record.id,
+      punchIn: record.punchIn || (record.status === "PRESENT" ? {
+        time: record.markedAt ? new Date(record.markedAt).toLocaleTimeString() : "10:00:00 AM",
+        place: record.place || "Center",
+        lat: record.lat,
+        lng: record.lng,
+        image: record.image,
+      } : null),
+      punchOut: record.punchOut || null,
+    };
+    return acc;
+  }, {});
 
   const handlePunch = async () => {
     setError("");
@@ -89,19 +102,33 @@ const AttendancePage = () => {
           pos.coords.longitude
         );
 
-        saveAttendance({
-          ...attendance,
-          [today]: {
-            ...todayRecord,
-            [activePunch === "in" ? "punchIn" : "punchOut"]: {
-              time: new Date().toLocaleTimeString(),
-              place,
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              image,
-            },
-          },
-        });
+        const punchPayload = {
+          time: new Date().toLocaleTimeString(),
+          place,
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          image,
+        };
+
+        if (todayRecord.id) {
+          update(todayRecord.id, {
+            [activePunch === "in" ? "punchIn" : "punchOut"]: punchPayload,
+            status: "PRESENT",
+          });
+        } else {
+          create({
+            subjectType: "EMPLOYEE",
+            subjectId: MOCK_EMPLOYEE_ID,
+            projectId: MOCK_PROJECT_ID,
+            centerId: MOCK_CENTER_ID,
+            batchId: MOCK_BATCH_ID,
+            date: today,
+            status: "PRESENT",
+            markedByEmployeeId: MOCK_EMPLOYEE_ID,
+            markedAt: new Date().toISOString(),
+            punchIn: punchPayload,
+          });
+        }
 
         setActivePunch(null);
       },

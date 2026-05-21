@@ -13,9 +13,6 @@ import {
   PieChart as PieIcon,
   ShieldAlert,
   BarChart3,
-  Search,
-  Filter,
-  Calendar
 } from "lucide-react";
 import {
   BarChart,
@@ -33,41 +30,23 @@ import {
   AreaChart,
   Area
 } from "recharts";
-
-/* ===================== ENTERPRISE MOCK DATA ===================== */
-
-const EXECUTIVE_KPIS = [
-  { label: "Global Grant Value", value: "₹42.8 Cr", sub: "12 Funding Sources", icon: Gem, color: "text-amber-500", bg: "bg-amber-500/10" },
-  { label: "Placement ROI", value: "88.4%", sub: "+4.2% YoY Growth", icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-500/10" },
-  { label: "Operational Centers", value: "32", sub: "Across 5 States", icon: Building2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { label: "System Uptime", value: "99.98%", sub: "Enterprise Grade", icon: Activity, color: "text-violet-500", bg: "bg-violet-500/10" },
-];
-
-const REVENUE_TRENDS = [
-  { p: "Q1", allocation: 4.2, spends: 3.1 },
-  { p: "Q2", allocation: 6.8, spends: 5.4 },
-  { p: "Q3", allocation: 8.5, spends: 7.2 },
-  { p: "Q4", allocation: 9.2, spends: 8.1 },
-];
-
-const GRANT_DISTRIBUTION = [
-  { name: "Government Grants", value: 45 },
-  { name: "CSR Funding", value: 30 },
-  { name: "Private Equity", value: 15 },
-  { name: "Donations/Other", value: 10 },
-];
+import { selectEnterpriseFinanceAnalytics } from "../../stores/selectors/analyticsSelectors";
 
 const COLORS = ["#f59e0b", "#3b82f6", "#10b981", "#8b5cf6"];
-
-const STRATEGIC_ALERTS = [
-  { id: 1, type: "Grant Milestone", msg: "DDU-GKY Q3 Installment (₹1.2 Cr) pending audit", time: "Now" },
-  { id: 2, type: "Regional Audit", msg: "Angul Center: ISO-9001 Recertification scheduled", time: "2h ago" },
-  { id: 3, type: "System Alert", msg: "Global workforce sync completed for Sundargarh Node", time: "5h ago" },
+const KPI_ICONS = [Gem, TrendingUp, Building2, Activity];
+const KPI_COLORS = [
+  { color: "text-amber-500", bg: "bg-amber-500/10" },
+  { color: "text-blue-500", bg: "bg-blue-500/10" },
+  { color: "text-emerald-500", bg: "bg-emerald-500/10" },
+  { color: "text-violet-500", bg: "bg-violet-500/10" },
 ];
+const ROADMAP_ICONS = [TrendingUp, Globe, Gem, Users];
 
 /* ===================== COMPONENT ===================== */
 
 export default function ExecutiveConsole() {
+  const analytics = selectEnterpriseFinanceAnalytics();
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       
@@ -99,11 +78,14 @@ export default function ExecutiveConsole() {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {EXECUTIVE_KPIS.map((kpi) => (
+        {analytics.kpis.map((kpi, index) => {
+          const Icon = KPI_ICONS[index] || Activity;
+          const tone = KPI_COLORS[index] || KPI_COLORS[0];
+          return (
           <div key={kpi.label} className="bg-[#111827]/80 border border-slate-700/50 rounded-2xl p-6 hover:border-amber-500/40 transition-all group backdrop-blur-sm shadow-lg shadow-black/20">
             <div className="flex items-start justify-between">
-              <div className={`p-4 rounded-2xl ${kpi.bg} ${kpi.color} group-hover:scale-105 transition-transform duration-300`}>
-                <kpi.icon size={28} />
+              <div className={`p-4 rounded-2xl ${tone.bg} ${tone.color} group-hover:scale-105 transition-transform duration-300`}>
+                <Icon size={28} />
               </div>
               <div className="flex items-center gap-1 text-[11px] font-extrabold text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-full uppercase tracking-tighter">
                 <ArrowUpRight size={12} /> +4.2%
@@ -117,7 +99,8 @@ export default function ExecutiveConsole() {
               </p>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Middle Section: Financial vs Strategic */}
@@ -140,7 +123,7 @@ export default function ExecutiveConsole() {
           
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={REVENUE_TRENDS}>
+              <AreaChart data={analytics.grantFlow}>
                 <defs>
                   <linearGradient id="colorAlloc" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
@@ -170,7 +153,7 @@ export default function ExecutiveConsole() {
             <ShieldAlert size={18} className="text-red-500" /> Operational Audit
           </h3>
           <div className="flex-1 space-y-6">
-            {STRATEGIC_ALERTS.map((alert) => (
+            {analytics.alerts.map((alert) => (
               <div key={alert.id} className="relative pl-6 border-l-2 border-white/[0.08] hover:border-amber-500/50 transition duration-500 group">
                 <div className="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-transparent group-hover:bg-amber-500 transition duration-500" />
                 <div className="flex items-center justify-between mb-2">
@@ -205,7 +188,7 @@ export default function ExecutiveConsole() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={GRANT_DISTRIBUTION}
+                    data={analytics.grantDistribution}
                     cx="50%"
                     cy="50%"
                     innerRadius={70}
@@ -213,7 +196,7 @@ export default function ExecutiveConsole() {
                     paddingAngle={8}
                     dataKey="value"
                   >
-                    {GRANT_DISTRIBUTION.map((entry, index) => (
+                    {analytics.grantDistribution.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0.5)" strokeWidth={4} />
                     ))}
                   </Pie>
@@ -222,7 +205,7 @@ export default function ExecutiveConsole() {
               </ResponsiveContainer>
             </div>
             <div className="space-y-6 md:pl-10 md:border-l border-white/[0.08]">
-              {GRANT_DISTRIBUTION.map((item, i) => (
+              {analytics.grantDistribution.map((item, i) => (
                 <div key={item.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full shadow-lg" style={{ backgroundColor: COLORS[i] }} />
@@ -242,16 +225,13 @@ export default function ExecutiveConsole() {
             <BarChart3 size={20} className="text-slate-500" />
           </div>
           <div className="space-y-8">
-            {[
-              { label: "Q4 Placement Strategic Goal", val: 92, color: "bg-amber-600", icon: TrendingUp },
-              { label: "State Expansion (Western Node)", val: 100, color: "bg-emerald-600", icon: Globe },
-              { label: "Asset Grant Utilization", val: 68, color: "bg-blue-600", icon: Gem },
-              { label: "Workforce Recertification", val: 45, color: "bg-violet-600", icon: Users },
-            ].map((m) => (
+            {analytics.roadmap.map((m, index) => {
+              const Icon = ROADMAP_ICONS[index] || TrendingUp;
+              return (
               <div key={m.label} className="group cursor-default">
                 <div className="flex justify-between items-center mb-3">
                   <div className="flex items-center gap-3">
-                    <m.icon size={16} className="text-slate-500 group-hover:text-amber-500 transition duration-300" />
+                    <Icon size={16} className="text-slate-500 group-hover:text-amber-500 transition duration-300" />
                     <span className="text-[11px] font-extrabold text-white/60 uppercase tracking-tighter group-hover:text-white/90 transition duration-300">{m.label}</span>
                   </div>
                   <span className="text-xs font-black text-amber-500">{m.val}%</span>
@@ -260,7 +240,8 @@ export default function ExecutiveConsole() {
                   <div className={`h-full ${m.color} rounded-full transition-all duration-1000 ease-out shadow-lg`} style={{ width: `${m.val}%` }} />
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

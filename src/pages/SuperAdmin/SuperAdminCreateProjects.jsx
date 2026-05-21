@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AtSign,
   FolderKanban,
@@ -11,8 +11,9 @@ import {
 } from "lucide-react";
 import MentionInput from "../../components/common/MentionInput";
 import { Breadcrumb, PageHeader } from "./SuperAdminSharedComponents";
-import { SA_PROJECTS } from "./superAdminData";
-import { ALL_USERS } from "./superAdminUsers";
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectSuperAdminProjectHierarchy } from "../../stores/selectors/superAdminSelectors";
 
 const emptyProject = {
   name: "",
@@ -34,23 +35,21 @@ const emptyBatch = {
 
 const batchStatuses = ["Active", "Verified", "Closed"];
 
-const adminUsers = ALL_USERS.filter((user) => user.role === "Admin");
-
 function normalizeBatchStatus(status) {
   if (status === "Completed") return "Closed";
   if (status === "Pending Verification") return "Verified";
   return batchStatuses.includes(status) ? status : "Active";
 }
 
-function getAssignedAdmin(projectName) {
+function getAssignedAdmin(projectId, adminUsers) {
   return adminUsers.find((user) => {
-    const assignments = user.projectAssignments || user.projects || [];
-    return assignments.includes(projectName);
+    const assignments = user.projectIds || [];
+    return assignments.includes(projectId);
   });
 }
 
-function seedProjects() {
-  return SA_PROJECTS.map((project) => {
+function seedProjects(projectHierarchy, adminUsers) {
+  return projectHierarchy.map((project) => {
     const batches = project.centers.flatMap((center) =>
       center.batches.map((batch) => ({
         ...batch,
@@ -58,7 +57,7 @@ function seedProjects() {
         center: center.name,
       }))
     );
-    const assignedAdmin = getAssignedAdmin(project.name);
+    const assignedAdmin = getAssignedAdmin(project.id, adminUsers);
 
     return {
       id: project.id,
@@ -75,7 +74,29 @@ function seedProjects() {
 }
 
 export default function SuperAdminCreateProjects() {
-  const [projects, setProjects] = useState(seedProjects);
+  const { records: projectRecords, fetchAll } = useProjectStore();
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  useEffect(() => {
+    fetchAll();
+    fetchWithAssignments();
+  }, [fetchAll, fetchWithAssignments]);
+  const projectHierarchy = useMemo(() => selectSuperAdminProjectHierarchy(projectRecords), [projectRecords]);
+  const adminUsers = useMemo(
+    () => employees
+      .filter((employee) => employee.designation === "Project Admin")
+      .map((employee) => ({
+        ...employee,
+        name: [employee.firstName, employee.lastName].filter(Boolean).join(" "),
+        role: "Admin",
+      })),
+    [employees]
+  );
+  const [projects, setProjects] = useState([]);
+
+  useEffect(() => {
+    setProjects((current) => (current.length ? current : seedProjects(projectHierarchy, adminUsers)));
+  }, [adminUsers, projectHierarchy]);
+
   const [searchDraft, setSearchDraft] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -351,6 +372,7 @@ export default function SuperAdminCreateProjects() {
 
       {showProjectModal && (
         <ProjectModal
+          adminUsers={adminUsers}
           project={projectDraft}
           canSave={canSaveProject}
           onClose={() => setShowProjectModal(false)}
@@ -463,7 +485,7 @@ function InlineAdminAssign({ values, people, onChange }) {
   );
 }
 
-function ProjectModal({ project, canSave, onClose, onSave, onUpdate }) {
+function ProjectModal({ adminUsers, project, canSave, onClose, onSave, onUpdate }) {
   return (
     <SlideOver title="New Project" subtitle="Create a project shell and assign an Admin lead." onClose={onClose}>
       <div className="space-y-5">

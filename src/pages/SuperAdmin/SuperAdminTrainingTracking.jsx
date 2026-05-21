@@ -1,18 +1,25 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Activity, GraduationCap, Search, UserRound } from "lucide-react";
-import { SA_PROJECTS } from "./superAdminData";
 import {
   ProjectCard, CenterCard, BackButton, PageHeader, Breadcrumb, ProgressBar,
   usePagination, Pagination,
 } from "./SuperAdminSharedComponents";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectSuperAdminProjectHierarchy } from "../../stores/selectors/superAdminSelectors";
 
 export default function SuperAdminTrainingTracking() {
+  const { records: projects, fetchAll } = useProjectStore();
   const [projectId, setProjectId] = useState(null);
   const [centerId, setCenterId] = useState(null);
   const [batchId, setBatchId] = useState(null);
   const [search, setSearch] = useState("");
 
-  const project = SA_PROJECTS.find((p) => p.id === projectId);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const projectHierarchy = useMemo(() => selectSuperAdminProjectHierarchy(projects), [projects]);
+  const project = projectHierarchy.find((p) => p.id === projectId);
   const center = project?.centers.find((c) => c.id === centerId);
   const selectedBatch = center?.batches.find((b) => b.id === batchId) || center?.batches[0];
 
@@ -39,7 +46,7 @@ export default function SuperAdminTrainingTracking() {
       {/* LEVEL 1: Projects */}
       {!project && (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {SA_PROJECTS.map((p) => {
+          {projectHierarchy.map((p) => {
             const totalModules = p.centers.reduce((s, c) => s + c.totalModules, 0);
             const completedModules = p.centers.reduce((s, c) => s + c.completedModules, 0);
             const pct = Math.round((completedModules / totalModules) * 100);

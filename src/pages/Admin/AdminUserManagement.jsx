@@ -14,24 +14,10 @@ import {
   CheckCircle2,
   X,
 } from "lucide-react";
-
-/* ===================== MOCK DATA ===================== */
-
-const ALL_USERS = [
-  { id: 1, name: "Aditya Sahu", role: "Trainer", center: "Angul", status: "Active", email: "aditya@example.com", phone: "+91 9876543210", joinDate: "12 Jan 2022", avatar: "https://i.pravatar.cc/40?img=12" },
-  { id: 2, name: "Priya Mishra", role: "Mobilizer", center: "Jajpur", status: "Active", email: "priya@example.com", phone: "+91 9876543211", joinDate: "05 Mar 2023", avatar: "https://i.pravatar.cc/40?img=5" },
-  { id: 3, name: "Rahul Patel", role: "Placement Officer", center: "Kalahandi", status: "Active", email: "rahul@example.com", phone: "+91 9876543212", joinDate: "18 Jun 2022", avatar: "https://i.pravatar.cc/40?img=8" },
-  { id: 4, name: "Sneha Das", role: "Trainer", center: "Jharsuguda", status: "Inactive", email: "sneha@example.com", phone: "+91 9876543213", joinDate: "22 Sep 2021", avatar: "https://i.pravatar.cc/40?img=9" },
-  { id: 5, name: "Vikram Singh", role: "Mobilizer", center: "Keonjhar", status: "Active", email: "vikram@example.com", phone: "+91 9876543214", joinDate: "01 Nov 2023", avatar: "https://i.pravatar.cc/40?img=11" },
-  { id: 6, name: "Anjali Mohanty", role: "Placement Officer", center: "Angul", status: "Active", email: "anjali@example.com", phone: "+91 9876543215", joinDate: "14 Feb 2023", avatar: "https://i.pravatar.cc/40?img=25" },
-  { id: 7, name: "Deepak Kumar", role: "Trainer", center: "Sundargarh", status: "Active", email: "deepak@example.com", phone: "+91 9876543216", joinDate: "30 Apr 2022", avatar: "https://i.pravatar.cc/40?img=14" },
-  { id: 8, name: "Kavita Behera", role: "Mobilizer", center: "Jajpur", status: "Inactive", email: "kavita@example.com", phone: "+91 9876543217", joinDate: "08 Jul 2022", avatar: "https://i.pravatar.cc/40?img=20" },
-  { id: 9, name: "Suresh Naik", role: "Trainer", center: "Kalahandi", status: "Active", email: "suresh@example.com", phone: "+91 9876543218", joinDate: "19 Aug 2023", avatar: "https://i.pravatar.cc/40?img=15" },
-  { id: 10, name: "Meera Pradhan", role: "Placement Officer", center: "Keonjhar", status: "Active", email: "meera@example.com", phone: "+91 9876543219", joinDate: "03 Dec 2022", avatar: "https://i.pravatar.cc/40?img=30" },
-];
-
-const ROLES = ["All", "Trainer", "Mobilizer", "Placement Officer"];
-const STATUSES = ["All", "Active", "Inactive"];
+import {
+  selectRoleOptions,
+  selectUserDirectory,
+} from "../../stores/selectors/employeeSelectors.js";
 
 /* ===================== MAIN COMPONENT ===================== */
 
@@ -42,9 +28,12 @@ export default function AdminUserManagement() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [actionMenu, setActionMenu] = useState(null);
   const [viewModal, setViewModal] = useState(null);
+  const users = useMemo(() => selectUserDirectory(), []);
+  const roles = useMemo(() => selectRoleOptions(), []);
+  const statuses = useMemo(() => ["All", ...new Set(users.map((user) => user.status))], [users]);
 
   const filtered = useMemo(() => {
-    return ALL_USERS.filter((user) => {
+    return users.filter((user) => {
       const matchSearch =
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -52,15 +41,15 @@ export default function AdminUserManagement() {
       const matchStatus = statusFilter === "All" || user.status === statusFilter;
       return matchSearch && matchRole && matchStatus;
     });
-  }, [searchTerm, roleFilter, statusFilter]);
+  }, [users, searchTerm, roleFilter, statusFilter]);
 
   const roleCounts = useMemo(() => {
     const counts = {};
-    ALL_USERS.forEach((u) => {
+    users.forEach((u) => {
       counts[u.role] = (counts[u.role] || 0) + 1;
     });
     return counts;
-  }, []);
+  }, [users]);
 
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,7 +90,7 @@ export default function AdminUserManagement() {
 
       {/* ================= ROLE SUMMARY CARDS ================= */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {ROLES.filter((r) => r !== "All").map((role) => (
+        {roles.filter((r) => r !== "All" && r !== "Client" && r !== "Executive" && r !== "Super Admin").map((role) => (
           <div
             key={role}
             className="bg-[#111827] border border-slate-700 rounded-xl p-4 hover:border-violet-500/30 transition cursor-pointer"
@@ -116,7 +105,7 @@ export default function AdminUserManagement() {
         <div className="bg-[#111827] border border-slate-700 rounded-xl p-4">
           <p className="text-xs text-white/60">Total Users</p>
           <p className="text-xl font-semibold text-slate-100 mt-1">
-            {ALL_USERS.length}
+            {users.length}
           </p>
         </div>
       </div>
@@ -143,7 +132,7 @@ export default function AdminUserManagement() {
             onChange={(e) => setRoleFilter(e.target.value)}
             className="bg-transparent border border-slate-700 text-white/90 px-3 py-2 rounded-lg text-sm focus:border-violet-400 outline-none"
           >
-            {ROLES.map((r) => (
+            {roles.map((r) => (
               <option key={r} value={r}>
                 {r === "All" ? "All Roles" : r}
               </option>
@@ -155,7 +144,7 @@ export default function AdminUserManagement() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-transparent border border-slate-700 text-white/90 px-3 py-2 rounded-lg text-sm focus:border-violet-400 outline-none"
           >
-            {STATUSES.map((s) => (
+            {statuses.map((s) => (
               <option key={s} value={s}>
                 {s === "All" ? "All Status" : s}
               </option>

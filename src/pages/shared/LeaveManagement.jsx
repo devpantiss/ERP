@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   AlertCircle,
@@ -11,14 +11,30 @@ import {
   X,
 } from "lucide-react";
 import {
+  diffDays,
   getLeaveBalances,
-  getRoleFromPath,
-  LEAVE_POLICIES,
-  nextLeaveId,
-  readLeaveRequests,
-  ROLE_LABEL,
-  writeLeaveRequests,
-} from "./leaveWorkflow";
+  LEAVE_TYPES,
+  selectLeaveRows,
+} from "../../stores/selectors/hrSelectors.js";
+import { useHrStore } from "../../stores/hrStore.js";
+
+const ROLE_LABEL = {
+  mobilizer: "Mobilizer",
+  trainer: "Trainer",
+  "placement-officer": "Placement Officer",
+}
+
+const ROLE_EMPLOYEE = {
+  mobilizer: "EMP-0003",
+  trainer: "EMP-0001",
+  "placement-officer": "EMP-0002",
+}
+
+function getRoleFromPath(pathname) {
+  if (pathname.includes("trainer")) return "trainer"
+  if (pathname.includes("placement")) return "placement-officer"
+  return "mobilizer"
+}
 
 const ACCENT_MAP = {
   mobilizer: {
@@ -47,29 +63,23 @@ const ACCENT_MAP = {
   },
 };
 
-const LEAVE_TYPES = LEAVE_POLICIES.map((policy) => policy.type);
-
-const diffDays = (from, to) => {
-  if (!from || !to) return 0;
-  const start = new Date(`${from}T00:00:00`);
-  const end = new Date(`${to}T00:00:00`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0;
-  return Math.round((end - start) / 86400000) + 1;
-};
-
-const formatDate = (date) =>
-  new Intl.DateTimeFormat("en-IN", {
+const formatDate = (date) => {
+  if (!date || date === "-") return "—";
+  const parsed = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-IN", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(`${date}T00:00:00`));
+  }).format(parsed);
+};
 
 export default function LeaveManagement() {
   const location = useLocation();
   const roleKey = getRoleFromPath(location.pathname);
   const a = ACCENT_MAP[roleKey] || ACCENT_MAP.mobilizer;
+  const { leaves: leaveRecords, fetchLeaves, createLeave } = useHrStore();
 
-  const [leaves, setLeaves] = useState(() => readLeaveRequests());
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     type: "Casual Leave",
@@ -79,15 +89,20 @@ export default function LeaveManagement() {
     contact: "",
   });
 
+  useEffect(() => {
+    fetchLeaves({ filters: { employeeId: ROLE_EMPLOYEE[roleKey] } });
+  }, [fetchLeaves, roleKey]);
+
+  const leaves = useMemo(() => selectLeaveRows(leaveRecords), [leaveRecords]);
   const requestedDays = diffDays(form.from, form.to);
   const roleLeaves = useMemo(
-    () => leaves.filter((leave) => leave.role === roleKey),
+    () => leaves.filter((leave) => leave.employeeId === ROLE_EMPLOYEE[roleKey]),
     [leaves, roleKey]
   );
 
   const leaveBalances = useMemo(
-    () => getLeaveBalances(leaves, roleKey),
-    [leaves, roleKey]
+    () => getLeaveBalances(leaveRecords, ROLE_EMPLOYEE[roleKey]),
+    [leaveRecords, roleKey]
   );
 
   const stats = useMemo(
@@ -111,27 +126,17 @@ export default function LeaveManagement() {
     event.preventDefault();
     if (!requestedDays || exceedsBalance) return;
 
-    const newLeave = {
-      id: nextLeaveId(leaves),
-      role: roleKey,
-      employee: `${ROLE_LABEL[roleKey] || "Employee"} User`,
+    createLeave({
+      employeeId: ROLE_EMPLOYEE[roleKey],
       type: form.type,
-      from: form.from,
-      to: form.to,
-      days: requestedDays,
+      fromDate: form.from,
+      toDate: form.to,
       reason: form.reason,
-      status: "Pending Admin Review",
+      status: "SUBMITTED",
       appliedOn: new Date().toISOString().split("T")[0],
-      approver: "Admin Office",
-      adminDecision: "",
-      superAdminDecision: "",
-      decisionNote: "",
       contact: form.contact,
-    };
-
-    const updatedLeaves = [newLeave, ...leaves];
-    writeLeaveRequests(updatedLeaves);
-    setLeaves(updatedLeaves);
+      approverEmployeeId: "EMP-0007",
+    });
     setForm({
       type: "Casual Leave",
       from: "",

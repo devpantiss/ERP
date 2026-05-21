@@ -1,10 +1,12 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import PlacementDriveStepper from "./PlacementDriveStepper";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { usePlacementStore } from "../../stores/placementStore.js";
+import { selectPlacementDriveRows } from "../../stores/selectors/placementSelectors.js";
 
 /* =========================================================
    GEO + WATERMARK
@@ -69,38 +71,12 @@ async function addWatermark(file, geo) {
 }
 
 /* =========================================================
-   DUMMY DATA
-========================================================= */
-
-function generateDrives() {
-  return Array.from({ length: 15 }, (_, i) => ({
-    id: i + 1,
-    eventName: "Campus Placement Drive",
-    type: i % 2 === 0 ? "Single" : "Multiple",
-    companies:
-      i % 2 === 0
-        ? ["Tata Steel"]
-        : ["Tata Steel", "JSW", "Vedanta"],
-    driveLocation: "Khurda Center",
-    date: `2026-02-${(i % 28) + 1}`,
-    status: i % 3 === 0 ? "Completed" : "Approved",
-    geo: null,
-    eventImages: [],
-    placedStudents: i % 3 === 0
-      ? [
-          { name: "Amit Kumar", company: "Tata Steel", role: "Trainee Operator", salary: "18000", joiningDate: "2026-03-01" },
-          { name: "Priya Sahoo", company: "JSW", role: "Production Associate", salary: "16500", joiningDate: "2026-03-05" },
-        ]
-      : [],
-  }));
-}
-
-/* =========================================================
    MAIN COMPONENT
 ========================================================= */
 
 export default function PlacementDrivesPage({ role = "placement" }) {
-  const [drives, setDrives] = useState(generateDrives());
+  const { drives: driveRecords, fetchDrives, updateDrive } = usePlacementStore();
+  const drives = useMemo(() => selectPlacementDriveRows(driveRecords), [driveRecords]);
   const [activeDrive, setActiveDrive] = useState(null);
 
   const [images, setImages] = useState([]);
@@ -117,6 +93,10 @@ export default function PlacementDrivesPage({ role = "placement" }) {
   const [statusFilter, setStatusFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+
+  useEffect(() => {
+    fetchDrives();
+  }, [fetchDrives]);
 
   /* ================= PAGINATION ================= */
 
@@ -238,19 +218,12 @@ export default function PlacementDrivesPage({ role = "placement" }) {
       images.map(f => addWatermark(f, completionGeo))
     );
 
-    setDrives(prev =>
-      prev.map(d =>
-        d.id === activeDrive.id
-          ? {
-              ...d,
-              status: "Completed",
-              geo: completionGeo,
-              eventImages: watermarked,
-              placedStudents,
-            }
-          : d
-      )
-    );
+    updateDrive(activeDrive.id, {
+      status: "COMPLETED",
+      geo: completionGeo,
+      eventImages: watermarked,
+      placedStudents,
+    });
 
     setActiveDrive(null);
   }

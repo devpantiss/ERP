@@ -1,7 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { Briefcase, Search, CalendarDays, Users, ChevronRight, Trophy, Building2 } from "lucide-react";
-import { SA_PROJECTS, SA_PLACEMENT_DRIVES } from "./superAdminData";
 import { ProjectCard, BackButton, PageHeader, Breadcrumb, usePagination, Pagination } from "./SuperAdminSharedComponents";
+import { usePlacementStore } from "../../stores/placementStore";
+import { useProjectStore } from "../../stores/projectStore";
+import {
+  selectSuperAdminPlacementDrives,
+  selectSuperAdminProjectHierarchy,
+} from "../../stores/selectors/superAdminSelectors";
 
 const STATUS_BADGE = {
   Selected: "bg-emerald-500/10 text-emerald-400",
@@ -10,16 +15,25 @@ const STATUS_BADGE = {
 };
 
 export default function SuperAdminPlacementDrives() {
+  const { records: projectRecords, fetchAll: fetchProjects } = useProjectStore();
+  const { drives: driveRecords, fetchDrives } = usePlacementStore();
   const [projectId, setProjectId] = useState(null);
   const [driveId, setDriveId] = useState(null);
   const [search, setSearch] = useState("");
 
-  const project = SA_PROJECTS.find((p) => p.id === projectId);
+  useEffect(() => {
+    fetchProjects();
+    fetchDrives();
+  }, [fetchDrives, fetchProjects]);
+
+  const projects = useMemo(() => selectSuperAdminProjectHierarchy(projectRecords), [projectRecords]);
+  const placementDrives = useMemo(() => selectSuperAdminPlacementDrives(driveRecords), [driveRecords]);
+  const project = projects.find((p) => p.id === projectId);
   const drives = useMemo(() => {
     if (!project) return [];
-    return SA_PLACEMENT_DRIVES.filter((d) => d.project === project.name);
-  }, [project]);
-  const drive = SA_PLACEMENT_DRIVES.find((d) => d.id === driveId);
+    return placementDrives.filter((d) => d.projectId === project.id);
+  }, [placementDrives, project]);
+  const drive = placementDrives.find((d) => d.id === driveId);
 
   const students = useMemo(() => {
     if (!drive?.students) return [];
@@ -31,7 +45,8 @@ export default function SuperAdminPlacementDrives() {
   }, [drive, search]);
 
   const pg = usePagination(students);
-  useEffect(() => { pg.setPage(1); }, [search]);
+  const resetPage = pg.setPage;
+  useEffect(() => { resetPage(1); }, [resetPage, search]);
 
   const breadcrumb = ["All Projects"];
   if (project) breadcrumb.push(project.name);
@@ -45,8 +60,8 @@ export default function SuperAdminPlacementDrives() {
       {/* LEVEL 1: Projects */}
       {!project && (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {SA_PROJECTS.map((p) => {
-            const pDrives = SA_PLACEMENT_DRIVES.filter((d) => d.project === p.name);
+          {projects.map((p) => {
+            const pDrives = placementDrives.filter((d) => d.projectId === p.id);
             const totalSelected = pDrives.reduce((s, d) => s + d.selected, 0);
             return (
               <ProjectCard

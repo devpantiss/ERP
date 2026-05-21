@@ -9,31 +9,8 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { FaGlobeAsia, FaFire, FaLayerGroup } from "react-icons/fa";
-
-/* ================= DUMMY DATA ================= */
-
-const openings = [
-  { country: "India", state: "Odisha", district: "Baleshwar", vacancies: 18 },
-  { country: "India", state: "Odisha", district: "Jajpur", vacancies: 25 },
-  { country: "India", state: "Odisha", district: "Keonjhar", vacancies: 16 },
-  { country: "India", state: "Odisha", district: "Khordha", vacancies: 20 },
-  { country: "India", state: "Odisha", district: "Cuttack", vacancies: 14 },
-
-  { country: "India", state: "West Bengal", vacancies: 22 },
-  { country: "India", state: "Jharkhand", vacancies: 18 },
-  { country: "India", state: "Bihar", vacancies: 14 },
-  { country: "India", state: "Gujarat", vacancies: 28 },
-  { country: "India", state: "Maharashtra", vacancies: 32 },
-
-  { country: "United Arab Emirates", vacancies: 20 },
-  { country: "Australia", vacancies: 60 },
-  { country: "South Africa", vacancies: 14 },
-  { country: "Russia", vacancies: 28 },
-  { country: "Germany", vacancies: 10 },
-  { country: "Brazil", vacancies: 9 },
-  { country: "Canada", vacancies: 22 },
-  { country: "Sweden", vacancies: 98 },
-];
+import { usePlacementStore } from "../../../stores/placementStore";
+import { selectJobOpeningRows, selectOpeningGeoRows } from "../../../stores/selectors/placementSelectors";
 
 /* ================= MAP CONFIG ================= */
 
@@ -114,10 +91,17 @@ function MapSkeleton() {
 /* ================= MAIN ================= */
 
 export default function OpeningGeoMapSection() {
+  const { drives, fetchDrives } = usePlacementStore();
   const [level, setLevel] = useState("odisha");
   const [geoData, setGeoData] = useState(null);
   const [hoveredName, setHoveredName] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDrives();
+  }, [fetchDrives]);
+
+  const openings = useMemo(() => selectOpeningGeoRows(selectJobOpeningRows(drives)), [drives]);
 
   /* LOAD GEOJSON */
 
@@ -215,7 +199,7 @@ export default function OpeningGeoMapSection() {
 
     const highest = openings.reduce(
       (max, o) => (o.vacancies > max.vacancies ? o : max),
-      openings[0]
+      { vacancies: 0 }
     );
 
     return {
@@ -223,7 +207,7 @@ export default function OpeningGeoMapSection() {
       regions: openings.length,
       highest,
     };
-  }, []);
+  }, [openings]);
 
   /* STYLE */
 

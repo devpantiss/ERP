@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import {
   Users, Search, Plus, Shield, GraduationCap, Briefcase, UserCog,
@@ -6,46 +6,17 @@ import {
   Send, FolderKanban, MapPin
 } from "lucide-react";
 import { usePagination, Pagination } from "./SuperAdminSharedComponents";
-import { SA_PROJECTS } from "./superAdminData";
-import { ALL_USERS } from "./superAdminUsers";
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectEmployeeDirectory } from "../../stores/selectors/employeeSelectors";
+import { selectSuperAdminProjectHierarchy } from "../../stores/selectors/superAdminSelectors";
 
-const ROLE_TABS = ["All", "Admin", "Trainer", "Mobilizer", "Placement Officer"];
-const EMPLOYEE_ROLES = ["Admin", "Trainer", "Mobilizer", "Placement Officer"];
 const ROLE_PREFIX = {
   Admin: "ADM",
   Trainer: "TRN",
   Mobilizer: "MOB",
   "Placement Officer": "PLC",
 };
-
-const TRAINER_TRAITS = [
-  "Electrical",
-  "HEMM",
-  "Dumper Operator",
-  "Fitter",
-  "Welder",
-  "Solar Technician",
-  "Retail Sales",
-  "Data Entry",
-  "Healthcare",
-  "Construction",
-];
-
-const CENTER_OPTIONS = Array.from(
-  new Set(SA_PROJECTS.flatMap((project) => project.centers.map((center) => center.name)))
-).sort();
-
-const PROJECT_CENTER_MAP = SA_PROJECTS.reduce((acc, project) => {
-  acc[project.name] = project.centers.map((center) => center.name);
-  return acc;
-}, {});
-
-const PROJECT_OPTIONS = Array.from(
-  new Set([
-    ...SA_PROJECTS.map((project) => project.name),
-    ...ALL_USERS.flatMap((user) => user.projects || []),
-  ])
-);
 
 const ROLE_BADGE = {
   Admin: "bg-violet-500/15 text-violet-400 border-violet-500/30",
@@ -98,16 +69,8 @@ function generateUserId(role, users) {
   return `${prefix}-${String(maxId + 1).padStart(3, "0")}`;
 }
 
-function inferProjects(user) {
-  if (Array.isArray(user.projects) && user.projects.length > 0) return user.projects;
-  const matched = SA_PROJECTS.filter((project) =>
-    project.centers.some((center) => center.name === user.center)
-  ).map((project) => project.name);
-  return matched.length > 0 ? [matched[0]] : [];
-}
-
 function normalizeUser(user) {
-  const projectAssignments = user.projectAssignments || inferProjects(user);
+  const projectAssignments = user.projectAssignments || (user.project ? [user.project] : []);
   const centerAssignments = user.centerAssignments || (user.center ? [user.center] : []);
   return {
     ...user,
@@ -120,9 +83,25 @@ function normalizeUser(user) {
   };
 }
 
-function getCentersForProjects(projects) {
-  const centers = projects.flatMap((project) => PROJECT_CENTER_MAP[project] || CENTER_OPTIONS);
+function getCentersForProjects(projects, projectCenterMap, centerOptions) {
+  const centers = projects.flatMap((project) => projectCenterMap[project] || centerOptions);
   return Array.from(new Set(centers)).sort();
+}
+
+function seedUsers(employeeRows, projectRecords) {
+  return employeeRows
+    .filter((employee) => ["Admin", "Trainer", "Mobilizer", "Placement Officer"].includes(employee.role))
+    .map((employee) => ({
+      ...employee,
+      projectAssignments: (employee.projectIds || [])
+        .map((projectId) => projectRecords.find((project) => project.id === projectId)?.name)
+        .filter(Boolean),
+      centerAssignments: [employee.center].filter((center) => center && center !== "Unassigned"),
+      loginId: employee.employeeCode || employee.id,
+      password: "",
+      trait: employee.role === "Trainer" ? employee.designation || employee.trait || "" : employee.trait || "",
+      credentialsSent: false,
+    }))
 }
 
 function ModalField({ label, children }) {
@@ -139,7 +118,40 @@ function ModalField({ label, children }) {
 /* ===================== COMPONENT ===================== */
 
 export default function SuperAdminUserManagement() {
-  const [users, setUsers] = useState(() => ALL_USERS.map(normalizeUser));
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  const { records: projectRecords, fetchAll } = useProjectStore();
+  useEffect(() => {
+    fetchWithAssignments();
+    fetchAll();
+  }, [fetchAll, fetchWithAssignments]);
+  const employeeRows = useMemo(() => selectEmployeeDirectory(employees), [employees]);
+  const projectHierarchy = useMemo(() => selectSuperAdminProjectHierarchy(projectRecords), [projectRecords]);
+  const seedUserRows = useMemo(() => seedUsers(employeeRows, projectRecords), [employeeRows, projectRecords]);
+  const projectOptions = useMemo(() => projectHierarchy.map((project) => project.name), [projectHierarchy]);
+  const centerOptions = useMemo(
+    () => Array.from(new Set(projectHierarchy.flatMap((project) => project.centers.map((center) => center.name)))).sort(),
+    [projectHierarchy]
+  );
+  const projectCenterMap = useMemo(
+    () => projectHierarchy.reduce((acc, project) => {
+      acc[project.name] = project.centers.map((center) => center.name);
+      return acc;
+    }, {}),
+    [projectHierarchy]
+  );
+  const trainerTraits = useMemo(
+    () => Array.from(new Set(projectHierarchy.flatMap((project) => project.centers.flatMap((center) => center.batches.map((batch) => batch.jobRole))))).sort(),
+    [projectHierarchy]
+  );
+  const employeeRoles = useMemo(
+    () => Array.from(new Set(seedUserRows.map((user) => user.role))).sort(),
+    [seedUserRows]
+  );
+  const roleTabs = useMemo(() => ["All", ...employeeRoles], [employeeRoles]);
+  const [users, setUsers] = useState([]);
+  useEffect(() => {
+    setUsers((current) => (current.length ? current : seedUserRows.map(normalizeUser)));
+  }, [seedUserRows]);
   const [activeTab, setActiveTab] = useState("All");
   const [search, setSearch] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -173,8 +185,8 @@ export default function SuperAdminUserManagement() {
     ? users.find((user) => user.id === assignmentDraft.userId)
     : null;
   const availableCenters = assignmentDraft
-    ? getCentersForProjects(assignmentDraft.projects)
-    : CENTER_OPTIONS;
+    ? getCentersForProjects(assignmentDraft.projects, projectCenterMap, centerOptions)
+    : centerOptions;
 
   const updateEmployeeForm = (key, value) => {
     setEmployeeForm((prev) => ({ ...prev, [key]: value }));
@@ -183,7 +195,7 @@ export default function SuperAdminUserManagement() {
   const handleCreateEmployee = () => {
     const trimmed = {
       name: employeeForm.name.trim(),
-      role: employeeForm.role,
+      role: employeeForm.role || employeeRoles[0] || "Admin",
       email: employeeForm.email.trim(),
       phone: employeeForm.phone.trim(),
     };
@@ -224,7 +236,7 @@ export default function SuperAdminUserManagement() {
 
   const setDraftProjects = (projects) => {
     setAssignmentDraft((prev) => {
-      const centers = prev.centers.filter((center) => getCentersForProjects(projects).includes(center));
+      const centers = prev.centers.filter((center) => getCentersForProjects(projects, projectCenterMap, centerOptions).includes(center));
       return { ...prev, projects, centers };
     });
   };
@@ -343,7 +355,7 @@ export default function SuperAdminUserManagement() {
         <div className="flex min-w-0 flex-col gap-4 border-b border-white/[0.08] p-5 lg:flex-row lg:items-center lg:justify-between">
           {/* Role Tabs */}
           <div className="flex min-w-0 max-w-full gap-1 overflow-x-auto rounded-xl bg-transparent/30 p-1">
-            {ROLE_TABS.map((tab) => (
+            {roleTabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => {
@@ -558,7 +570,7 @@ export default function SuperAdminUserManagement() {
                   onChange={(e) => updateEmployeeForm("role", e.target.value)}
                   className={selectClass}
                 >
-                  {EMPLOYEE_ROLES.map((role) => <option key={role} value={role}>{role}</option>)}
+                  {employeeRoles.map((role) => <option key={role} value={role}>{role}</option>)}
                 </select>
               </ModalField>
               <ModalField label="Email">
@@ -638,7 +650,7 @@ export default function SuperAdminUserManagement() {
                       <FolderKanban size={13} /> Projects
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2">
-                      {PROJECT_OPTIONS.map((project) => {
+                      {projectOptions.map((project) => {
                         const active = assignmentDraft.projects.includes(project);
                         return (
                           <button
@@ -703,7 +715,7 @@ export default function SuperAdminUserManagement() {
                       className={selectClass}
                     >
                       <option value="">Select project</option>
-                      {PROJECT_OPTIONS.map((project) => <option key={project} value={project}>{project}</option>)}
+                      {projectOptions.map((project) => <option key={project} value={project}>{project}</option>)}
                     </select>
                   </ModalField>
                   <ModalField label="Center">
@@ -727,7 +739,7 @@ export default function SuperAdminUserManagement() {
                         className={selectClass}
                       >
                         <option value="">Select trade</option>
-                        {TRAINER_TRAITS.map((trait) => <option key={trait} value={trait}>{trait}</option>)}
+                        {trainerTraits.map((trait) => <option key={trait} value={trait}>{trait}</option>)}
                       </select>
                     </ModalField>
                   )}

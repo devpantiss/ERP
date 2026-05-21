@@ -1,4 +1,4 @@
-import { createElement, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import {
   Activity,
   BadgeCheck,
@@ -23,9 +23,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { SA_EMPLOYEES, SA_PLACEMENT_DRIVES, SA_PROJECTS } from "./superAdminData";
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { usePlacementStore } from "../../stores/placementStore";
+import { useProjectStore } from "../../stores/projectStore";
+import {
+  selectSuperAdminPlacementDrives,
+  selectSuperAdminProjectHierarchy,
+} from "../../stores/selectors/superAdminSelectors";
 
-function getProjectStats(project) {
+function getProjectStats(project, employees, placementDrives) {
   const centers = project.centers || [];
   const batches = centers.flatMap((center) => center.batches || []);
   const candidates = batches.flatMap((batch) => batch.candidates || []);
@@ -38,8 +44,8 @@ function getProjectStats(project) {
   const certifiedCandidates = candidates.filter(
     (candidate) => candidate.status === "Completed" && candidate.moduleCompletion >= 80 && candidate.attendance >= 75
   ).length;
-  const employees = SA_EMPLOYEES.filter((employee) => employee.project === project.name);
-  const drives = SA_PLACEMENT_DRIVES.filter((drive) => drive.project === project.name);
+  const projectEmployees = employees.filter((employee) => employee.projectIds?.includes(project.id));
+  const drives = placementDrives.filter((drive) => drive.projectId === project.id);
   const participated = drives.reduce((sum, drive) => sum + drive.participated, 0);
   const selected = drives.reduce((sum, drive) => sum + drive.selected, 0);
   const retained3Months = drives.reduce(
@@ -72,7 +78,7 @@ function getProjectStats(project) {
     certifiedCandidates,
     completedCandidates,
     completedModules,
-    employees: employees.length,
+    employees: projectEmployees.length,
     enrolled,
     enrollmentRate,
     learners,
@@ -175,23 +181,36 @@ function getPortfolioTimeline(projects) {
 }
 
 export default function SuperAdminDashboard() {
+  const { records: projects, fetchAll: fetchProjects } = useProjectStore();
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  const { drives, fetchDrives } = usePlacementStore();
   const [selectedProjectId, setSelectedProjectId] = useState("all");
-  const projectStats = useMemo(() => SA_PROJECTS.map(getProjectStats), []);
+  useEffect(() => {
+    fetchProjects();
+    fetchWithAssignments();
+    fetchDrives();
+  }, [fetchDrives, fetchProjects, fetchWithAssignments]);
+
+  const projectHierarchy = useMemo(() => selectSuperAdminProjectHierarchy(projects), [projects]);
+  const placementDrives = useMemo(() => selectSuperAdminPlacementDrives(drives), [drives]);
+  const projectStats = useMemo(
+    () => projectHierarchy.map((project) => getProjectStats(project, employees, placementDrives)),
+    [employees, placementDrives, projectHierarchy]
+  );
   const selectedProject = useMemo(
     () => projectStats.find((project) => project.id === selectedProjectId),
     [projectStats, selectedProjectId]
   );
-  const visibleProjects = selectedProject ? [selectedProject] : projectStats;
-  const selectedRawProject = useMemo(
-    () => SA_PROJECTS.find((project) => project.id === selectedProjectId),
-    [selectedProjectId]
+  const visibleProjects = useMemo(
+    () => (selectedProject ? [selectedProject] : projectStats),
+    [projectStats, selectedProject]
   );
 
   const totals = useMemo(() => buildDashboardTotals(visibleProjects), [visibleProjects]);
   const targets = useMemo(() => getDashboardTargets(totals), [totals]);
 
-  const chartData = selectedRawProject
-    ? getCenterChartData(selectedRawProject)
+  const chartData = selectedProject
+    ? getCenterChartData(selectedProject)
     : projectStats.map((project) => ({
         name: project.name,
         Enrolled: project.enrolled,
@@ -237,7 +256,7 @@ export default function SuperAdminDashboard() {
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300/80">Portfolio Status</p>
             <p className="mt-1 flex items-center gap-2 text-sm font-black text-emerald-200">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              {selectedProject ? selectedProject.status : `${totals.activeProjects}/${SA_PROJECTS.length} Active Projects`}
+              {selectedProject ? selectedProject.status : `${totals.activeProjects}/${projectStats.length} Active Projects`}
             </p>
           </div>
         </div>

@@ -7,42 +7,20 @@ import {
   BookOpen,
   Wrench,
 } from "lucide-react";
+import { useAuthStore } from "../../stores/authStore";
+import { selectTrainerLearningHierarchy } from "../../stores/selectors/trainingSelectors";
 
 /* ================= CONFIG ================= */
 
 const MODULE_VIDEO_URL =
   "https://www.youtube.com/embed/dQw4w9WgXcQ";
 
-/* Departments Data */
-
-const DATA = {
-  "Mines, Steel & Aluminium": {
-    "Center A": {
-      "Underground Mining Technician": [
-        "Batch A",
-        "Batch B",
-      ],
-    },
-  },
-
-  "Power & Green Energy": {
-    "Center B": {
-      "Solar PV Installer": ["Batch C"],
-    },
-  },
-};
-
-/* Generate Modules */
-
-const generateModules = () =>
-  Array.from({ length: 12 }, (_, i) => ({
-    id: i + 1,
-    title: `Module ${i + 1}`,
-  }));
-
 /* ================= MAIN COMPONENT ================= */
 
 export default function TrainerLabsModules() {
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const trainerEmployeeId = currentUser?.employeeId || "EMP-0001";
+  const { departments, modules } = selectTrainerLearningHierarchy(trainerEmployeeId, 12);
   const [dept, setDept] = useState(null);
   const [center, setCenter] = useState(null);
   const [role, setRole] = useState(null);
@@ -53,13 +31,7 @@ export default function TrainerLabsModules() {
   /* Completed Modules State */
 
   const [completedData, setCompletedData] =
-    useState({
-      "Batch A": [1, 2, 3, 4],
-      "Batch B": [1, 2],
-    });
-
-  const modules = generateModules();
-
+    useState({});
   /* Navigation Reset */
 
   const goDept = () => {
@@ -159,7 +131,7 @@ export default function TrainerLabsModules() {
         {!dept && (
           <SelectionGrid
             title="Select Department"
-            options={Object.keys(DATA)}
+            options={Object.keys(departments)}
             onSelect={setDept}
           />
         )}
@@ -167,7 +139,7 @@ export default function TrainerLabsModules() {
         {dept && !center && (
           <SelectionGrid
             title="Select Center"
-            options={Object.keys(DATA[dept])}
+            options={Object.keys(departments[dept])}
             onSelect={setCenter}
           />
         )}
@@ -175,7 +147,7 @@ export default function TrainerLabsModules() {
         {center && !role && (
           <SelectionGrid
             title="Select Job Role"
-            options={Object.keys(DATA[dept][center])}
+            options={Object.keys(departments[dept][center])}
             onSelect={setRole}
           />
         )}
@@ -183,7 +155,7 @@ export default function TrainerLabsModules() {
         {role && !batch && (
           <SelectionGrid
             title="Select Batch"
-            options={DATA[dept][center][role]}
+            options={departments[dept][center][role]}
             onSelect={setBatch}
           />
         )}

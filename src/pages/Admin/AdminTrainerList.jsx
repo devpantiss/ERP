@@ -1,12 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, Mail, Phone, Users } from "lucide-react";
 import {
   DataTable,
   ProjectCards,
   WorkspaceHeader,
 } from "../../components/Admin/ProjectWorkspace";
-import { buildProjectSummaries } from "../../components/Admin/projectWorkspaceUtils";
-import { EMPLOYEES } from "./adminPortalData";
+import { useEmployeeStore } from "../../stores/employeeStore.js";
+import {
+  selectEmployeeDirectory,
+  selectProjectCardsFromEmployees,
+} from "../../stores/selectors/employeeSelectors.js";
 
 const ROLE_STYLES = {
   Trainer: "bg-violet-500/10 text-violet-300 border-violet-400/20",
@@ -15,6 +18,7 @@ const ROLE_STYLES = {
 };
 
 export default function AdminTrainerList() {
+  const { records, fetchWithAssignments, loading } = useEmployeeStore();
   const [selectedProject, setSelectedProject] = useState(null);
   const [filters, setFilters] = useState({
     search: "",
@@ -23,24 +27,29 @@ export default function AdminTrainerList() {
     status: "All",
   });
 
-  const projects = useMemo(() => buildProjectSummaries(EMPLOYEES), []);
+  useEffect(() => {
+    fetchWithAssignments();
+  }, [fetchWithAssignments]);
+
+  const employees = useMemo(() => selectEmployeeDirectory(records), [records]);
+  const projects = useMemo(() => selectProjectCardsFromEmployees(records), [records]);
   const projectEmployees = useMemo(
     () =>
       selectedProject
-        ? EMPLOYEES.filter((employee) => employee.project === selectedProject.name)
+        ? employees.filter((employee) => employee.projectId === selectedProject.id)
         : [],
-    [selectedProject]
+    [employees, selectedProject]
   );
-  const centers = useMemo(() => ["All", ...new Set(EMPLOYEES.map((employee) => employee.center))], []);
-  const roles = useMemo(() => ["All", ...new Set(EMPLOYEES.map((employee) => employee.role))], []);
-  const statuses = useMemo(() => ["All", ...new Set(EMPLOYEES.map((employee) => employee.status))], []);
+  const centers = useMemo(() => ["All", ...new Set(employees.map((employee) => employee.center))], [employees]);
+  const roles = useMemo(() => ["All", ...new Set(employees.map((employee) => employee.role))], [employees]);
+  const statuses = useMemo(() => ["All", ...new Set(employees.map((employee) => employee.status))], [employees]);
   const filteredProjectEmployees = useMemo(
     () => filterEmployeeRows(projectEmployees, filters),
     [projectEmployees, filters]
   );
   const filteredEmployees = useMemo(
-    () => filterEmployeeRows(EMPLOYEES, filters),
-    [filters]
+    () => filterEmployeeRows(employees, filters),
+    [employees, filters]
   );
 
   const columns = [
@@ -130,7 +139,7 @@ export default function AdminTrainerList() {
         subtitle={
           selectedProject
             ? `${filteredProjectEmployees.length} employees match the selected filters.`
-            : "Select a project to view its employee directory."
+            : loading ? "Loading centralized employee registry..." : "Select a project to view its employee directory."
         }
         selectedProject={selectedProject}
         onBack={() => setSelectedProject(null)}

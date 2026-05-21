@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SlidePanel from "../../common/SlidePanel";
 import * as XLSX from "xlsx";
 import {
@@ -9,81 +9,77 @@ import {
   FaPlus,
   FaSearch,
   FaEye,
-  FaTimes,
   FaEdit,
   FaChevronLeft,
   FaChevronRight,
   FaFileExport,
 } from "react-icons/fa";
-
-/* ================= DUMMY DATA ================= */
-
-const companies = [
-  "Tata Steel",
-  "Adani",
-  "L&T",
-  "Reliance",
-  "Vedanta",
-  "JSW",
-  "UltraTech",
-];
-
-const locations = ["Mumbai", "Jamshedpur", "Gujarat", "Pune", "Delhi"];
-
-const roles = [
-  "Technician",
-  "Plant Operator",
-  "Site Supervisor",
-  "Electrician",
-  "Maintenance Engineer",
-];
-
-const generateJobs = () =>
-  Array.from({ length: 50 }, (_, i) => ({
-    id: i + 1,
-    company: companies[i % companies.length],
-    role: roles[i % roles.length],
-    location: locations[i % locations.length],
-    salary: 18000 + (i % 6) * 4000,
-    eligibility:
-      "ITI / Diploma with minimum 60% marks. Basic technical knowledge required.",
-    description:
-      "Responsible for operational activities, maintenance support, and safety compliance.",
-    vacancies: 10 + (i % 10),
-    status: i % 3 === 0 ? "Closed" : "Open",
-  }));
+import { usePlacementStore } from "../../../stores/placementStore";
+import { selectJobOpeningRows } from "../../../stores/selectors/placementSelectors";
 
 /* ================= MAIN ================= */
 
 export default function Section1() {
-  const [data, setData] = useState(generateJobs());
+  const { drives, fetchDrives } = usePlacementStore();
+  const [editedRows, setEditedRows] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [salaryFilter, setSalaryFilter] = useState("");
   const [modalContent, setModalContent] = useState(null);
   const [editJob, setEditJob] = useState(null);
   const [page, setPage] = useState(1);
 
   const pageSize = 10;
 
+  useEffect(() => {
+    fetchDrives();
+  }, [fetchDrives]);
+
+  const data = useMemo(() => {
+    return selectJobOpeningRows(drives).map((row) => ({ ...row, ...(editedRows[row.id] || {}) }));
+  }, [drives, editedRows]);
+
+  const locations = useMemo(() => Array.from(new Set(data.map((job) => job.location))).filter(Boolean), [data]);
+
+  const filteredData = useMemo(() => {
+    return data.filter((job) => {
+      const matchesSearch =
+        !searchTerm ||
+        job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        job.project.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesLocation = !locationFilter || job.location === locationFilter;
+      const matchesSalary =
+        !salaryFilter ||
+        (salaryFilter === "under-18000" && job.salary < 18000) ||
+        (salaryFilter === "18000-22000" && job.salary >= 18000 && job.salary <= 22000) ||
+        (salaryFilter === "above-22000" && job.salary > 22000);
+
+      return matchesSearch && matchesLocation && matchesSalary;
+    });
+  }, [data, locationFilter, salaryFilter, searchTerm]);
+
   /* ================= PAGINATION ================= */
 
-  const totalPages = Math.ceil(data.length / pageSize);
+  const totalPages = Math.ceil(filteredData.length / pageSize);
 
-  const paginatedData = data.slice(
+  const paginatedData = filteredData.slice(
     (page - 1) * pageSize,
     page * pageSize
   );
 
   /* ================= SUMMARY ================= */
 
-  const totalOpenings = data.length;
-  const totalCompanies = new Set(data.map((d) => d.company)).size;
-  const totalVacancies = data.reduce((acc, d) => acc + d.vacancies, 0);
+  const totalOpenings = filteredData.length;
+  const totalCompanies = new Set(filteredData.map((d) => d.company)).size;
+  const totalVacancies = filteredData.reduce((acc, d) => acc + d.vacancies, 0);
   const avgSalary =
-    data.reduce((acc, d) => acc + d.salary, 0) / (data.length || 1);
+    filteredData.reduce((acc, d) => acc + d.salary, 0) / (filteredData.length || 1);
 
   /* ================= EXPORT EXCEL ================= */
 
   const exportExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(data);
+    const worksheet = XLSX.utils.json_to_sheet(filteredData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Jobs");
     XLSX.writeFile(workbook, "Job_Openings.xlsx");
@@ -92,9 +88,7 @@ export default function Section1() {
   /* ================= UPDATE JOB ================= */
 
   const saveEdit = (updated) => {
-    setData((prev) =>
-      prev.map((job) => (job.id === updated.id ? updated : job))
-    );
+    setEditedRows((prev) => ({ ...prev, [updated.id]: updated }));
     setEditJob(null);
   };
 
@@ -123,7 +117,15 @@ export default function Section1() {
               FILTER JOB OPENINGS
             </h3>
 
-            <button className="text-xs text-white/60">
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setLocationFilter("");
+                setSalaryFilter("");
+                setPage(1);
+              }}
+              className="text-xs text-white/60"
+            >
               Clear Filters
             </button>
           </div>
@@ -134,16 +136,41 @@ export default function Section1() {
               <FaSearch className="absolute top-3 left-3 text-gray-500" />
               <input
                 placeholder="Search..."
+                value={searchTerm}
+                onChange={(event) => {
+                  setSearchTerm(event.target.value);
+                  setPage(1);
+                }}
                 className="w-full bg-[#020617] border border-gray-700 rounded-lg pl-9 py-2"
               />
             </div>
 
-            <select className="bg-[#020617] border border-gray-700 rounded-lg p-2">
-              <option>All Locations</option>
+            <select
+              value={locationFilter}
+              onChange={(event) => {
+                setLocationFilter(event.target.value);
+                setPage(1);
+              }}
+              className="bg-[#020617] border border-gray-700 rounded-lg p-2"
+            >
+              <option value="">All Locations</option>
+              {locations.map((location) => (
+                <option key={location} value={location}>{location}</option>
+              ))}
             </select>
 
-            <select className="bg-[#020617] border border-gray-700 rounded-lg p-2">
-              <option>Salary Range</option>
+            <select
+              value={salaryFilter}
+              onChange={(event) => {
+                setSalaryFilter(event.target.value);
+                setPage(1);
+              }}
+              className="bg-[#020617] border border-gray-700 rounded-lg p-2"
+            >
+              <option value="">Salary Range</option>
+              <option value="under-18000">Below ₹18,000</option>
+              <option value="18000-22000">₹18,000 - ₹22,000</option>
+              <option value="above-22000">Above ₹22,000</option>
             </select>
 
           </div>
@@ -259,7 +286,7 @@ export default function Section1() {
 
           <div className="text-sm text-white/60">
             Showing {(page - 1) * pageSize + 1} to{" "}
-            {Math.min(page * pageSize, data.length)} of {data.length}
+            {Math.min(page * pageSize, filteredData.length)} of {filteredData.length}
           </div>
 
           <div className="flex gap-2">

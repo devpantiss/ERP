@@ -1,36 +1,13 @@
 import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from "recharts";
 import { Download, TrendingUp, Users, Briefcase } from "lucide-react";
-
-const ENROLLMENT_DATA = [
-  { month: "Jul", enrolled: 45 }, { month: "Aug", enrolled: 62 }, { month: "Sep", enrolled: 78 },
-  { month: "Oct", enrolled: 55 }, { month: "Nov", enrolled: 90 }, { month: "Dec", enrolled: 72 },
-  { month: "Jan", enrolled: 85 }, { month: "Feb", enrolled: 110 },
-];
-
-const PLACEMENT_DATA = [
-  { month: "Jul", rate: 68 }, { month: "Aug", rate: 72 }, { month: "Sep", rate: 75 },
-  { month: "Oct", rate: 71 }, { month: "Nov", rate: 78 }, { month: "Dec", rate: 82 },
-  { month: "Jan", rate: 85 }, { month: "Feb", rate: 88 },
-];
-
-const TRAINING_HOURS = [
-  { center: "Angul", hours: 1240 }, { center: "Jajpur", hours: 980 }, { center: "Kalahandi", hours: 1560 },
-  { center: "Jharsuguda", hours: 720 }, { center: "Keonjhar", hours: 1100 }, { center: "Sundargarh", hours: 1340 },
-];
-
-const SECTOR_DATA = [
-  { name: "IT & ITES", value: 32, color: "#8b5cf6" },
-  { name: "Healthcare", value: 24, color: "#22d3ee" },
-  { name: "Manufacturing", value: 18, color: "#10b981" },
-  { name: "Retail", value: 14, color: "#facc15" },
-  { name: "Others", value: 12, color: "#f43f5e" },
-];
+import { selectAdminReportAnalytics } from "../../stores/selectors/analyticsSelectors";
 
 const tooltipStyle = {  border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" };
 
 export default function AdminReports() {
   const [activeTab, setActiveTab] = useState("enrollment");
+  const analytics = selectAdminReportAnalytics();
 
   return (
     <div className="space-y-6">
@@ -46,21 +23,20 @@ export default function AdminReports() {
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: "Total Enrollments", value: "1,370", icon: Users, change: "+12%" },
-          { label: "Placement Rate", value: "82%", icon: Briefcase, change: "+6%" },
-          { label: "Training Hours", value: "6,940h", icon: TrendingUp, change: "+18%" },
-          { label: "Active Sectors", value: "5", icon: TrendingUp, change: "Stable" },
-        ].map((s) => (
+        {analytics.summary.map((s, index) => {
+          const icons = [Users, Briefcase, TrendingUp, TrendingUp];
+          const Icon = icons[index] || TrendingUp;
+          return (
           <div key={s.label} className="bg-[#111827] border border-slate-700 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-white/60">{s.label}</span>
-              <s.icon size={16} className="text-violet-400" />
+              <Icon size={16} className="text-violet-400" />
             </div>
             <p className="text-xl font-semibold text-slate-100">{s.value}</p>
             <p className="text-xs text-emerald-400 mt-1">{s.change}</p>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Tab Navigation */}
@@ -80,7 +56,7 @@ export default function AdminReports() {
             <h3 className="text-sm font-medium text-violet-400 mb-6">Monthly Enrollment Trends</h3>
             <div className="h-72">
               <ResponsiveContainer>
-                <BarChart data={ENROLLMENT_DATA}>
+                <BarChart data={analytics.enrollmentData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
                   <YAxis stroke="#64748b" fontSize={12} />
@@ -97,7 +73,7 @@ export default function AdminReports() {
             <h3 className="text-sm font-medium text-violet-400 mb-6">Placement Rate Trends</h3>
             <div className="h-72">
               <ResponsiveContainer>
-                <LineChart data={PLACEMENT_DATA}>
+                <LineChart data={analytics.placementData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="month" stroke="#64748b" fontSize={12} />
                   <YAxis stroke="#64748b" fontSize={12} domain={[60, 100]} />
@@ -114,7 +90,7 @@ export default function AdminReports() {
             <h3 className="text-sm font-medium text-violet-400 mb-6">Training Hours by Center</h3>
             <div className="h-72">
               <ResponsiveContainer>
-                <BarChart data={TRAINING_HOURS} layout="vertical">
+                <BarChart data={analytics.trainingHours} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis type="number" stroke="#64748b" fontSize={12} />
                   <YAxis dataKey="center" type="category" stroke="#64748b" fontSize={12} width={80} />
@@ -132,8 +108,8 @@ export default function AdminReports() {
             <div className="h-72">
               <ResponsiveContainer>
                 <PieChart>
-                  <Pie data={SECTOR_DATA} cx="50%" cy="50%" innerRadius={70} outerRadius={100} dataKey="value" paddingAngle={3} strokeWidth={0}>
-                    {SECTOR_DATA.map((e, i) => <Cell key={i} fill={e.color} />)}
+                  <Pie data={analytics.sectorData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} dataKey="value" paddingAngle={3} strokeWidth={0}>
+                    {analytics.sectorData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend formatter={(v) => <span className="text-sm text-white/80">{v}</span>} />

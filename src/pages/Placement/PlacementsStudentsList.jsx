@@ -1,7 +1,9 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
 import TableExportActions from "../../components/common/TableExportActions";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
+import { usePlacementStore } from "../../stores/placementStore";
+import { selectPlacementCandidateRows } from "../../stores/selectors/placementSelectors";
 import {
   FaPlus,
   FaUsers,
@@ -15,27 +17,6 @@ import {
 } from "react-icons/fa";
 import PlacementStudentDetailsStepperPage from "./PlacementStudentDetailsStepper";
 
-/* ================= DUMMY DATA ================= */
-
-const projects = ["Mining", "Shipping", "Construction", "Power"];
-const companies = ["Tata Steel", "Adani", "L&T", "JSW", "Reliance", "Vedanta"];
-const centers = ["Angul", "Jajpur", "Keonjhar", "Kalahandi"];
-const jobRoles = ["Technician", "Operator", "Safety Officer", "Fitter"];
-
-const generateData = () =>
-  Array.from({ length: 30 }, (_, i) => ({
-    id: i + 1,
-    name: `Candidate ${i + 1}`,
-    project: projects[i % projects.length],
-    center: centers[i % centers.length],
-    batch: `B00${(i % 5) + 1}`,
-    company: companies[i % companies.length],
-    designation: jobRoles[i % jobRoles.length],
-    salary: 18000 + (i % 5) * 3000,
-    joiningDate: "2026-01-15",
-    docs: {},
-  }));
-
 const getStatus = (row) => {
   if (row.docs.offer && row.docs.bank) return "Verified";
   return "Pending";
@@ -44,7 +25,8 @@ const getStatus = (row) => {
 /* ================= MAIN COMPONENT ================= */
 
 export default function CandidatePlacementSheetEnterpriseDark() {
-  const [data, setData] = useState(generateData());
+  const { drives, fetchDrives } = usePlacementStore();
+  const [documentState, setDocumentState] = useState({});
   const [previewFile, setPreviewFile] = useState(null);
   const [progress, setProgress] = useState({});
   const [page, setPage] = useState(1);
@@ -58,6 +40,25 @@ export default function CandidatePlacementSheetEnterpriseDark() {
   const [showForm, setShowForm] = useState(false);
 
   const pageSize = 20;
+
+  useEffect(() => {
+    fetchDrives();
+  }, [fetchDrives]);
+
+  const baseRows = useMemo(() => selectPlacementCandidateRows(drives), [drives]);
+  const data = useMemo(
+    () =>
+      baseRows.map((row) => ({
+        ...row,
+        docs: { ...row.docs, ...(documentState[row.id] || {}) },
+      })),
+    [baseRows, documentState]
+  );
+
+  const projects = useMemo(() => Array.from(new Set(data.map((row) => row.project))).filter(Boolean), [data]);
+  const centers = useMemo(() => Array.from(new Set(data.map((row) => row.center))).filter(Boolean), [data]);
+  const jobRoles = useMemo(() => Array.from(new Set(data.map((row) => row.designation))).filter(Boolean), [data]);
+  const batches = useMemo(() => Array.from(new Set(data.map((row) => row.batch))).filter(Boolean), [data]);
 
   const filteredData = useMemo(() => {
     return data.filter((row) => {
@@ -89,6 +90,7 @@ export default function CandidatePlacementSheetEnterpriseDark() {
 
   const total = filteredData.length;
   const placed = filteredData.filter((d) => d.company).length;
+  const documentsPending = filteredData.filter((row) => getStatus(row) !== "Verified").length;
   const avgSalary =
     filteredData.reduce((acc, curr) => acc + (curr.salary || 0), 0) /
     (filteredData.length || 1);
@@ -109,19 +111,13 @@ export default function CandidatePlacementSheetEnterpriseDark() {
       if (percent >= 100) {
         clearInterval(interval);
 
-        setData((prev) =>
-          prev.map((row) =>
-            row.id === id
-              ? {
-                  ...row,
-                  docs: {
-                    ...row.docs,
-                    [field]: file,
-                  },
-                }
-              : row
-          )
-        );
+        setDocumentState((prev) => ({
+          ...prev,
+          [id]: {
+            ...(prev[id] || {}),
+            [field]: file,
+          },
+        }));
       }
     }, 150);
   };
@@ -188,7 +184,7 @@ export default function CandidatePlacementSheetEnterpriseDark() {
         />
         <StatCard
           title="Documents Pending"
-          value={total - placed}
+          value={documentsPending}
           icon={<FaFileAlt />}
         />
       </div>
@@ -331,7 +327,7 @@ export default function CandidatePlacementSheetEnterpriseDark() {
                 className="w-full bg-[#020617] border border-gray-700 rounded-lg p-2 text-sm"
               >
                 <option value="">All Batches</option>
-                {Array.from(new Set(data.map((row) => row.batch))).map((batch) => (
+                {batches.map((batch) => (
                   <option key={batch} value={batch}>{batch}</option>
                 ))}
               </select>
@@ -555,8 +551,9 @@ function UploadCell({ file, progress, onUpload, onPreview }) {
 }
 
 function PreviewModal({ file, onClose }) {
-  const url = URL.createObjectURL(file);
-  const isImage = file.type.startsWith("image");
+  const url = file.url || URL.createObjectURL(file);
+  const type = file.type || "";
+  const isImage = type.startsWith("image") || /\.(jpe?g|png|webp)$/i.test(url);
 
   return (
     <SlidePanel open={true} onClose={onClose} title="Document Preview" width="lg">

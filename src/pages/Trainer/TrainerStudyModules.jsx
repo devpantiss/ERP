@@ -9,6 +9,8 @@ import {
   Video,
 } from "lucide-react";
 import TrainerLiveFeedHost from "./TrainerLiveFeedHost";
+import { useAuthStore } from "../../stores/authStore";
+import { selectTrainerLearningHierarchy } from "../../stores/selectors/trainingSelectors";
 
 /* ===================== CONFIG ===================== */
 
@@ -17,35 +19,12 @@ const MODULE_VIDEO_URL =
 
 const ACTIVITY_IMAGE = "/activity.png";
 
-/* ===================== DATA ===================== */
-
-const DATA = {
-  "Mines, Steel & Aluminium": {
-    "Center A": {
-      "Underground Mining Technician": [
-        "Batch A",
-        "Batch B",
-      ],
-      "Blast Furnace Operator": ["Batch C"],
-    },
-  },
-
-  "Power & Green Energy": {
-    "Center B": {
-      "Solar PV Installer": ["Batch D"],
-    },
-  },
-};
-
-const generateModules = () =>
-  Array.from({ length: 45 }, (_, i) => ({
-    id: i + 1,
-    title: `Module ${i + 1}`,
-  }));
-
 /* ===================== MAIN COMPONENT ===================== */
 
 export default function TrainerStudyModules() {
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const trainerEmployeeId = currentUser?.employeeId || "EMP-0001";
+  const { departments, modules } = selectTrainerLearningHierarchy(trainerEmployeeId, 45);
   const [dept, setDept] = useState(null);
   const [center, setCenter] = useState(null);
   const [role, setRole] = useState(null);
@@ -53,9 +32,6 @@ export default function TrainerStudyModules() {
   const [module, setModule] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
-
-  const modules = generateModules();
-
   /* NAVIGATION RESET */
 
   const goDept = () => {
@@ -154,7 +130,7 @@ export default function TrainerStudyModules() {
         {!dept && (
           <SelectionGrid
             title="Select Department"
-            options={Object.keys(DATA)}
+            options={Object.keys(departments)}
             onSelect={setDept}
           />
         )}
@@ -162,7 +138,7 @@ export default function TrainerStudyModules() {
         {dept && !center && (
           <SelectionGrid
             title="Select Center"
-            options={Object.keys(DATA[dept])}
+            options={Object.keys(departments[dept])}
             onSelect={setCenter}
           />
         )}
@@ -170,7 +146,7 @@ export default function TrainerStudyModules() {
         {center && !role && (
           <SelectionGrid
             title="Select Job Role"
-            options={Object.keys(DATA[dept][center])}
+            options={Object.keys(departments[dept][center])}
             onSelect={setRole}
           />
         )}
@@ -178,7 +154,7 @@ export default function TrainerStudyModules() {
         {role && !batch && (
           <SelectionGrid
             title="Select Batch"
-            options={DATA[dept][center][role]}
+            options={departments[dept][center][role]}
             onSelect={setBatch}
           />
         )}

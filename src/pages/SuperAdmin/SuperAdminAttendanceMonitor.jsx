@@ -1,32 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  CalendarCheck, Building2, Users, ChevronDown, ChevronUp, CheckCircle2, AlertTriangle
+  CalendarCheck, Users, ChevronDown, ChevronUp
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { ALL_USERS } from "./superAdminUsers";
-
-const ALL_STAFF = ALL_USERS.filter(u => u.role !== "Admin");
-
-const STAFF_DETAILS = {
-  "PSU-TRN-001": { weekPct: "96%", monthPct: "94%", alerts: 0, daily: [{ d: "Mon", s: "P" },{ d: "Tue", s: "P" },{ d: "Wed", s: "P" },{ d: "Thu", s: "A" },{ d: "Fri", s: "P" },{ d: "Sat", s: "P" }] },
-  "PSU-TRN-002": { weekPct: "93%", monthPct: "91%", alerts: 1, daily: [{ d: "Mon", s: "P" },{ d: "Tue", s: "P" },{ d: "Wed", s: "A" },{ d: "Thu", s: "P" },{ d: "Fri", s: "P" },{ d: "Sat", s: "P" }] },
-  "PSU-TRN-003": { weekPct: "100%", monthPct: "97%", alerts: 0, daily: [{ d: "Mon", s: "P" },{ d: "Tue", s: "P" },{ d: "Wed", s: "P" },{ d: "Thu", s: "P" },{ d: "Fri", s: "P" },{ d: "Sat", s: "P" }] },
-  "PSU-TRN-004": { weekPct: "67%", monthPct: "71%", alerts: 3, daily: [{ d: "Mon", s: "A" },{ d: "Tue", s: "P" },{ d: "Wed", s: "A" },{ d: "Thu", s: "P" },{ d: "Fri", s: "P" },{ d: "Sat", s: "A" }] },
-  "PSU-MOB-001": { weekPct: "100%", monthPct: "94%", alerts: 0, daily: [{ d: "Mon", s: "P" },{ d: "Tue", s: "P" },{ d: "Wed", s: "P" },{ d: "Thu", s: "P" },{ d: "Fri", s: "P" },{ d: "Sat", s: "P" }] },
-  "PSU-MOB-002": { weekPct: "83%", monthPct: "88%", alerts: 1, daily: [{ d: "Mon", s: "P" },{ d: "Tue", s: "A" },{ d: "Wed", s: "P" },{ d: "Thu", s: "P" },{ d: "Fri", s: "P" },{ d: "Sat", s: "P" }] },
-  "PSU-MOB-003": { weekPct: "67%", monthPct: "78%", alerts: 3, daily: [{ d: "Mon", s: "P" },{ d: "Tue", s: "A" },{ d: "Wed", s: "P" },{ d: "Thu", s: "A" },{ d: "Fri", s: "P" },{ d: "Sat", s: "A" }] },
-  "PSU-PLC-001": { weekPct: "100%", monthPct: "96%", alerts: 0, daily: [{ d: "Mon", s: "P" },{ d: "Tue", s: "P" },{ d: "Wed", s: "P" },{ d: "Thu", s: "P" },{ d: "Fri", s: "P" },{ d: "Sat", s: "P" }] },
-  "PSU-PLC-002": { weekPct: "83%", monthPct: "91%", alerts: 1, daily: [{ d: "Mon", s: "P" },{ d: "Tue", s: "P" },{ d: "Wed", s: "P" },{ d: "Thu", s: "A" },{ d: "Fri", s: "P" },{ d: "Sat", s: "P" }] },
-};
-
-const WEEKLY_DATA = [
-  { day: "Mon", trainers: 96, students: 89, mobilizers: 92 },
-  { day: "Tue", trainers: 94, students: 87, mobilizers: 88 },
-  { day: "Wed", trainers: 98, students: 91, mobilizers: 94 },
-  { day: "Thu", trainers: 92, students: 85, mobilizers: 86 },
-  { day: "Fri", trainers: 95, students: 88, mobilizers: 95 },
-  { day: "Sat", trainers: 90, students: 82, mobilizers: 80 },
-];
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { selectAttendanceMonitorData } from "../../stores/selectors/superAdminSelectors";
 
 const ROLE_BADGE = {
   Trainer: "bg-emerald-500/15 text-emerald-400",
@@ -36,18 +14,16 @@ const ROLE_BADGE = {
 
 const tooltipStyle = {  border: "1px solid #334155", borderRadius: "12px" };
 
-const STATS = [
-  { label: "Avg Trainer Attend.", value: "94.2%", color: "text-emerald-500" },
-  { label: "Avg Mobilizer Attend.", value: "89.3%", color: "text-amber-500" },
-  { label: "Low Attend. Alerts", value: "8", color: "text-red-500" },
-  { label: "Today's Sync", value: "32/32", color: "text-violet-500" },
-];
-
 export default function SuperAdminAttendanceMonitor() {
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
   const [expanded, setExpanded] = useState(null);
   const [roleFilter, setRoleFilter] = useState("All");
+  useEffect(() => {
+    fetchWithAssignments();
+  }, [fetchWithAssignments]);
 
-  const filteredStaff = roleFilter === "All" ? ALL_STAFF : ALL_STAFF.filter(s => s.role === roleFilter);
+  const { stats, weeklyData, staff } = useMemo(() => selectAttendanceMonitorData(employees), [employees]);
+  const filteredStaff = roleFilter === "All" ? staff : staff.filter(s => s.role === roleFilter);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -59,7 +35,7 @@ export default function SuperAdminAttendanceMonitor() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {STATS.map(s => (
+        {stats.map(s => (
           <div key={s.label} className="bg-[#111827]/80 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-sm">
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">{s.label}</p>
             <h3 className={`text-2xl font-black ${s.color}`}>{s.value}</h3>
@@ -74,7 +50,7 @@ export default function SuperAdminAttendanceMonitor() {
         </h3>
         <div className="h-[250px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={WEEKLY_DATA} barGap={4}>
+            <BarChart data={weeklyData} barGap={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
               <XAxis dataKey="day" stroke="#475569" fontSize={11} axisLine={false} tickLine={false} />
               <YAxis stroke="#475569" fontSize={11} axisLine={false} tickLine={false} domain={[70, 100]} />
@@ -117,8 +93,6 @@ export default function SuperAdminAttendanceMonitor() {
             </tr></thead>
             <tbody className="divide-y divide-slate-800">
               {filteredStaff.map((staff) => {
-                const d = STAFF_DETAILS[staff.id];
-                if (!d) return null;
                 const isExpanded = expanded === staff.id;
                 return (
                   <>
@@ -138,11 +112,11 @@ export default function SuperAdminAttendanceMonitor() {
                         <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase ${ROLE_BADGE[staff.role]}`}>{staff.role}</span>
                       </td>
                       <td className="px-6 py-4 text-xs font-bold text-white/60">{staff.center}</td>
-                      <td className="px-6 py-4 text-xs font-bold text-white/90">{d.weekPct}</td>
-                      <td className="px-6 py-4 text-xs font-bold text-blue-400">{d.monthPct}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-white/90">{staff.weekPct}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-blue-400">{staff.monthPct}</td>
                       <td className="px-6 py-4">
-                        {d.alerts > 0 ? (
-                          <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-[10px] font-black rounded-full">{d.alerts} alerts</span>
+                        {staff.alerts > 0 ? (
+                          <span className="px-2 py-0.5 bg-red-500/10 text-red-400 text-[10px] font-black rounded-full">{staff.alerts} alerts</span>
                         ) : (
                           <span className="text-[10px] text-emerald-400 font-bold">Clear</span>
                         )}
@@ -161,7 +135,7 @@ export default function SuperAdminAttendanceMonitor() {
                           <div className="bg-transparent rounded-xl p-5 border border-white/[0.08] max-w-xl">
                             <h4 className="text-xs font-black text-white/60 uppercase tracking-widest mb-4">Daily Attendance — This Week</h4>
                             <div className="flex gap-3">
-                              {d.daily.map((day, i) => (
+                              {staff.daily.map((day, i) => (
                                 <div key={i} className="flex-1 text-center">
                                   <p className="text-[10px] text-slate-500 font-bold mb-2">{day.d}</p>
                                   <div className={`w-full py-2.5 rounded-xl text-xs font-black ${

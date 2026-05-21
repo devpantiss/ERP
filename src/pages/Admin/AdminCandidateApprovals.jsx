@@ -1,11 +1,7 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
 import ExportPDFButton from "../../components/common/ExportPDFButton";
-import {
-  getSubmittedEnrollments,
-  updateSubmittedEnrollmentStatus,
-} from "../../components/utils/enrollmentStorage";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle,
   Eye,
@@ -15,46 +11,8 @@ import {
   X,
   XCircle,
 } from "lucide-react";
-
-const sampleImage = (i) => `https://i.pravatar.cc/400?img=${(i % 70) + 1}`;
-const samplePDF = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
-
-const makeSampleDocument = (name, url, type = "") => ({ name, url, type });
-
-const CANDIDATES = Array.from({ length: 12 }, (_, i) => ({
-  id: `sample-${i + 1}`,
-  name: `Candidate ${i + 1}`,
-  mobilizer: ["Priya Mishra", "Vikram Singh", "Rajan Nayak", "Sunita Patra"][i % 4],
-  school: [
-    "School for Mines, Steel & Aluminium",
-    "School for Furniture & Fittings",
-    "School for Power & Green Energy",
-    "School for Shipping & Logistics",
-  ][i % 4],
-  center: ["Talcher Mining Training Center", "Bhubaneswar Furniture Skill Hub", "Angul Solar Energy Skill Center", "Paradip Port Skill Center"][i % 4],
-  jobrole: ["Dumper Operator", "Furniture Carpenter", "Solar Panel Installer", "Forklift Operator"][i % 4],
-  dob: `199${i % 5}-0${(i % 8) + 1}-15`,
-  gender: i % 2 === 0 ? "Male" : "Female",
-  phone: `98765${43210 + i}`,
-  aadhaar: `XXXX-XXXX-${2000 + i}`,
-  qualification: ["10th Pass", "12th Pass", "ITI", "Diploma"][i % 4],
-  qualificationTrade: ["Electrical", "Fitter", "Welder", "Logistics"][i % 4],
-  qualificationInstitute: ["ITI Angul", "Govt Polytechnic", "CBSE Board", "Skill Center"][i % 4],
-  qualificationYear: String(2020 + (i % 5)),
-  experience: `${i % 4} Years`,
-  currentlyEmployed: i % 2 ? "No" : "Yes",
-  address: ["House 12", "Main Road", "Angul", "Odisha", "759122"].join(", "),
-  enrollmentDate: "2026-05-14",
-  status: i % 5 === 0 ? "Approved" : i % 5 === 1 ? "Rejected" : "Pending",
-  image: sampleImage(i),
-  liveLocation: { lat: 20.2961 + i / 100, lng: 85.8245 + i / 100, accuracy: 25, place: "Odisha training cluster" },
-  documents: {
-    aadhaar: makeSampleDocument("aadhaar.pdf", i % 2 ? samplePDF : sampleImage(i + 10), i % 2 ? "application/pdf" : "image/jpeg"),
-    qualification: makeSampleDocument("qualification.pdf", i % 2 ? sampleImage(i + 20) : samplePDF, i % 2 ? "image/jpeg" : "application/pdf"),
-    experience: i % 3 ? makeSampleDocument("experience.pdf", samplePDF, "application/pdf") : null,
-    license: i % 4 === 0 ? makeSampleDocument("operator-license.jpg", sampleImage(i + 30), "image/jpeg") : null,
-  },
-}));
+import { useCandidateStore } from "../../stores/candidateStore.js";
+import { selectCandidateLifecycle } from "../../stores/selectors/candidateSelectors.js";
 
 const DOCUMENT_FIELDS = [
   { key: "aadhaar", label: "Aadhaar Card" },
@@ -62,25 +20,6 @@ const DOCUMENT_FIELDS = [
   { key: "experience", label: "Experience Certificate" },
   { key: "license", label: "Operator / Driving License" },
 ];
-
-function toCandidate(raw) {
-  const documents = raw.documents || {
-    aadhaar: raw.aadhaarFile ? makeSampleDocument("aadhaar", raw.aadhaarFile) : null,
-    qualification: raw.qualificationFile ? makeSampleDocument("qualification", raw.qualificationFile) : null,
-    license: raw.licenceFile ? makeSampleDocument("license", raw.licenceFile) : null,
-  };
-
-  return {
-    ...raw,
-    mobilizer: raw.mobilizer || "Current Mobilizer",
-    school: raw.school || "Not Assigned",
-    center: raw.center || "Not Assigned",
-    jobrole: raw.jobrole || raw.role || "Not Assigned",
-    status: raw.status || "Pending",
-    image: raw.image || raw.avatar || sampleImage(1),
-    documents,
-  };
-}
 
 function getDocumentUrl(file) {
   return typeof file === "string" ? file : file?.url;
@@ -99,8 +38,7 @@ function formatValue(value) {
 }
 
 export default function AdminCandidateApprovals() {
-  const submittedCandidates = useMemo(() => getSubmittedEnrollments().map(toCandidate), []);
-  const [candidates, setCandidates] = useState([...submittedCandidates, ...CANDIDATES.map(toCandidate)]);
+  const { records, fetchLifecycle, update } = useCandidateStore();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [centerFilter, setCenterFilter] = useState("All");
@@ -108,9 +46,14 @@ export default function AdminCandidateApprovals() {
   const [viewCandidate, setViewCandidate] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const candidates = useMemo(() => selectCandidateLifecycle(records), [records]);
 
-  const centers = ["All", ...new Set(candidates.map((c) => c.center))];
-  const jobRoles = ["All", ...new Set(candidates.map((c) => c.jobrole))];
+  useEffect(() => {
+    fetchLifecycle();
+  }, [fetchLifecycle]);
+
+  const centers = useMemo(() => ["All", ...new Set(candidates.map((c) => c.center))], [candidates]);
+  const jobRoles = useMemo(() => ["All", ...new Set(candidates.map((c) => c.jobrole))], [candidates]);
 
   const filtered = useMemo(() => {
     const needle = search.toLowerCase();
@@ -125,8 +68,7 @@ export default function AdminCandidateApprovals() {
   }, [candidates, search, statusFilter, centerFilter, jobRoleFilter]);
 
   const updateStatus = (id, status) => {
-    setCandidates((prev) => prev.map((c) => (c.id === id ? { ...c, status } : c)));
-    updateSubmittedEnrollmentStatus(id, status);
+    update(id, { status: status === "Approved" ? "IN_TRAINING" : "DROPPED" });
     setViewCandidate(null);
   };
 

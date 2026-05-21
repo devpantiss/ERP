@@ -1,8 +1,14 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { UserCog, Search, Plus, X, Save, Calendar, Target } from "lucide-react";
 import { toast } from "react-toastify";
-import { SA_PROJECTS, SA_EMPLOYEES, SA_MONTHLY_TARGETS } from "./superAdminData";
 import { ProjectCard, BackButton, PageHeader, Breadcrumb, usePagination, Pagination } from "./SuperAdminSharedComponents";
+import { useEmployeeStore } from "../../stores/employeeStore.js";
+import { useProjectStore } from "../../stores/projectStore.js";
+import {
+  getRoleIdByLabel,
+  selectEmployeeDirectory,
+} from "../../stores/selectors/employeeSelectors.js";
+import { selectProjectDirectory } from "../../stores/selectors/projectSelectors.js";
 
 const STATUS_BADGE = {
   Active: "bg-emerald-500/10 text-emerald-400",
@@ -24,19 +30,27 @@ function getTargetLabels(role) {
 }
 
 export default function SuperAdminEmployeeManagement() {
+  const { records: employeeRecords, fetchWithAssignments, create: createEmployee } = useEmployeeStore();
+  const { records: projectRecords, fetchAll: fetchProjects } = useProjectStore();
   const [projectId, setProjectId] = useState(null);
   const [search, setSearch] = useState("");
-  const [employees, setEmployees] = useState(SA_EMPLOYEES);
-  const [targets, setTargets] = useState(SA_MONTHLY_TARGETS);
+  const [targets, setTargets] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTargetModal, setShowTargetModal] = useState(null); // empId
   const [selectedMonth, setSelectedMonth] = useState("2026-04");
 
-  const project = SA_PROJECTS.find((p) => p.id === projectId);
+  useEffect(() => {
+    fetchWithAssignments();
+    fetchProjects();
+  }, [fetchProjects, fetchWithAssignments]);
+
+  const employees = useMemo(() => selectEmployeeDirectory(employeeRecords), [employeeRecords]);
+  const projects = useMemo(() => selectProjectDirectory(projectRecords), [projectRecords]);
+  const project = projects.find((p) => p.id === projectId);
 
   const projectEmployees = useMemo(() => {
     if (!project) return [];
-    let list = employees.filter((e) => e.project === project.name);
+    let list = employees.filter((e) => e.projectId === project.id);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((e) => e.name.toLowerCase().includes(q) || e.role.toLowerCase().includes(q) || e.center.toLowerCase().includes(q));
@@ -52,28 +66,34 @@ export default function SuperAdminEmployeeManagement() {
   /* ── Add Employee ── */
   const [form, setForm] = useState({ name: "", role: ROLES[0], center: "", joinDate: "", phone: "", email: "" });
 
-  const projectCenters = project ? project.centers.map((c) => c.name) : [];
+  const projectCenters = project ? project.centers : [];
 
   const handleAddEmployee = () => {
     if (!form.name || !form.center || !form.joinDate) {
       toast.error("Please fill all required fields");
       return;
     }
+    const [firstName, ...rest] = form.name.trim().split(" ");
+    const selectedCenter = projectCenters.find((center) => center.id === form.center);
+    const roleId = getRoleIdByLabel(form.role);
     const newEmp = {
-      id: `EMP-${String(employees.length + 1).padStart(3, "0")}`,
-      name: form.name,
-      project: project.name,
-      center: form.center,
-      role: form.role,
-      joinDate: form.joinDate,
-      status: "Active",
-      phone: form.phone,
+      firstName,
+      lastName: rest.join(" ") || "",
       email: form.email,
+      phone: form.phone,
+      roleIds: roleId ? [roleId] : [],
+      projectIds: [project.id],
+      centerIds: selectedCenter ? [selectedCenter.id] : [],
+      assignedBatchIds: [],
+      designation: form.role,
+      status: "ACTIVE",
+      joinedOn: form.joinDate,
+      managerEmployeeId: null,
     };
-    setEmployees((prev) => [...prev, newEmp]);
+    createEmployee(newEmp);
     setShowAddModal(false);
     setForm({ name: "", role: ROLES[0], center: "", joinDate: "", phone: "", email: "" });
-    toast.success(`${newEmp.name} added successfully`);
+    toast.success(`${form.name} added successfully`);
   };
 
   /* ── Target helpers ── */
@@ -128,9 +148,9 @@ export default function SuperAdminEmployeeManagement() {
       {/* LEVEL 1: Projects */}
       {!project && (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {SA_PROJECTS.map((p) => {
-            const empCount = employees.filter((e) => e.project === p.name).length;
-            const activeCount = employees.filter((e) => e.project === p.name && e.status === "Active").length;
+          {projects.map((p) => {
+            const empCount = employees.filter((e) => e.projectId === p.id).length;
+            const activeCount = employees.filter((e) => e.projectId === p.id && e.status === "Active").length;
             return (
               <ProjectCard
                 key={p.id}
@@ -139,7 +159,7 @@ export default function SuperAdminEmployeeManagement() {
                 stats={[
                   { label: "Employees", value: empCount },
                   { label: "Active", value: activeCount, color: "text-emerald-300" },
-                  { label: "Centers", value: p.centers.length },
+                  { label: "Centers", value: p.centerCount },
                 ]}
               />
             );
@@ -271,7 +291,7 @@ export default function SuperAdminEmployeeManagement() {
                 <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-500">Center *</label>
                 <select value={form.center} onChange={(e) => setForm((p) => ({ ...p, center: e.target.value }))} className="w-full rounded-xl border border-slate-700 bg-[#111827] px-4 py-2.5 text-sm text-white outline-none transition focus:border-red-500">
                   <option value="">Select center</option>
-                  {projectCenters.map((c) => <option key={c} value={c}>{c}</option>)}
+                  {projectCenters.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
             </div>

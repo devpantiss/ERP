@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -22,49 +22,12 @@ import {
   FaArrowUp,
   FaChartLine,
 } from "react-icons/fa";
-
-/* ================= DUMMY DATA ================= */
-
-const monthlyCompanyData = [
-  { month: "Jan", Tata: 25, Adani: 18, LNT: 12, JSW: 20 },
-  { month: "Feb", Tata: 30, Adani: 15, LNT: 18, JSW: 22 },
-  { month: "Mar", Tata: 28, Adani: 20, LNT: 15, JSW: 25 },
-  { month: "Apr", Tata: 35, Adani: 22, LNT: 20, JSW: 30 },
-  { month: "May", Tata: 40, Adani: 28, LNT: 22, JSW: 32 },
-  { month: "Jun", Tata: 45, Adani: 30, LNT: 25, JSW: 35 },
-];
-
-const roleTrendData = [
-  { month: "Jan", Technician: 40, Operator: 25, Supervisor: 18 },
-  { month: "Feb", Technician: 45, Operator: 28, Supervisor: 20 },
-  { month: "Mar", Technician: 50, Operator: 30, Supervisor: 22 },
-  { month: "Apr", Technician: 55, Operator: 35, Supervisor: 26 },
-  { month: "May", Technician: 60, Operator: 38, Supervisor: 28 },
-  { month: "Jun", Technician: 70, Operator: 42, Supervisor: 30 },
-];
-
-const industryData = [
-  { name: "Mining", value: 120 },
-  { name: "Construction", value: 98 },
-  { name: "Logistics", value: 86 },
-  { name: "Power", value: 65 },
-  { name: "Shipping", value: 50 },
-];
-
-const salaryData = [
-  { role: "Technician", salary: 22000 },
-  { role: "Operator", salary: 26000 },
-  { role: "Supervisor", salary: 32000 },
-  { role: "Engineer", salary: 45000 },
-];
-
-const funnelData = [
-  { stage: "Enrolled", value: 500 },
-  { stage: "Trained", value: 420 },
-  { stage: "Certified", value: 350 },
-  { stage: "Interviewed", value: 280 },
-  { stage: "Placed", value: 210 },
-];
+import { usePlacementStore } from "../../../stores/placementStore";
+import {
+  selectJobOpeningRows,
+  selectOpeningAnalytics,
+  selectOpeningTrendData,
+} from "../../../stores/selectors/placementSelectors";
 
 /* ================= COLORS ================= */
 
@@ -73,16 +36,17 @@ const PIE_COLORS = ["#06b6d4", "#22d3ee", "#67e8f9", "#0891b2", "#0ea5e9"];
 /* ================= MAIN ================= */
 
 export default function Section3() {
+  const { drives, fetchDrives } = usePlacementStore();
+
+  useEffect(() => {
+    fetchDrives();
+  }, [fetchDrives]);
+
+  const openings = useMemo(() => selectJobOpeningRows(drives), [drives]);
+  const trendData = useMemo(() => selectOpeningTrendData(openings), [openings]);
   /* ================= KPI ================= */
 
-  const stats = useMemo(() => {
-    return {
-      vacancies: 620,
-      companies: 48,
-      avgSalary: 28000,
-      conversion: 68,
-    };
-  }, []);
+  const stats = useMemo(() => selectOpeningAnalytics(openings), [openings]);
 
   return (
     <section className="w-full mt-4 bg-[#020617] border border-cyan-900 rounded-2xl p-6 md:p-8 space-y-8 shadow-2xl">
@@ -149,17 +113,16 @@ export default function Section3() {
         <Panel title="Monthly Company Hiring">
 
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={monthlyCompanyData}>
+            <BarChart data={trendData.monthlyCompanyData}>
               <CartesianGrid stroke="#0f172a" />
               <XAxis dataKey="month" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip />
               <Legend />
 
-              <Bar dataKey="Tata" fill="#06b6d4" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="Adani" fill="#22d3ee" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="LNT" fill="#67e8f9" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="JSW" fill="#0891b2" radius={[6, 6, 0, 0]} />
+              {trendData.companies.map((company, index) => (
+                <Bar key={company} dataKey={company} fill={trendData.colors[index % trendData.colors.length]} radius={[6, 6, 0, 0]} />
+              ))}
 
             </BarChart>
           </ResponsiveContainer>
@@ -171,16 +134,16 @@ export default function Section3() {
         <Panel title="Role Demand Trend">
 
           <ResponsiveContainer width="100%" height={320}>
-            <LineChart data={roleTrendData}>
+            <LineChart data={trendData.roleTrendData}>
               <CartesianGrid stroke="#0f172a" />
               <XAxis dataKey="month" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
               <Tooltip />
               <Legend />
 
-              <Line type="monotone" dataKey="Technician" stroke="#06b6d4" strokeWidth={3} />
-              <Line type="monotone" dataKey="Operator" stroke="#22d3ee" strokeWidth={3} />
-              <Line type="monotone" dataKey="Supervisor" stroke="#67e8f9" strokeWidth={3} />
+              {trendData.roles.map((role, index) => (
+                <Line key={role} type="monotone" dataKey={role} stroke={trendData.colors[index % trendData.colors.length]} strokeWidth={3} />
+              ))}
 
             </LineChart>
           </ResponsiveContainer>
@@ -200,12 +163,12 @@ export default function Section3() {
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie
-                data={industryData}
+                data={trendData.industryData}
                 dataKey="value"
                 outerRadius={100}
                 label
               >
-                {industryData.map((_, i) => (
+                {trendData.industryData.map((_, i) => (
                   <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                 ))}
               </Pie>
@@ -219,7 +182,7 @@ export default function Section3() {
         <Panel title="Salary Intelligence">
 
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={salaryData}>
+            <BarChart data={trendData.salaryData}>
               <CartesianGrid stroke="#0f172a" />
               <XAxis dataKey="role" stroke="#94a3b8" />
               <YAxis stroke="#94a3b8" />
@@ -238,7 +201,7 @@ export default function Section3() {
 
           <div className="space-y-3">
 
-            {funnelData.map((f, i) => (
+            {trendData.funnelData.map((f, i) => (
               <div key={i}>
 
                 <div className="flex justify-between text-xs text-white/60 mb-1">
@@ -249,7 +212,7 @@ export default function Section3() {
                 <div className="w-full bg-transparent rounded h-2">
                   <div
                     className="bg-cyan-400 h-2 rounded"
-                    style={{ width: `${(f.value / 500) * 100}%` }}
+                    style={{ width: `${(f.value / Math.max(trendData.funnelData[0]?.value || 1, 1)) * 100}%` }}
                   />
                 </div>
 

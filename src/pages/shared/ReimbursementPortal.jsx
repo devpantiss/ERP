@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import { useLocation } from "react-router-dom";
 import {
@@ -18,6 +18,8 @@ import {
   ChevronDown,
   StickyNote,
 } from "lucide-react";
+import { useHrStore } from "../../stores/hrStore.js";
+import { selectReimbursementRows } from "../../stores/selectors/hrSelectors.js";
 
 /* ═══════════════════════════════════════════════════════════════
    ACCENT PALETTE
@@ -41,57 +43,8 @@ const ACCENT_MAP = {
   },
 };
 
-/* ═══════════════════════════════════════════════════════════════
-   MOCK DATA
-═══════════════════════════════════════════════════════════════ */
-
-const INITIAL_CLAIMS = [
-  {
-    id: "RMB-001",
-    claimTitle: "Angul Mining Colony Site Visit",
-    dateRange: "2026-03-10 → 2026-03-12",
-    totalAmount: 4500,
-    status: "Approved",
-    submittedOn: "2026-03-13",
-    claimNote: "Visited 3 mining colonies for candidate mobilization. Met village heads.",
-    bills: [
-      { date: "2026-03-10", desc: "Bus fare (Bhubaneswar → Angul)", amount: 450, mode: "Cash" },
-      { date: "2026-03-10", desc: "Hotel stay (2 nights)", amount: 2400, mode: "Online" },
-      { date: "2026-03-11", desc: "Food & refreshments", amount: 650, mode: "Cash" },
-      { date: "2026-03-11", desc: "Auto fare (local travel)", amount: 300, mode: "Cash" },
-      { date: "2026-03-12", desc: "Printing & stationery", amount: 700, mode: "Online" },
-    ],
-  },
-  {
-    id: "RMB-002",
-    claimTitle: "Training Workshop Supplies",
-    dateRange: "2026-02-20",
-    totalAmount: 5200,
-    status: "Paid",
-    submittedOn: "2026-02-23",
-    claimNote: "Training charts, marker sets, handouts, venue support, and refreshments for participants.",
-    bills: [
-      { date: "2026-02-20", desc: "Printed training material", amount: 1200, mode: "Online" },
-      { date: "2026-02-20", desc: "Workshop kit supplies", amount: 2000, mode: "Online" },
-      { date: "2026-02-20", desc: "Refreshments", amount: 800, mode: "Cash" },
-      { date: "2026-02-20", desc: "Venue rental", amount: 1200, mode: "Online" },
-    ],
-  },
-  {
-    id: "RMB-003",
-    claimTitle: "Monthly Mobile and Internet Expense",
-    dateRange: "2026-01-31",
-    totalAmount: 2800,
-    status: "Pending",
-    submittedOn: "2026-01-17",
-    claimNote: "Mobile data and calling expenses used for candidate follow-up and field coordination.",
-    bills: [
-      { date: "2026-01-31", desc: "Monthly data recharge", amount: 999, mode: "Online" },
-      { date: "2026-01-31", desc: "Calling pack", amount: 599, mode: "Online" },
-      { date: "2026-01-31", desc: "Work SIM top-up", amount: 1202, mode: "Online" },
-    ],
-  },
-];
+const ROLE_EMPLOYEE = { mobilizer: "EMP-0003", trainer: "EMP-0001", "placement-officer": "EMP-0002" };
+const ROLE_PROJECT = { mobilizer: "PRJ-0001", trainer: "PRJ-0001", "placement-officer": "PRJ-0001" };
 
 /* ═══════════════════════════════════════════════════════════════
    COMPONENT
@@ -101,8 +54,13 @@ export default function ReimbursementPortal() {
   const location = useLocation();
   const roleKey = location.pathname.split("/")[1];
   const a = ACCENT_MAP[roleKey] || ACCENT_MAP.mobilizer;
+  const { reimbursements, fetchReimbursements, createReimbursement } = useHrStore();
 
-  const [claims, setClaims] = useState(INITIAL_CLAIMS);
+  useEffect(() => {
+    fetchReimbursements({ filters: { employeeId: ROLE_EMPLOYEE[roleKey] } });
+  }, [fetchReimbursements, roleKey]);
+
+  const claims = useMemo(() => selectReimbursementRows(reimbursements), [reimbursements]);
   const [showForm, setShowForm] = useState(false);
   const [expandedClaim, setExpandedClaim] = useState(null);
 
@@ -131,17 +89,19 @@ export default function ReimbursementPortal() {
     const dateRange = billDates.length > 1 && billDates[0] !== billDates[billDates.length - 1]
       ? `${billDates[0]} → ${billDates[billDates.length - 1]}`
       : billDates[0] || "—";
-    const newClaim = {
-      id: `RMB-${String(claims.length + 4).padStart(3, "0")}`,
+    createReimbursement({
+      employeeId: ROLE_EMPLOYEE[roleKey],
+      projectId: ROLE_PROJECT[roleKey],
       claimTitle,
       dateRange,
+      amount: totalAmount,
       totalAmount,
-      status: "Pending",
+      status: "SUBMITTED",
       submittedOn: new Date().toISOString().split("T")[0],
       claimNote,
+      category: claimTitle || "Reimbursement",
       bills: bills.map(b => ({ date: b.date, desc: b.desc, amount: parseFloat(b.amount) || 0, mode: b.mode })),
-    };
-    setClaims([newClaim, ...claims]);
+    });
     resetForm();
   };
 

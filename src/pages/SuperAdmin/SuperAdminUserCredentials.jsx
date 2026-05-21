@@ -1,21 +1,14 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Key, UserPlus, ShieldPlus, RefreshCcw, Eye, EyeOff, Copy, CheckCircle2, Search, Filter, Mail, MessageSquare } from "lucide-react";
-
-/* ===================== MOCK DATA ===================== */
-
-const ROLES = ["Admin", "Mobilizer", "Trainer", "Placement Officer"];
-const CENTERS = ["Angul", "Sundargarh", "Keonjhar", "Jharsuguda", "Kalahandi"];
-
-const RECENT_CREDENTIALS = [
-  { id: "PSU-ADM-021", name: "Rahul Sharma", role: "Admin", center: "Angul", created: "2026-03-05", status: "Active" },
-  { id: "PSU-MOB-112", name: "Priya Sahu", role: "Mobilizer", center: "Sundargarh", created: "2026-03-04", status: "Active" },
-  { id: "PSU-TRN-058", name: "Amit Panda", role: "Trainer", center: "Keonjhar", created: "2026-03-04", status: "Inactive" },
-  { id: "PSU-PLC-009", name: "Sonal Behera", role: "Placement Officer", center: "Jharsuguda", created: "2026-03-02", status: "Active" },
-];
-
-/* ===================== COMPONENT ===================== */
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { selectCredentialDirectory } from "../../stores/selectors/superAdminSelectors";
 
 export default function SuperAdminUserCredentials() {
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  useEffect(() => {
+    fetchWithAssignments();
+  }, [fetchWithAssignments]);
+  const { roles, centers, recentCredentials } = useMemo(() => selectCredentialDirectory(employees), [employees]);
   const [formData, setFormData] = useState({
     name: "",
     role: "Admin",
@@ -98,7 +91,7 @@ export default function SuperAdminUserCredentials() {
                   value={formData.role}
                   onChange={(e) => setFormData({...formData, role: e.target.value})}
                 >
-                  {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
@@ -108,7 +101,7 @@ export default function SuperAdminUserCredentials() {
                   value={formData.center}
                   onChange={(e) => setFormData({...formData, center: e.target.value})}
                 >
-                  {CENTERS.map(c => <option key={c} value={c}>{c}</option>)}
+                  {centers.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
             </div>
@@ -165,7 +158,7 @@ export default function SuperAdminUserCredentials() {
             </div>
             
             <div className="space-y-4">
-              {RECENT_CREDENTIALS.map((user) => (
+              {recentCredentials.map((user) => (
                 <div key={user.id} className="flex items-center justify-between p-4 rounded-xl border border-white/[0.08] hover:border-slate-700 transition group">
                   <div className="flex items-center gap-4">
                     <div className={`p-2 rounded-lg bg-transparent text-red-500`}>

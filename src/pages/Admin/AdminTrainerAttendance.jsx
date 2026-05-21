@@ -1,34 +1,40 @@
 import Pagination from "../../components/common/Pagination";
 import TableExportActions from "../../components/common/TableExportActions";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-
-const TRAINERS = [
-  { id: 1, name: "Aditya Sahu", center: "Angul", avatar: "https://i.pravatar.cc/40?img=12", presentDays: 24, totalDays: 26, lateDays: 2 },
-  { id: 2, name: "Deepak Kumar", center: "Sundargarh", avatar: "https://i.pravatar.cc/40?img=14", presentDays: 25, totalDays: 26, lateDays: 1 },
-  { id: 3, name: "Suresh Naik", center: "Kalahandi", avatar: "https://i.pravatar.cc/40?img=15", presentDays: 22, totalDays: 26, lateDays: 3 },
-  { id: 4, name: "Rahul Sharma", center: "Angul", avatar: "https://i.pravatar.cc/40?img=8", presentDays: 26, totalDays: 26, lateDays: 0 },
-  { id: 5, name: "Amit Panda", center: "Keonjhar", avatar: "https://i.pravatar.cc/40?img=18", presentDays: 20, totalDays: 26, lateDays: 4 },
-  { id: 6, name: "Sneha Das", center: "Jharsuguda", avatar: "https://i.pravatar.cc/40?img=9", presentDays: 18, totalDays: 26, lateDays: 2 },
-];
-
-const WEEKLY = [
-  { day: "Mon", present: 6, absent: 0 }, { day: "Tue", present: 5, absent: 1 },
-  { day: "Wed", present: 6, absent: 0 }, { day: "Thu", present: 4, absent: 2 },
-  { day: "Fri", present: 5, absent: 1 }, { day: "Sat", present: 3, absent: 3 },
-];
+import { useAttendanceStore } from "../../stores/attendanceStore";
+import { useEmployeeStore } from "../../stores/employeeStore";
+import {
+  selectTrainerAttendanceRows,
+  selectTrainerWeeklyAttendance,
+} from "../../stores/selectors/trainingSelectors";
 
 const tooltipStyle = {  border: "1px solid #334155", borderRadius: "8px", color: "#e2e8f0" };
 
 export default function AdminTrainerAttendance() {
+  const employeeRecords = useEmployeeStore((state) => state.records);
+  const fetchEmployees = useEmployeeStore((state) => state.fetchAll);
+  const attendanceRecords = useAttendanceStore((state) => state.records);
+  const fetchAttendance = useAttendanceStore((state) => state.fetchAll);
   const [centerFilter, setCenterFilter] = useState("All");
   const [selectedIds, setSelectedIds] = useState([]);
   const [exportScope, setExportScope] = useState("all");
-  const centers = ["All", ...new Set(TRAINERS.map((t) => t.center))];
+
+  useEffect(() => {
+    fetchEmployees();
+    fetchAttendance();
+  }, [fetchAttendance, fetchEmployees]);
+
+  const trainers = useMemo(
+    () => selectTrainerAttendanceRows(employeeRecords, attendanceRecords),
+    [attendanceRecords, employeeRecords]
+  );
+  const weekly = useMemo(() => selectTrainerWeeklyAttendance(trainers), [trainers]);
+  const centers = ["All", ...new Set(trainers.map((t) => t.center))];
 
   const filtered = useMemo(() => {
-    return TRAINERS.filter((t) => centerFilter === "All" || t.center === centerFilter);
-  }, [centerFilter]);
+    return trainers.filter((t) => centerFilter === "All" || t.center === centerFilter);
+  }, [centerFilter, trainers]);
 
   const avgRate = Math.round(filtered.reduce((s, t) => s + (t.presentDays / t.totalDays) * 100, 0) / (filtered.length || 1));
 
@@ -129,7 +135,7 @@ export default function AdminTrainerAttendance() {
         <h3 className="text-sm font-medium text-violet-400 mb-4">Weekly Attendance Overview</h3>
         <div className="h-52">
           <ResponsiveContainer>
-            <BarChart data={WEEKLY}>
+            <BarChart data={weekly}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
               <XAxis dataKey="day" stroke="#64748b" fontSize={12} />
               <YAxis stroke="#64748b" fontSize={12} />

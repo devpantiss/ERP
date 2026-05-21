@@ -1,178 +1,7 @@
 import { useState, useMemo } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import { BarChart3, Search, Filter, Eye, X, CheckCircle2, Clock, PlayCircle, BookOpen, Layers } from "lucide-react";
-
-/* ===================== MOCK DATA ===================== */
-
-const MODULES_BY_TRADE = {
-  Electrical: [
-    "Safety & Tools",
-    "Basic Electricity",
-    "Wiring Standards",
-    "Motor Maintenance",
-    "Power Distribution",
-    "Troubleshooting",
-    "Energy Conservation",
-  ],
-  Fitter: [
-    "Workshop Safety",
-    "Measurement Tools",
-    "Metal Cutting",
-    "Welding Basics",
-    "Assembly Techniques",
-    "Hydraulics & Pneumatics",
-    "Precision Grinding",
-  ],
-  Welder: [
-    "Welding Safety",
-    "Arc Welding",
-    "Gas Welding",
-    "TIG/MIG Techniques",
-    "Plasma Cutting",
-    "Quality Inspection",
-    "Steel Fabrication",
-  ],
-  Safety: [
-    "Industrial Safety",
-    "Fire Prevention",
-    "First Aid",
-    "Hazard Identification",
-    "PPE Standards",
-    "Emergency Response",
-    "Environmental Safety",
-  ],
-};
-
-const BATCHES = [
-  { 
-    id: "B1", 
-    batch: "BATCH-101", 
-    trainer: "Aditya Sahu", 
-    center: "Angul", 
-    trade: "Electrical",
-    progress: {
-      "Safety & Tools": "Completed",
-      "Basic Electricity": "Completed",
-      "Wiring Standards": "In Progress",
-      "Motor Maintenance": "Scheduled",
-      "Power Distribution": "Scheduled",
-      "Troubleshooting": "Scheduled",
-      "Energy Conservation": "Scheduled",
-    }
-  },
-  { 
-    id: "B2", 
-    batch: "BATCH-102", 
-    trainer: "Aditya Sahu", 
-    center: "Angul", 
-    trade: "Fitter",
-    progress: {
-      "Workshop Safety": "Completed",
-      "Measurement Tools": "Completed",
-      "Metal Cutting": "Completed",
-      "Welding Basics": "In Progress",
-      "Assembly Techniques": "Scheduled",
-      "Hydraulics & Pneumatics": "Scheduled",
-      "Precision Grinding": "Scheduled",
-    }
-  },
-  { 
-    id: "B3", 
-    batch: "BATCH-103", 
-    trainer: "Deepak Kumar", 
-    center: "Sundargarh", 
-    trade: "Welder",
-    progress: {
-      "Welding Safety": "Completed",
-      "Arc Welding": "Completed",
-      "Gas Welding": "Completed",
-      "TIG/MIG Techniques": "Completed",
-      "Plasma Cutting": "In Progress",
-      "Quality Inspection": "Scheduled",
-      "Steel Fabrication": "Scheduled",
-    }
-  },
-  { 
-    id: "B4", 
-    batch: "BATCH-104", 
-    trainer: "Deepak Kumar", 
-    center: "Sundargarh", 
-    trade: "Safety",
-    progress: {
-      "Industrial Safety": "Completed",
-      "Fire Prevention": "In Progress",
-      "First Aid": "Scheduled",
-      "Hazard Identification": "Scheduled",
-      "PPE Standards": "Scheduled",
-      "Emergency Response": "Scheduled",
-      "Environmental Safety": "Scheduled",
-    }
-  },
-  { 
-    id: "B5", 
-    batch: "BATCH-105", 
-    trainer: "Suresh Naik", 
-    center: "Kalahandi", 
-    trade: "Electrical",
-    progress: {
-      "Safety & Tools": "Completed",
-      "Basic Electricity": "In Progress",
-      "Wiring Standards": "Scheduled",
-      "Motor Maintenance": "Scheduled",
-      "Power Distribution": "Scheduled",
-      "Troubleshooting": "Scheduled",
-      "Energy Conservation": "Scheduled",
-    }
-  },
-  { 
-    id: "B6", 
-    batch: "BATCH-106", 
-    trainer: "Rahul Sharma", 
-    center: "Angul", 
-    trade: "Fitter",
-    progress: {
-      "Workshop Safety": "Completed",
-      "Measurement Tools": "Completed",
-      "Metal Cutting": "Completed",
-      "Welding Basics": "Completed",
-      "Assembly Techniques": "Completed",
-      "Hydraulics & Pneumatics": "In Progress",
-      "Precision Grinding": "Scheduled",
-    }
-  },
-  { 
-    id: "B7", 
-    batch: "BATCH-107", 
-    trainer: "Amit Panda", 
-    center: "Keonjhar", 
-    trade: "Safety",
-    progress: {
-      "Industrial Safety": "Completed",
-      "Fire Prevention": "Scheduled",
-      "First Aid": "Scheduled",
-      "Hazard Identification": "Scheduled",
-      "PPE Standards": "Scheduled",
-      "Emergency Response": "Scheduled",
-      "Environmental Safety": "Scheduled",
-    }
-  },
-  { 
-    id: "B8", 
-    batch: "BATCH-108", 
-    trainer: "Sneha Das", 
-    center: "Jharsuguda", 
-    trade: "Welder",
-    progress: {
-      "Welding Safety": "In Progress",
-      "Arc Welding": "Scheduled",
-      "Gas Welding": "Scheduled",
-      "TIG/MIG Techniques": "Scheduled",
-      "Plasma Cutting": "Scheduled",
-      "Quality Inspection": "Scheduled",
-      "Steel Fabrication": "Scheduled",
-    }
-  },
-];
+import { selectBatchModuleProgress } from "../../stores/selectors/trainingSelectors";
 
 /* ===================== COMPONENTS ===================== */
 
@@ -206,12 +35,13 @@ export default function AdminModuleProgress() {
   const [tradeFilter, setTradeFilter] = useState("All");
   const [selectedBatch, setSelectedBatch] = useState(null);
 
-  const trainers = ["All", ...new Set(BATCHES.map((b) => b.trainer))];
-  const centers = ["All", ...new Set(BATCHES.map((b) => b.center))];
-  const trades = ["All", ...new Set(BATCHES.map((b) => b.trade))];
+  const batches = useMemo(() => selectBatchModuleProgress(), []);
+  const trainers = ["All", ...new Set(batches.map((b) => b.trainer))];
+  const centers = ["All", ...new Set(batches.map((b) => b.center))];
+  const trades = ["All", ...new Set(batches.map((b) => b.trade))];
 
   const filtered = useMemo(() => {
-    return BATCHES.filter((b) => {
+    return batches.filter((b) => {
       const matchSearch = b.batch.toLowerCase().includes(search.toLowerCase()) || 
                           b.trainer.toLowerCase().includes(search.toLowerCase());
       const matchTrainer = trainerFilter === "All" || b.trainer === trainerFilter;
@@ -219,13 +49,13 @@ export default function AdminModuleProgress() {
       const matchTrade = tradeFilter === "All" || b.trade === tradeFilter;
       return matchSearch && matchTrainer && matchCenter && matchTrade;
     });
-  }, [search, trainerFilter, centerFilter, tradeFilter]);
+  }, [batches, search, trainerFilter, centerFilter, tradeFilter]);
 
   const stats = useMemo(() => {
     const totalCount = filtered.length;
     let totalProgress = 0;
     filtered.forEach(b => {
-      const modules = MODULES_BY_TRADE[b.trade];
+      const modules = b.modules;
       const completedCount = Object.values(b.progress).filter(s => s === "Completed").length;
       totalProgress += (completedCount / modules.length) * 100;
     });
@@ -336,10 +166,10 @@ export default function AdminModuleProgress() {
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {filtered.map((b) => {
-                const modules = MODULES_BY_TRADE[b.trade];
+                const modules = b.modules;
                 const completedCount = Object.values(b.progress).filter(s => s === "Completed").length;
                 const progressPct = Math.round((completedCount / modules.length) * 100);
-                const currentModule = Object.entries(b.progress).find(([_, s]) => s === "In Progress")?.[0] || "All Completed";
+                const currentModule = Object.entries(b.progress).find(([, s]) => s === "In Progress")?.[0] || "All Completed";
 
                 return (
                   <tr key={b.id} className="hover:bg-transparent/30 transition-colors">
@@ -400,7 +230,9 @@ export default function AdminModuleProgress() {
       </div>
 
       {/* ================= DRILL-DOWN MODAL ================= */}
-      <SlidePanel open={!!selectedBatch} onClose={() => setSelectedBatch(null)} title="/span> Detailed Progress" width="lg">
+      <SlidePanel open={!!selectedBatch} onClose={() => setSelectedBatch(null)} title="Detailed Progress" width="lg">
+        {selectedBatch && (
+          <>
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
               <div>
@@ -430,7 +262,7 @@ export default function AdminModuleProgress() {
                 </div>
 
                 <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-                  {MODULES_BY_TRADE[selectedBatch.trade].map((moduleName, index) => {
+                  {selectedBatch.modules.map((moduleName, index) => {
                     const status = selectedBatch.progress[moduleName] || "Scheduled";
                     return (
                       <div 
@@ -475,6 +307,8 @@ export default function AdminModuleProgress() {
                 Close
               </button>
             </div>
+          </>
+        )}
       </SlidePanel>
     </div>
   );

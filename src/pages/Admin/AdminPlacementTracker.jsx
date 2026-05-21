@@ -1,11 +1,10 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { FileText, CheckCircle, Clock, X, Eye, Upload, ZoomIn, ShieldCheck, AlertCircle } from "lucide-react";
+import { usePlacementStore } from "../../stores/placementStore";
+import { selectPlacementCandidateRows } from "../../stores/selectors/placementSelectors";
 
-const PROJECTS = ["All", "PMKVY", "CSR - Tata Steel", "DDUGKY", "DMF Keonjhar"];
-const COMPANIES = ["All", "Tata Steel", "Adani", "L&T", "JSW", "Vedanta"];
-const CENTERS = ["All", "Angul", "Jharsuguda", "Kalahandi", "Keonjhar"];
 const DOC_FIELDS = [
   { key: "offer", label: "Offer Letter" },
   { key: "m1", label: "M1 Salary Slip" },
@@ -13,34 +12,6 @@ const DOC_FIELDS = [
   { key: "m3", label: "M3 Salary Slip" },
   { key: "bank", label: "Bank Account Details" },
 ];
-
-const sampleDocs = {
-  offer: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80",
-  m1: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80",
-  m2: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80",
-  m3: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80",
-  bank: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80",
-};
-
-const buildStudents = () =>
-  Array.from({ length: 25 }, (_, i) => ({
-    id: i + 1,
-    name: `Student ${i + 1}`,
-    batch: `BATCH-${101 + (i % 5)}`,
-    project: ["PMKVY", "CSR - Tata Steel", "DDUGKY", "DMF Keonjhar"][i % 4],
-    center: ["Angul", "Jharsuguda", "Kalahandi", "Keonjhar"][i % 4],
-    company: ["Tata Steel", "Adani", "L&T", "JSW", "Vedanta"][i % 5],
-    designation: ["Technician", "Operator", "Safety Officer", "Fitter"][i % 4],
-    salary: 18000 + (i % 5) * 3000,
-    joiningDate: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`,
-    docs: {
-      offer: i % 2 === 0 ? { url: sampleDocs.offer, verified: false } : null,
-      m1: i % 3 === 0 ? { url: sampleDocs.m1, verified: false } : null,
-      m2: i % 4 === 0 ? { url: sampleDocs.m2, verified: false } : null,
-      m3: i % 5 === 0 ? { url: sampleDocs.m3, verified: false } : null,
-      bank: i % 2 === 0 ? { url: sampleDocs.bank, verified: false } : null,
-    },
-  }));
 
 /* ================= HELPERS ================= */
 
@@ -254,7 +225,8 @@ function DocPreviewModal({ student, onClose, onVerifyDoc, onVerifyAll }) {
 /* ================= MAIN COMPONENT ================= */
 
 export default function AdminPlacementTracker() {
-  const [students, setStudents] = useState(buildStudents);
+  const { drives, fetchDrives } = usePlacementStore();
+  const [documentState, setDocumentState] = useState({});
   const [batchFilter, setBatchFilter] = useState("All");
   const [projectFilter, setProjectFilter] = useState("All");
   const [centerFilter, setCenterFilter] = useState("All");
@@ -263,7 +235,24 @@ export default function AdminPlacementTracker() {
   const [verifyFilter, setVerifyFilter] = useState("All");
   const [previewStudent, setPreviewStudent] = useState(null);
 
+  useEffect(() => {
+    fetchDrives();
+  }, [fetchDrives]);
+
+  const baseRows = useMemo(() => selectPlacementCandidateRows(drives), [drives]);
+  const students = useMemo(
+    () =>
+      baseRows.map((row) => ({
+        ...row,
+        docs: { ...row.docs, ...(documentState[row.id] || {}) },
+      })),
+    [baseRows, documentState]
+  );
+
   const batches = ["All", ...new Set(students.map((s) => s.batch))];
+  const projects = ["All", ...new Set(students.map((s) => s.project))];
+  const centers = ["All", ...new Set(students.map((s) => s.center))];
+  const companies = ["All", ...new Set(students.map((s) => s.company))];
   const jobRoles = ["All", ...new Set(students.map((s) => s.designation))];
 
   const filtered = useMemo(() => {
@@ -289,13 +278,17 @@ export default function AdminPlacementTracker() {
 
   /* Verify a single document */
   const verifyDoc = (studentId, docKey) => {
-    setStudents((prev) =>
-      prev.map((s) =>
-        s.id === studentId
-          ? { ...s, docs: { ...s.docs, [docKey]: { ...s.docs[docKey], verified: true } } }
-          : s
-      )
-    );
+    const student = students.find((s) => s.id === studentId) || previewStudent;
+    const currentDoc = student?.docs?.[docKey];
+    if (!currentDoc) return;
+
+    setDocumentState((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...(prev[studentId] || {}),
+        [docKey]: { ...currentDoc, verified: true },
+      },
+    }));
     /* Also update the modal's student reference */
     setPreviewStudent((prev) =>
       prev && prev.id === studentId
@@ -306,16 +299,19 @@ export default function AdminPlacementTracker() {
 
   /* Verify all remaining uploaded documents */
   const verifyAll = (studentId) => {
-    setStudents((prev) =>
-      prev.map((s) => {
-        if (s.id !== studentId) return s;
-        const newDocs = { ...s.docs };
-        DOC_FIELDS.forEach((f) => {
-          if (newDocs[f.key]) newDocs[f.key] = { ...newDocs[f.key], verified: true };
-        });
-        return { ...s, docs: newDocs };
-      })
-    );
+    const student = students.find((s) => s.id === studentId) || previewStudent;
+    if (!student) return;
+    const newDocs = { ...student.docs };
+    DOC_FIELDS.forEach((f) => {
+      if (newDocs[f.key]) newDocs[f.key] = { ...newDocs[f.key], verified: true };
+    });
+    setDocumentState((prev) => ({
+      ...prev,
+      [studentId]: {
+        ...(prev[studentId] || {}),
+        ...newDocs,
+      },
+    }));
     setPreviewStudent((prev) => {
       if (!prev || prev.id !== studentId) return prev;
       const newDocs = { ...prev.docs };
@@ -363,15 +359,15 @@ export default function AdminPlacementTracker() {
         </select>
         <select value={projectFilter} onChange={(e) => { setProjectFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
-          {PROJECTS.map((p) => <option key={p} value={p}>{p === "All" ? "All Projects" : p}</option>)}
+          {projects.map((p) => <option key={p} value={p}>{p === "All" ? "All Projects" : p}</option>)}
         </select>
         <select value={centerFilter} onChange={(e) => { setCenterFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
-          {CENTERS.map((c) => <option key={c} value={c}>{c === "All" ? "All Centers" : c}</option>)}
+          {centers.map((c) => <option key={c} value={c}>{c === "All" ? "All Centers" : c}</option>)}
         </select>
         <select value={companyFilter} onChange={(e) => { setCompanyFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">
-          {COMPANIES.map((c) => <option key={c} value={c}>{c === "All" ? "All Companies" : c}</option>)}
+          {companies.map((c) => <option key={c} value={c}>{c === "All" ? "All Companies" : c}</option>)}
         </select>
         <select value={jobRoleFilter} onChange={(e) => { setJobRoleFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 rounded-lg bg-[#111827] border border-slate-700 text-sm text-white/90">

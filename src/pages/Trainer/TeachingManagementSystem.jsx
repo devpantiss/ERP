@@ -9,10 +9,16 @@ import {
   BookOpen,
   CheckCircle2,
 } from "lucide-react";
+import { useAuthStore } from "../../stores/authStore";
+import { useAttendanceStore } from "../../stores/attendanceStore";
+import {
+  selectTeachingAttendanceLedger,
+  selectTeachingSessions,
+  selectTrainerAttendanceScope,
+} from "../../stores/selectors/trainingSelectors";
 
 /* ================= CONFIG ================= */
 
-const STORAGE_KEY = "trainer-tms-attendance";
 const SHIFT_START = "09:00";
 const LATE_AFTER_MINUTES = 15;
 
@@ -53,20 +59,16 @@ const getStatus = (timeStr) => {
   return h * 60 + m <= shiftMinutes ? "On-time" : "Late";
 };
 
-/* ================= MOCK SESSION DATA ================= */
-
-const MOCK_SESSIONS = [
-  { date: "2026-04-12", batch: "Batch A – Electrician", topic: "Circuit Design Fundamentals", students: 24, duration: "3h" },
-  { date: "2026-04-11", batch: "Batch B – Welder", topic: "Arc Welding Safety", students: 18, duration: "4h" },
-  { date: "2026-04-10", batch: "Batch A – Electrician", topic: "Motor Winding Basics", students: 22, duration: "3h" },
-  { date: "2026-04-09", batch: "Batch C – Fitter", topic: "Precision Measurement Tools", students: 20, duration: "2.5h" },
-  { date: "2026-04-08", batch: "Batch B – Welder", topic: "Gas Cutting Techniques", students: 18, duration: "4h" },
-];
-
 /* ================= MAIN COMPONENT ================= */
 
 const TeachingManagementSystem = () => {
   const webcamRef = useRef(null);
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const trainerEmployeeId = currentUser?.employeeId || "EMP-0001";
+  const attendanceRecords = useAttendanceStore((state) => state.records);
+  const fetchAttendance = useAttendanceStore((state) => state.fetchAll);
+  const createAttendance = useAttendanceStore((state) => state.create);
+  const updateAttendance = useAttendanceStore((state) => state.update);
 
   const [attendance, setAttendance] = useState({});
   const [activePunch, setActivePunch] = useState(null);
@@ -74,13 +76,46 @@ const TeachingManagementSystem = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    setAttendance(stored);
-  }, []);
+    fetchAttendance({ filters: { subjectType: "EMPLOYEE" } });
+  }, [fetchAttendance]);
 
-  const saveAttendance = (data) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    setAttendance(data);
+  useEffect(() => {
+    setAttendance(selectTeachingAttendanceLedger(attendanceRecords, trainerEmployeeId));
+  }, [attendanceRecords, trainerEmployeeId]);
+
+  const teachingSessions = selectTeachingSessions(trainerEmployeeId);
+
+  const upsertAttendanceRecord = async (date, dayRecord) => {
+    const scope = selectTrainerAttendanceScope(trainerEmployeeId);
+    const existing = attendanceRecords.find(
+      (record) =>
+        record.subjectType === "EMPLOYEE" &&
+        record.subjectId === trainerEmployeeId &&
+        record.date === date &&
+        record.sessionKey === "tms"
+    );
+    const payload = {
+      subjectType: "EMPLOYEE",
+      subjectId: trainerEmployeeId,
+      employeeId: trainerEmployeeId,
+      projectId: scope.projectId,
+      centerId: scope.centerId,
+      batchId: scope.batchId,
+      date,
+      status: "PRESENT",
+      markedByEmployeeId: trainerEmployeeId,
+      sessionKey: "tms",
+      sessionTitle: "Teaching Management Attendance",
+      punchIn: dayRecord.punchIn,
+      punchOut: dayRecord.punchOut,
+    };
+
+    if (existing) {
+      await updateAttendance(existing.id, payload);
+      return;
+    }
+
+    await createAttendance(payload);
   };
 
   const handlePunch = async () => {
@@ -106,7 +141,7 @@ const TeachingManagementSystem = () => {
           pos.coords.longitude
         );
 
-        saveAttendance({
+        const updated = {
           ...attendance,
           [today]: {
             ...todayRecord,
@@ -118,7 +153,10 @@ const TeachingManagementSystem = () => {
               image,
             },
           },
-        });
+        };
+
+        setAttendance(updated);
+        await upsertAttendanceRecord(today, updated[today]);
 
         setActivePunch(null);
       },
@@ -142,8 +180,8 @@ const TeachingManagementSystem = () => {
     ).length,
   };
 
-  const totalStudentsTaught = MOCK_SESSIONS.reduce((s, x) => s + x.students, 0);
-  const totalSessions = MOCK_SESSIONS.length;
+  const totalStudentsTaught = teachingSessions.reduce((s, x) => s + x.students, 0);
+  const totalSessions = teachingSessions.length;
 
   return (
     <section className="min-h-screen bg-transparent p-8 text-white/90">
@@ -211,8 +249,8 @@ const TeachingManagementSystem = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-emerald-500/10">
-                {MOCK_SESSIONS.map((session, i) => (
-                  <tr key={i} className="hover:bg-emerald-500/5 transition-colors">
+                {teachingSessions.map((session) => (
+                  <tr key={session.id} className="hover:bg-emerald-500/5 transition-colors">
                     <td className="px-4 py-3 font-medium text-white/90">{session.date}</td>
                     <td className="px-4 py-3">
                       <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-full font-medium">

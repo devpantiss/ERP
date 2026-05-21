@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Check, FileText, MapPin, Users, FileCheck } from "lucide-react";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectProjectFormOptions } from "../../stores/selectors/projectSelectors";
 
 const STEPS = [
   { label: "Project Details", icon: FileText },
@@ -8,11 +10,6 @@ const STEPS = [
   { label: "Batches & Enrollment", icon: Users },
   { label: "Review & Submit", icon: FileCheck },
 ];
-
-const PROJECTS = ["PMKVY 4.0", "CSR - Tata Steel", "DDUGKY", "State Skill Mission", "DMF Keonjhar"];
-const CENTERS = ["Angul", "Jajpur", "Kalahandi", "Jharsuguda", "Keonjhar", "Sundargarh"];
-const SECTORS = ["Mining", "Shipping", "Construction", "Power", "IT & ITES", "Healthcare", "Retail", "Manufacturing"];
-const STATUSES = ["Planning", "Active", "On Hold"];
 
 function Input({ label, value, onChange, type = "text", placeholder = "" }) {
   return (
@@ -31,7 +28,7 @@ function Select({ label, value, onChange, options }) {
       <select value={value} onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2.5 rounded-lg bg-transparent border border-slate-700 text-sm text-white/90 focus:border-violet-400 outline-none">
         <option value="">Select {label}</option>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </div>
   );
@@ -49,6 +46,10 @@ function Textarea({ label, value, onChange, placeholder = "" }) {
 
 export default function AdminAddProjectStepper() {
   const navigate = useNavigate();
+  const projectRecords = useProjectStore((state) => state.records);
+  const fetchProjects = useProjectStore((state) => state.fetchAll);
+  const createProject = useProjectStore((state) => state.create);
+  const options = useMemo(() => selectProjectFormOptions(projectRecords), [projectRecords]);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     name: "", scheme: "", sector: "", status: "", startDate: "", endDate: "", description: "",
@@ -58,6 +59,10 @@ export default function AdminAddProjectStepper() {
 
   const u = (key, val) => setForm({ ...form, [key]: val });
 
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
   const canNext = () => {
     if (step === 0) return form.name && form.scheme && form.sector;
     if (step === 1) return form.center && form.district;
@@ -65,7 +70,24 @@ export default function AdminAddProjectStepper() {
     return true;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    await createProject({
+      code: form.name.toUpperCase().replace(/[^A-Z0-9]+/g, "-").slice(0, 16) || "NEW-PRJ",
+      name: form.name,
+      fundingAgencyId: form.scheme || options.fundingAgencies[0]?.value || "FAG-0001",
+      schoolId: form.sector || "SCH-0001",
+      startDate: form.startDate,
+      endDate: form.endDate,
+      status: form.status || "PLANNING",
+      description: form.description,
+      proposedCenterId: form.center,
+      enrollmentTarget: Number(form.totalEnrollment || 0),
+      batchPlan: {
+        totalBatches: Number(form.totalBatches || 0),
+        batchSize: Number(form.batchSize || 0),
+        jobRoles: form.jobroles,
+      },
+    });
     navigate("/admin/project-management");
   };
 
@@ -118,9 +140,9 @@ export default function AdminAddProjectStepper() {
               <h3 className="text-lg font-semibold text-violet-400">Project Details</h3>
               <div className="grid md:grid-cols-2 gap-5">
                 <Input label="Project Name" value={form.name} onChange={(v) => u("name", v)} placeholder="e.g. PMKVY 4.0 Phase II" />
-                <Select label="Scheme / Program" value={form.scheme} onChange={(v) => u("scheme", v)} options={PROJECTS} />
-                <Select label="Sector" value={form.sector} onChange={(v) => u("sector", v)} options={SECTORS} />
-                <Select label="Status" value={form.status} onChange={(v) => u("status", v)} options={STATUSES} />
+                <Select label="Funding Agency" value={form.scheme} onChange={(v) => u("scheme", v)} options={options.fundingAgencies} />
+                <Select label="Sector" value={form.sector} onChange={(v) => u("sector", v)} options={options.sectors} />
+                <Select label="Status" value={form.status} onChange={(v) => u("status", v)} options={options.statuses} />
                 <Input label="Start Date" value={form.startDate} onChange={(v) => u("startDate", v)} type="date" />
                 <Input label="End Date" value={form.endDate} onChange={(v) => u("endDate", v)} type="date" />
               </div>
@@ -132,7 +154,7 @@ export default function AdminAddProjectStepper() {
             <div className="space-y-6">
               <h3 className="text-lg font-semibold text-violet-400">Location & Center</h3>
               <div className="grid md:grid-cols-2 gap-5">
-                <Select label="Training Center" value={form.center} onChange={(v) => u("center", v)} options={CENTERS} />
+                <Select label="Training Center" value={form.center} onChange={(v) => u("center", v)} options={options.centers} />
                 <Input label="State" value={form.state} onChange={(v) => u("state", v)} />
                 <Input label="District" value={form.district} onChange={(v) => u("district", v)} placeholder="e.g. Angul" />
                 <Input label="Block" value={form.block} onChange={(v) => u("block", v)} placeholder="e.g. Talcher" />

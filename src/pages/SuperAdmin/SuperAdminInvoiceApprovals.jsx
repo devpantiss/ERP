@@ -1,4 +1,4 @@
-import { createElement, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   AlertCircle,
@@ -21,14 +21,13 @@ import {
   Utensils,
   Wallet,
 } from "lucide-react";
-import {
-  FOOD_MONTHLY_DATA,
-  FOOD_RATE_PER_STUDENT,
-  MIN_ATTENDANCE_PCT,
-  buildInitialProjectBills,
-  getMonthLabel,
-} from "../Admin/adminInvoiceData";
 import { Breadcrumb, PageHeader } from "./SuperAdminSharedComponents";
+import { useFinanceStore } from "../../stores/financeStore";
+import {
+  getInvoiceMonthLabel,
+  selectInvoiceApprovalRows,
+  selectInvoiceMonthData,
+} from "../../stores/selectors/invoiceSelectors";
 
 const ADMIN_INVOICE_LINK = {
   label: "Admin Invoices Raised",
@@ -43,13 +42,15 @@ const CATEGORY_TABS = [
 ];
 
 const ADMIN_REVIEWABLE_STATUSES = ["Verified", "Approved", "Paid"];
+const FOOD_RATE_PER_STUDENT = 3000;
+const MIN_ATTENDANCE_PCT = 70;
 
 function formatCurrency(value) {
   return value ? `₹${value.toLocaleString("en-IN")}` : "Review pending";
 }
 
-function buildInvoiceRecords() {
-  return buildInitialProjectBills().map((bill) => {
+function buildInvoiceRecords(invoices) {
+  return selectInvoiceApprovalRows(invoices).map((bill) => {
     const adminReady = ADMIN_REVIEWABLE_STATUSES.includes(bill.status);
 
     return {
@@ -110,12 +111,30 @@ function summarizeProjects(records) {
 }
 
 export default function SuperAdminInvoiceApprovals() {
-  const [invoiceRows, setInvoiceRows] = useState(buildInvoiceRecords);
+  const { invoices, fetchInvoices } = useFinanceStore();
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
+
+  const normalizedInvoiceRows = useMemo(() => buildInvoiceRecords(invoices), [invoices]);
+  const invoiceMonthData = useMemo(() => selectInvoiceMonthData(invoices), [invoices]);
+  const monthKeys = useMemo(() => Object.keys(invoiceMonthData).sort().reverse(), [invoiceMonthData]);
+  const [invoiceRows, setInvoiceRows] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState("2026-03");
+  const [selectedMonth, setSelectedMonth] = useState("2026-05");
   const [activeTab, setActiveTab] = useState("Food");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+
+  useEffect(() => {
+    setInvoiceRows((current) => (current.length ? current : normalizedInvoiceRows));
+  }, [normalizedInvoiceRows]);
+
+  useEffect(() => {
+    if (monthKeys.length && !monthKeys.includes(selectedMonth)) {
+      setSelectedMonth(monthKeys[0]);
+    }
+  }, [monthKeys, selectedMonth]);
 
   const projectSummaries = useMemo(() => summarizeProjects(invoiceRows), [invoiceRows]);
   const selectedProjectSummary = useMemo(
@@ -123,8 +142,8 @@ export default function SuperAdminInvoiceApprovals() {
     [projectSummaries, selectedProject]
   );
 
-  const monthLabel = getMonthLabel(selectedMonth);
-  const monthData = FOOD_MONTHLY_DATA[selectedMonth] || {
+  const monthLabel = getInvoiceMonthLabel(selectedMonth);
+  const monthData = invoiceMonthData[selectedMonth] || {
     activeStudents: 0,
     attendancePct: 0,
     boardingCapacity: 0,
@@ -316,9 +335,9 @@ export default function SuperAdminInvoiceApprovals() {
                     onChange={(event) => setSelectedMonth(event.target.value)}
                     className="w-full appearance-none rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 pr-8 text-xs font-semibold text-white/75 outline-none transition focus:border-red-400/45"
                   >
-                    {Object.keys(FOOD_MONTHLY_DATA).map((monthKey) => (
+                    {monthKeys.map((monthKey) => (
                       <option key={monthKey} value={monthKey} className="bg-slate-950">
-                        {getMonthLabel(monthKey)}
+                        {getInvoiceMonthLabel(monthKey)}
                       </option>
                     ))}
                   </select>

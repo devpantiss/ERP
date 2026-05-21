@@ -12,9 +12,8 @@ import {
   Video,
   Wifi,
 } from "lucide-react";
-import { LIVE_FEEDS } from "../Admin/adminPortalData";
 import { Header } from "./ClientDashboard";
-import { getClientProjects, getStoredClient } from "./clientPortalData";
+import { getClientLiveFeeds, getClientProjects, getStoredClient } from "./clientPortalData";
 
 const statusStyles = {
   Live: "border-red-400/25 bg-red-500/10 text-red-200",
@@ -56,8 +55,8 @@ export default function ClientLiveFeed() {
   const projects = getClientProjects(client.name);
   const projectNames = useMemo(() => new Set(projects.map((project) => project.name)), [projects]);
   const feeds = useMemo(
-    () => LIVE_FEEDS.filter((feed) => projectNames.has(feed.project)),
-    [projectNames]
+    () => getClientLiveFeeds(client.name).filter((feed) => projectNames.has(feed.project)),
+    [client.name, projectNames]
   );
   const archiveFeeds = useMemo(() => buildArchiveFeeds(feeds), [feeds]);
   const centers = useMemo(

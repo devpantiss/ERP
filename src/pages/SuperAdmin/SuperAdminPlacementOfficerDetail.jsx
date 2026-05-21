@@ -1,53 +1,23 @@
+import { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Target, Briefcase, TrendingUp, Building2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { ALL_USERS } from "./superAdminUsers";
-
-const PO_MAP = {};
-ALL_USERS.filter(u => u.role === "Placement Officer").forEach(u => { PO_MAP[u.id] = u; });
-
-const PO_KPIS = {
-  "PSU-PLC-001": {
-    totalDrives: 12, studentsPlaced: 185, conversionRate: "72%", avgSalary: "₹14,500/mo", partnerCompanies: 18,
-    drives: [
-      { company: "Tata Steel", sector: "Manufacturing", date: "28 Feb", placed: 32, appeared: 45, status: "Completed" },
-      { company: "TCS", sector: "IT/ITES", date: "15 Feb", placed: 28, appeared: 40, status: "Completed" },
-      { company: "Vedanta Ltd", sector: "Mining", date: "05 Feb", placed: 18, appeared: 30, status: "Completed" },
-      { company: "Apollo Hospitals", sector: "Healthcare", date: "08 Mar", placed: 0, appeared: 0, status: "Upcoming" },
-    ],
-    sectorSplit: [
-      { name: "Manufacturing", value: 35, color: "#ef4444" },
-      { name: "IT/ITES", value: 28, color: "#3b82f6" },
-      { name: "Mining", value: 20, color: "#f59e0b" },
-      { name: "Healthcare", value: 17, color: "#10b981" },
-    ],
-    monthly: [{ m: "Oct", p: 18 },{ m: "Nov", p: 25 },{ m: "Dec", p: 32 },{ m: "Jan", p: 40 },{ m: "Feb", p: 38 },{ m: "Mar", p: 32 }],
-  },
-  "PSU-PLC-002": {
-    totalDrives: 8, studentsPlaced: 120, conversionRate: "68%", avgSalary: "₹13,200/mo", partnerCompanies: 12,
-    drives: [
-      { company: "NALCO", sector: "Mining", date: "20 Feb", placed: 22, appeared: 35, status: "Completed" },
-      { company: "Infosys BPO", sector: "IT/ITES", date: "10 Feb", placed: 18, appeared: 28, status: "Completed" },
-      { company: "L&T", sector: "Construction", date: "01 Feb", placed: 15, appeared: 25, status: "Completed" },
-      { company: "Vedanta Ltd", sector: "Mining", date: "08 Mar", placed: 0, appeared: 0, status: "Upcoming" },
-    ],
-    sectorSplit: [
-      { name: "Mining", value: 40, color: "#f59e0b" },
-      { name: "IT/ITES", value: 25, color: "#3b82f6" },
-      { name: "Construction", value: 20, color: "#ef4444" },
-      { name: "Other", value: 15, color: "#64748b" },
-    ],
-    monthly: [{ m: "Oct", p: 12 },{ m: "Nov", p: 16 },{ m: "Dec", p: 22 },{ m: "Jan", p: 28 },{ m: "Feb", p: 24 },{ m: "Mar", p: 18 }],
-  },
-};
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { usePlacementStore } from "../../stores/placementStore";
+import { selectPlacementOfficerDetail } from "../../stores/selectors/superAdminSelectors";
 
 const tooltipStyle = {  border: "1px solid #334155", borderRadius: "12px" };
 
 export default function SuperAdminPlacementOfficerDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const po = PO_MAP[id] || ALL_USERS.find(u => u.role === "Placement Officer");
-  const kpi = PO_KPIS[id] || PO_KPIS["PSU-PLC-001"];
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  const { drives, fetchDrives } = usePlacementStore();
+  useEffect(() => {
+    fetchWithAssignments();
+    fetchDrives();
+  }, [fetchDrives, fetchWithAssignments]);
+  const { employee: po, kpi } = useMemo(() => selectPlacementOfficerDetail(id, employees, drives), [drives, employees, id]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">

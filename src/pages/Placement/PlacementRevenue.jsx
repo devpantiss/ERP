@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import {
   IndianRupee,
@@ -12,6 +12,7 @@ import {
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
+import { selectRevenueWorkflows } from "../../stores/selectors/analyticsSelectors";
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -26,22 +27,6 @@ const TARGET_DRIVES        = 3;      // per month
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
-];
-
-/* ── Demo data ───────────────────────────────────────────────── */
-const MONTHLY_DATA = {
-  "2026-03": { placed: 16, drivesCompleted: 2 },
-  "2026-02": { placed: 20, drivesCompleted: 3 },
-  "2026-01": { placed: 12, drivesCompleted: 3 },
-  "2025-12": { placed: 18, drivesCompleted: 3 },
-  "2025-11": { placed: 22, drivesCompleted: 2 },
-  "2025-10": { placed: 15, drivesCompleted: 3 },
-};
-
-const INVOICES = [
-  { id: "INV-P-0018", month: "February 2026", amount: 30000, status: "Paid",     raisedOn: "2026-03-01" },
-  { id: "INV-P-0017", month: "January 2026",  amount: 20400, status: "Approved", raisedOn: "2026-02-01" },
-  { id: "INV-P-0016", month: "December 2025", amount: 27600, status: "Paid",     raisedOn: "2026-01-01" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -71,13 +56,15 @@ const statusBg = (s) =>
 ═══════════════════════════════════════════════════════════════ */
 
 export default function PlacementRevenue() {
+  const workflow = selectRevenueWorkflows().placement;
+  const monthlyData = workflow.monthlyData;
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey());
   const [invoiceModal, setInvoiceModal]   = useState(false);
   const [invoiceNotes, setInvoiceNotes]   = useState("");
-  const [invoices, setInvoices]           = useState(INVOICES);
+  const [invoices, setInvoices]           = useState(workflow.invoices);
 
-  const data     = MONTHLY_DATA[selectedMonth] || { placed: 0, drivesCompleted: 0 };
-  const earnings = useMemo(() => calcEarnings(data), [selectedMonth]);
+  const data     = monthlyData[selectedMonth] || { placed: 0, drivesCompleted: 0 };
+  const earnings = calcEarnings(data);
 
   const monthLabel = (() => {
     const [y, m] = selectedMonth.split("-");
@@ -122,7 +109,7 @@ export default function PlacementRevenue() {
                          px-4 py-3 text-sm text-white/90 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 focus:outline-none
                          cursor-pointer pr-10 hover:bg-white/[0.06] transition-colors shadow-lg shadow-black/20"
             >
-              {Object.keys(MONTHLY_DATA).map((k) => {
+              {Object.keys(monthlyData).map((k) => {
                 const [y, m] = k.split("-");
                 return <option key={k} value={k} className="bg-[#0b1220]">{MONTHS[parseInt(m) - 1]} {y}</option>;
               })}

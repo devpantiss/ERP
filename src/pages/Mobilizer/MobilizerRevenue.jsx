@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import {
   IndianRupee,
@@ -12,6 +12,7 @@ import {
   AlertCircle,
   ChevronDown,
 } from "lucide-react";
+import { selectRevenueWorkflows } from "../../stores/selectors/analyticsSelectors";
 
 /* ═══════════════════════════════════════════════════════════════
    CONFIG
@@ -23,61 +24,6 @@ const PER_DRIVE      = 1000;   // ₹1,000 per community drive conducted
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
-];
-
-/* ── Demo data ───────────────────────────────────────────────── */
-const MONTHLY_DATA = {
-  "2026-03": {
-    candidates: [
-      { name: "Rahul Mehra",    date: "2026-03-02", status: "Enrolled" },
-      { name: "Priya Sharma",   date: "2026-03-05", status: "Enrolled" },
-      { name: "Amit Kumar",     date: "2026-03-07", status: "Enrolled" },
-      { name: "Deepa Nayak",    date: "2026-03-10", status: "Enrolled" },
-      { name: "Suresh Patel",   date: "2026-03-12", status: "Enrolled" },
-      { name: "Kavita Das",     date: "2026-03-14", status: "Enrolled" },
-      { name: "Ravi Shukla",    date: "2026-03-15", status: "Pending" },
-    ],
-    drives: [
-      { name: "Angul Mining Colony Outreach",  date: "2026-03-03", location: "Angul" },
-      { name: "Jharsuguda Skill Fair",         date: "2026-03-08", location: "Jharsuguda" },
-      { name: "Talcher Community Camp",        date: "2026-03-13", location: "Talcher" },
-    ],
-  },
-  "2026-02": {
-    candidates: [
-      { name: "Sanjay Rath",      date: "2026-02-02", status: "Enrolled" },
-      { name: "Manisha Behera",   date: "2026-02-06", status: "Enrolled" },
-      { name: "Rajesh Pradhan",   date: "2026-02-10", status: "Enrolled" },
-      { name: "Sunita Mohanty",   date: "2026-02-15", status: "Enrolled" },
-      { name: "Anil Sahu",        date: "2026-02-19", status: "Enrolled" },
-      { name: "Geeta Naik",       date: "2026-02-22", status: "Enrolled" },
-      { name: "Biswajit Swain",   date: "2026-02-25", status: "Enrolled" },
-      { name: "Pankaj Mishra",    date: "2026-02-27", status: "Enrolled" },
-    ],
-    drives: [
-      { name: "Barbil Rural Drive",             date: "2026-02-05", location: "Barbil" },
-      { name: "Rourkela Employment Mela",        date: "2026-02-14", location: "Rourkela" },
-      { name: "Sundargarh Block Campaign",       date: "2026-02-20", location: "Sundargarh" },
-      { name: "Sambalpur Awareness Rally",       date: "2026-02-26", location: "Sambalpur" },
-    ],
-  },
-  "2026-01": {
-    candidates: [
-      { name: "Prakash Sahu",    date: "2026-01-05", status: "Enrolled" },
-      { name: "Nirmala Jena",    date: "2026-01-12", status: "Enrolled" },
-      { name: "Vikram Panda",    date: "2026-01-18", status: "Enrolled" },
-      { name: "Laxmi Rout",      date: "2026-01-25", status: "Enrolled" },
-    ],
-    drives: [
-      { name: "Keonjhar Outreach Camp",   date: "2026-01-08",  location: "Keonjhar" },
-      { name: "Koraput Skill Drive",       date: "2026-01-20", location: "Koraput" },
-    ],
-  },
-};
-
-const INVOICES = [
-  { id: "INV-M-0023", month: "February 2026", amount: 8000,  status: "Paid",     raisedOn: "2026-03-01" },
-  { id: "INV-M-0022", month: "January 2026",  amount: 4000,  status: "Approved", raisedOn: "2026-02-01" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -107,13 +53,15 @@ const statusBg = (s) =>
 ═══════════════════════════════════════════════════════════════ */
 
 export default function MobilizerRevenue() {
+  const workflow = selectRevenueWorkflows().mobilizer;
+  const monthlyData = workflow.monthlyData;
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey());
   const [invoiceModal, setInvoiceModal]   = useState(false);
   const [invoiceNotes, setInvoiceNotes]   = useState("");
-  const [invoices, setInvoices]           = useState(INVOICES);
+  const [invoices, setInvoices]           = useState(workflow.invoices);
 
-  const data     = MONTHLY_DATA[selectedMonth] || { candidates: [], drives: [] };
-  const earnings = useMemo(() => calcEarnings(data), [selectedMonth]);
+  const data     = monthlyData[selectedMonth] || { candidates: [], drives: [] };
+  const earnings = calcEarnings(data);
 
   const monthLabel = (() => {
     const [y, m] = selectedMonth.split("-");
@@ -158,7 +106,7 @@ export default function MobilizerRevenue() {
                          px-4 py-3 text-sm text-white/90 focus:border-yellow-400/50 focus:ring-1 focus:ring-yellow-400/50 focus:outline-none
                          cursor-pointer pr-10 hover:bg-white/[0.06] transition-colors shadow-lg shadow-black/20"
             >
-              {Object.keys(MONTHLY_DATA).map((k) => {
+              {Object.keys(monthlyData).map((k) => {
                 const [y, m] = k.split("-");
                 return <option key={k} value={k} className="bg-[#0b1220]">{MONTHS[parseInt(m) - 1]} {y}</option>;
               })}
@@ -247,9 +195,9 @@ export default function MobilizerRevenue() {
         <div className="bg-white/[0.02] backdrop-blur-md rounded-2xl border border-white/[0.05] p-6 sm:p-8 animate-fade-in-up shadow-xl shadow-black/20" style={{ animationDelay: "750ms" }}>
           <h2 className="text-sm font-semibold text-white mb-6 uppercase tracking-widest text-white/80">Earnings History Visualizer</h2>
           <div className="flex items-end gap-3 sm:gap-6 h-40">
-            {Object.entries(MONTHLY_DATA).reverse().map(([key, d]) => {
+            {Object.entries(monthlyData).reverse().map(([key, d]) => {
               const e = calcEarnings(d);
-              const maxAmt = Math.max(...Object.values(MONTHLY_DATA).map((x) => calcEarnings(x).net), 100);
+              const maxAmt = Math.max(...Object.values(monthlyData).map((x) => calcEarnings(x).net), 100);
               const hPct = (e.net / maxAmt) * 100;
               const [, m] = key.split("-");
               const isCurrent = key === selectedMonth;

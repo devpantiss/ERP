@@ -1,20 +1,13 @@
 import { 
   Gem, 
   Wallet, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  PieChart as PieIcon, 
   TrendingUp, 
   History, 
   Search, 
   Filter, 
   Download,
   Plus,
-  MoreVertical,
-  CheckCircle2,
   Clock,
-  AlertCircle,
-  IndianRupee
 } from "lucide-react";
 import {
   BarChart,
@@ -24,47 +17,19 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell,
   ComposedChart,
   Line,
-  Area
 } from "recharts";
+import { selectEnterpriseFinanceAnalytics } from "../../stores/selectors/analyticsSelectors";
 
-/* ===================== ENTERPRISE MOCK DATA ===================== */
-
-const GRANT_KPIS = [
-  { label: "Total Fund corpus", value: "₹85.4 Cr", sub: "Global Multi-year", icon: Gem, color: "text-amber-500", bg: "bg-amber-500/10" },
-  { label: "Disbursed amount", value: "₹42.8 Cr", sub: "FY 2025-26", icon: Wallet, color: "text-blue-500", bg: "bg-blue-500/10" },
-  { label: "Pending Claims", value: "₹12.2 Cr", sub: "Under Audit", icon: Clock, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-  { label: "Operational Burn", value: "₹4.5 Cr", sub: "Monthly average", icon: TrendingUp, color: "text-violet-500", bg: "bg-violet-500/10" },
-];
-
-const FUNDING_SOURCES = [
-  { id: "GS-001", name: "PMKVY National Grant", total: 25.0, utilized: 18.5, status: "Active" },
-  { id: "CSR-102", name: "TSML Skill Development", total: 12.0, utilized: 9.2, status: "Active" },
-  { id: "WB-DG-05", name: "World Bank Skills Loan", total: 40.0, utilized: 12.0, status: "Active" },
-  { id: "STATE-OR", name: "Odisha State Skill Mission", total: 8.4, utilized: 3.1, status: "Active" },
-];
-
-const DISBURSEMENT_DATA = [
-  { month: "Apr", allocation: 5, actual: 4 },
-  { month: "May", allocation: 8, actual: 7.2 },
-  { month: "Jun", allocation: 6, actual: 5.8 },
-  { month: "Jul", allocation: 12, actual: 11 },
-  { month: "Aug", allocation: 10, actual: 9.5 },
-  { month: "Sep", allocation: 15, actual: 12.8 },
-];
-
-const RECENT_TRANSACTIONS = [
-  { id: "TXN-882", desc: "Angul Center Operations", amount: "₹4.2 L", date: "2026-03-05", status: "Approved" },
-  { id: "TXN-881", desc: "NSDC Assessment Fees", amount: "₹12.5 L", date: "2026-03-04", status: "Pending" },
-  { id: "TXN-880", desc: "Trainer Certification Grant", amount: "₹8.0 L", date: "2026-03-03", status: "Approved" },
-  { id: "TXN-879", desc: "Lab Infrastructure Keonjhar", amount: "₹24.0 L", date: "2026-03-01", status: "Approved" },
-];
+const KPI_ICONS = [Gem, Wallet, Clock, TrendingUp];
+const KPI_TONES = ["bg-amber-500/10", "bg-blue-500/10", "bg-emerald-500/10", "bg-violet-500/10"];
 
 /* ===================== COMPONENT ===================== */
 
 export default function GrantFinancials() {
+  const analytics = selectEnterpriseFinanceAnalytics();
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
@@ -89,10 +54,13 @@ export default function GrantFinancials() {
 
       {/* KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {GRANT_KPIS.map((kpi) => (
+        {analytics.grantKpis.map((kpi, index) => {
+          const Icon = KPI_ICONS[index] || Gem;
+          const tone = KPI_TONES[index] || KPI_TONES[0];
+          return (
           <div key={kpi.label} className="bg-[#111827]/80 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-sm relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition duration-500">
-              <kpi.icon size={64} />
+              <Icon size={64} />
             </div>
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">{kpi.label}</p>
             <h3 className="text-2xl font-black text-slate-100 flex items-baseline gap-1">
@@ -102,10 +70,11 @@ export default function GrantFinancials() {
               <span className="text-[10px] font-bold text-white/60 uppercase tracking-tighter">{kpi.sub}</span>
             </div>
             <div className="mt-4 h-1 w-full bg-transparent rounded-full overflow-hidden">
-               <div className={`h-full ${kpi.bg.replace('bg-', 'bg-').split('/')[0]} opacity-50 w-2/3`} />
+               <div className={`h-full ${tone} opacity-80 w-2/3`} />
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -123,7 +92,7 @@ export default function GrantFinancials() {
           </div>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={DISBURSEMENT_DATA}>
+              <ComposedChart data={analytics.grantFlow}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                 <XAxis dataKey="month" stroke="#475569" fontSize={11} axisLine={false} tickLine={false} />
                 <YAxis stroke="#475569" fontSize={11} axisLine={false} tickLine={false} />
@@ -143,7 +112,7 @@ export default function GrantFinancials() {
             <Gem size={18} className="text-amber-500" /> Active Grant Portfolio
           </h3>
           <div className="space-y-6">
-            {FUNDING_SOURCES.map((source) => (
+            {analytics.fundingSources.map((source) => (
               <div key={source.id} className="space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
@@ -151,13 +120,13 @@ export default function GrantFinancials() {
                     <p className="text-[10px] text-slate-500 mt-0.5 font-bold uppercase">{source.id}</p>
                   </div>
                   <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest leading-none">
-                    {((source.utilized / source.total) * 100).toFixed(0)}% Utilized
+                    {source.total ? ((source.utilized / source.total) * 100).toFixed(0) : 0}% Utilized
                   </span>
                 </div>
                 <div className="h-1.5 w-full bg-transparent rounded-full overflow-hidden">
                    <div 
                      className="h-full bg-amber-500 transition-all duration-1000" 
-                     style={{ width: `${(source.utilized / source.total) * 100}%` }} 
+                     style={{ width: `${source.total ? (source.utilized / source.total) * 100 : 0}%` }} 
                    />
                 </div>
                 <div className="flex justify-between text-[10px] font-bold text-white/60">
@@ -202,7 +171,7 @@ export default function GrantFinancials() {
                   </tr>
                </thead>
                <tbody className="divide-y divide-slate-800">
-                  {RECENT_TRANSACTIONS.map((txn) => (
+                  {analytics.transactions.map((txn) => (
                     <tr key={txn.id} className="hover:bg-transparent/30 transition group">
                        <td className="px-8 py-5 text-[11px] font-black text-amber-500/80 font-mono">{txn.id}</td>
                        <td className="px-8 py-5">

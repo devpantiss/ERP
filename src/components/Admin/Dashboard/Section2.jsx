@@ -14,65 +14,9 @@ import {
   ArrowRight,
 } from "lucide-react";
 
-/* ===================== ROLE DISTRIBUTION DATA ===================== */
-
-const ROLE_DATA = [
-  { name: "Trainers", value: 64, color: "#10b981" },
-  { name: "Mobilizers", value: 52, color: "#facc15" },
-  { name: "Placement Officers", value: 38, color: "#22d3ee" },
-  { name: "Admins", value: 8, color: "#8b5cf6" },
-];
-
-/* ===================== RECENT ACTIVITY DATA ===================== */
-
-const RECENT_ACTIVITY = [
-  {
-    id: 1,
-    icon: UserPlus,
-    text: "New Trainer Rajesh Kumar registered",
-    time: "12 min ago",
-    color: "text-emerald-400",
-  },
-  {
-    id: 2,
-    icon: UserCheck,
-    text: "Mobilizer Priya updated enrollment records",
-    time: "34 min ago",
-    color: "text-yellow-400",
-  },
-  {
-    id: 3,
-    icon: Clock,
-    text: "Placement drive scheduled for Jajpur Center",
-    time: "1 hr ago",
-    color: "text-cyan-400",
-  },
-  {
-    id: 4,
-    icon: AlertTriangle,
-    text: "Attendance below threshold at Kalahandi Center",
-    time: "2 hrs ago",
-    color: "text-red-400",
-  },
-  {
-    id: 5,
-    icon: UserPlus,
-    text: "15 new candidates enrolled via DMF Keonjhar",
-    time: "3 hrs ago",
-    color: "text-violet-400",
-  },
-  {
-    id: 6,
-    icon: UserCheck,
-    text: "Trainer batch completion report submitted",
-    time: "5 hrs ago",
-    color: "text-emerald-400",
-  },
-];
-
 /* ===================== MAIN COMPONENT ===================== */
 
-export default function AdminDashboardSection2() {
+export default function AdminDashboardSection2({ roleData = [], recentActivity = [] }) {
   return (
     <section className="grid md:grid-cols-2 gap-6 mt-6">
 
@@ -87,7 +31,7 @@ export default function AdminDashboardSection2() {
           <ResponsiveContainer>
             <PieChart>
               <Pie
-                data={ROLE_DATA}
+                data={roleData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
@@ -96,7 +40,7 @@ export default function AdminDashboardSection2() {
                 paddingAngle={3}
                 strokeWidth={0}
               >
-                {ROLE_DATA.map((entry, index) => (
+                {roleData.map((entry, index) => (
                   <Cell key={index} fill={entry.color} />
                 ))}
               </Pie>
@@ -121,7 +65,7 @@ export default function AdminDashboardSection2() {
 
         {/* Role summary */}
         <div className="grid grid-cols-2 gap-3 mt-4">
-          {ROLE_DATA.map((role) => (
+          {roleData.map((role) => (
             <div
               key={role.name}
               className="flex items-center gap-2 text-sm"
@@ -152,11 +96,11 @@ export default function AdminDashboardSection2() {
         </div>
 
         <div className="space-y-4">
-          {RECENT_ACTIVITY.map((activity) => {
-            const Icon = activity.icon;
+          {recentActivity.map((activity, index) => {
+            const Icon = activity.type === "alert" ? AlertTriangle : activity.type === "placement" ? Clock : activity.type === "candidate" ? UserPlus : UserCheck;
             return (
               <div
-                key={activity.id}
+                key={`${activity.type}-${index}`}
                 className="flex items-start gap-3 group"
               >
                 <div className={`mt-0.5 ${activity.color}`}>

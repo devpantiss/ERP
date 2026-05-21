@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Briefcase, ChevronLeft, ChevronRight, Check, User, FolderKanban, Building2, FileCheck, CheckCircle2 } from "lucide-react";
-import { ALL_USERS } from "./superAdminUsers";
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { useProjectStore } from "../../stores/projectStore";
+import { selectEmployeeDirectory } from "../../stores/selectors/employeeSelectors";
+import { selectEnrollmentCatalog } from "../../stores/selectors/projectSelectors";
 
 const STEPS = [
   { label: "Select Officer", icon: User },
@@ -10,16 +13,29 @@ const STEPS = [
   { label: "Review & Confirm", icon: FileCheck },
 ];
 
-const PROJECTS = ["DDU-GKY Phase IV", "PMKVY 4.0", "CSR Skill Program", "State Skill Mission", "World Bank Skills Loan"];
-const CENTERS = ["Angul", "Sundargarh", "Keonjhar", "Jharsuguda", "Kalahandi"];
-const POS = ALL_USERS.filter(u => u.role === "Placement Officer");
-
 export default function SuperAdminPlacementAssignment() {
   const navigate = useNavigate();
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  const { records: projects, fetchAll: fetchProjects } = useProjectStore();
   const [step, setStep] = useState(0);
   const [selectedPO, setSelectedPO] = useState(null);
   const [selectedProjects, setSelectedProjects] = useState([]);
   const [selectedCenters, setSelectedCenters] = useState([]);
+
+  useEffect(() => {
+    fetchWithAssignments();
+    fetchProjects();
+  }, [fetchProjects, fetchWithAssignments]);
+
+  const officers = useMemo(() => selectEmployeeDirectory(employees).filter((employee) => employee.role === "Placement Officer"), [employees]);
+  const catalog = useMemo(() => selectEnrollmentCatalog(projects), [projects]);
+  const projectOptions = useMemo(() => catalog.map((project) => project.name), [catalog]);
+  const centerOptions = useMemo(
+    () => catalog
+      .filter((project) => selectedProjects.length === 0 || selectedProjects.includes(project.name))
+      .flatMap((project) => project.centers.map((center) => center.name)),
+    [catalog, selectedProjects]
+  );
 
   const toggle = (item, list, setList) => setList(list.includes(item) ? list.filter(i => i !== item) : [...list, item]);
 
@@ -78,7 +94,7 @@ export default function SuperAdminPlacementAssignment() {
           <div className="space-y-6">
             <h3 className="text-lg font-bold text-red-400">Select Placement Officer</h3>
             <div className="grid md:grid-cols-2 gap-4">
-              {POS.map((po) => (
+              {officers.map((po) => (
                 <button key={po.id} onClick={() => setSelectedPO(po)}
                   className={`p-5 rounded-xl text-left border transition ${selectedPO?.id === po.id ? "bg-red-500/10 border-red-500/50" : "bg-transparent/50 border-slate-700 hover:border-slate-600"}`}>
                   <div className="flex items-center gap-3">
@@ -102,7 +118,7 @@ export default function SuperAdminPlacementAssignment() {
             <h3 className="text-lg font-bold text-red-400">Assign Projects</h3>
             <p className="text-xs text-slate-500">Select projects for <span className="text-red-400 font-bold">{selectedPO?.name}</span>.</p>
             <div className="grid md:grid-cols-2 gap-3">
-              {PROJECTS.map(p => (
+              {projectOptions.map(p => (
                 <button key={p} onClick={() => toggle(p, selectedProjects, setSelectedProjects)}
                   className={`px-5 py-4 rounded-xl text-sm font-bold transition border text-left flex items-center gap-3 ${
                     selectedProjects.includes(p) ? "bg-red-500/15 border-red-500/50 text-red-400" : "bg-transparent/50 border-slate-700 text-white/60 hover:border-slate-600"
@@ -120,7 +136,7 @@ export default function SuperAdminPlacementAssignment() {
             <h3 className="text-lg font-bold text-red-400">Assign Centers</h3>
             <p className="text-xs text-slate-500">Select centers for <span className="text-red-400 font-bold">{selectedPO?.name}</span>.</p>
             <div className="grid md:grid-cols-3 gap-3">
-              {CENTERS.map(c => (
+              {centerOptions.map(c => (
                 <button key={c} onClick={() => toggle(c, selectedCenters, setSelectedCenters)}
                   className={`px-5 py-4 rounded-xl text-sm font-bold transition border flex items-center gap-3 ${
                     selectedCenters.includes(c) ? "bg-blue-500/15 border-blue-500/50 text-blue-400" : "bg-transparent/50 border-slate-700 text-white/60 hover:border-slate-600"

@@ -1,35 +1,18 @@
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  GraduationCap, Building2, Users, ExternalLink,
-  CheckCircle2, Clock, XCircle, Download
+  GraduationCap, Building2, Users, ExternalLink, Download
 } from "lucide-react";
-import { ALL_USERS } from "./superAdminUsers";
-
-const MOBILIZERS = ALL_USERS.filter(u => u.role === "Mobilizer");
-
-const MOB_DETAILS = {
-  "PSU-MOB-001": { mobilized: 280, approved: 240, pending: 28, rejected: 12, attendanceRate: "94%" },
-  "PSU-MOB-002": { mobilized: 195, approved: 165, pending: 22, rejected: 8, attendanceRate: "91%" },
-  "PSU-MOB-003": { mobilized: 320, approved: 275, pending: 30, rejected: 15, attendanceRate: "87%" },
-};
-
-const STATS = [
-  { label: "Total Enrolled", value: "4,862", color: "text-red-500" },
-  { label: "Approved", value: "3,940", color: "text-emerald-500" },
-  { label: "Pending Review", value: "612", color: "text-amber-500" },
-  { label: "Rejected", value: "310", color: "text-red-500" },
-];
-
-const CENTER_DATA = [
-  { center: "Angul", total: 1240, approved: 1080, pending: 110, rejected: 50 },
-  { center: "Sundargarh", total: 980, approved: 820, pending: 120, rejected: 40 },
-  { center: "Keonjhar", total: 860, approved: 710, pending: 100, rejected: 50 },
-  { center: "Jharsuguda", total: 720, approved: 580, pending: 90, rejected: 50 },
-  { center: "Kalahandi", total: 620, approved: 480, pending: 80, rejected: 60 },
-];
+import { useEmployeeStore } from "../../stores/employeeStore";
+import { selectEnrollmentMonitorData } from "../../stores/selectors/superAdminSelectors";
 
 export default function SuperAdminEnrollmentMonitor() {
   const navigate = useNavigate();
+  const { records: employees, fetchWithAssignments } = useEmployeeStore();
+  useEffect(() => {
+    fetchWithAssignments();
+  }, [fetchWithAssignments]);
+  const { stats, centerData, mobilizers } = useMemo(() => selectEnrollmentMonitorData(employees), [employees]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -47,7 +30,7 @@ export default function SuperAdminEnrollmentMonitor() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {STATS.map(s => (
+        {stats.map(s => (
           <div key={s.label} className="bg-[#111827]/80 border border-slate-700/50 rounded-2xl p-6 backdrop-blur-sm">
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">{s.label}</p>
             <h3 className={`text-2xl font-black ${s.color}`}>{s.value}</h3>
@@ -61,10 +44,10 @@ export default function SuperAdminEnrollmentMonitor() {
           <Building2 size={18} className="text-blue-500" /> Center-wise Breakdown
         </h3>
         <div className="space-y-5">
-          {CENTER_DATA.map(c => {
-            const apPct = Math.round((c.approved / c.total) * 100);
-            const pePct = Math.round((c.pending / c.total) * 100);
-            const rePct = Math.round((c.rejected / c.total) * 100);
+          {centerData.map(c => {
+            const apPct = c.total ? Math.round((c.approved / c.total) * 100) : 0;
+            const pePct = c.total ? Math.round((c.pending / c.total) * 100) : 0;
+            const rePct = c.total ? Math.round((c.rejected / c.total) * 100) : 0;
             return (
               <div key={c.center}>
                 <div className="flex justify-between text-sm mb-2">
@@ -103,8 +86,7 @@ export default function SuperAdminEnrollmentMonitor() {
               <th className="px-6 py-3 text-right">Action</th>
             </tr></thead>
             <tbody className="divide-y divide-slate-800">
-              {MOBILIZERS.map((mob) => {
-                const d = MOB_DETAILS[mob.id];
+              {mobilizers.map((mob) => {
                 return (
                   <tr key={mob.id} className="hover:bg-transparent/30 transition">
                     <td className="px-6 py-4">
@@ -119,10 +101,10 @@ export default function SuperAdminEnrollmentMonitor() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-xs font-bold text-white/60">{mob.center}</td>
-                    <td className="px-6 py-4 text-xs font-bold text-white/90">{d.mobilized}</td>
-                    <td className="px-6 py-4 text-xs font-bold text-emerald-400">{d.approved}</td>
-                    <td className="px-6 py-4 text-xs font-bold text-amber-400">{d.pending}</td>
-                    <td className="px-6 py-4 text-xs font-bold text-blue-400">{d.attendanceRate}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-white/90">{mob.mobilized}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-emerald-400">{mob.approved}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-amber-400">{mob.pending}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-blue-400">{mob.attendanceRate}</td>
                     <td className="px-6 py-4 text-right">
                       <button onClick={() => navigate(`/super-admin/mobilizer/${mob.id}`)}
                         className="px-3 py-1.5 bg-red-500/10 text-red-500 text-[10px] font-black uppercase rounded-lg hover:bg-red-500/20 transition flex items-center gap-1 ml-auto cursor-pointer">

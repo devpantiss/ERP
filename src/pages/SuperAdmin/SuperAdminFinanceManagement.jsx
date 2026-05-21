@@ -1,4 +1,4 @@
-import { createElement, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -15,36 +15,31 @@ import {
   UserCheck,
   Wallet,
 } from "lucide-react";
-import { EMPLOYEES, SALARY_APPROVALS } from "../Admin/adminPortalData";
 import { buildSalaryWorkEvidence, SalaryWorkEvidence } from "../shared/salaryWorkEvidence";
 import { Breadcrumb, PageHeader } from "./SuperAdminSharedComponents";
+import { useSalaryStore } from "../../stores/salaryStore";
+import { selectSalaryRows } from "../../stores/selectors/salarySelectors";
 
 const ADMIN_SALARY_LINK = {
   label: "Admin Salary Approvals",
   path: "/admin/financial-management/salary-approvals",
 };
 
-const employeeProjectByName = EMPLOYEES.reduce((map, employee) => {
-  map[employee.name] = employee.project;
-  return map;
-}, {});
-
 function formatCurrency(value) {
   return `₹${value.toLocaleString("en-IN")}`;
 }
 
-function buildSalaryRecords() {
-  return SALARY_APPROVALS.map((salary, index) => {
+function buildSalaryRecords(salaries) {
+  return selectSalaryRows(salaries).map((salary, index) => {
     const target2 = salary.role === "Placement Officer" ? 40 + index * 2 : 80 + index * 4;
     const achievement2 = Math.max(Math.round(target2 * (salary.attendance / 100)) - (index % 3), 0);
     const adminApproved = salary.status === "Approved";
 
     return {
       ...salary,
-      project: employeeProjectByName[salary.employee] || "Unassigned Project",
-      target1: salary.target,
+      target1: salary.target1 || salary.targetKPI,
       target2,
-      achievement1: salary.achievement,
+      achievement1: salary.achievement1 || salary.achievedKPI,
       achievement2,
       evidence: buildSalaryWorkEvidence(salary, index),
       adminApproved,
@@ -101,7 +96,16 @@ function summarizeProjects(records) {
 }
 
 export default function SuperAdminFinanceManagement() {
-  const [salaryRows, setSalaryRows] = useState(buildSalaryRecords);
+  const { salaries, fetchSalaries } = useSalaryStore();
+  useEffect(() => {
+    fetchSalaries();
+  }, [fetchSalaries]);
+
+  const normalizedSalaryRows = useMemo(() => buildSalaryRecords(salaries), [salaries]);
+  const [salaryRows, setSalaryRows] = useState([]);
+  useEffect(() => {
+    setSalaryRows((current) => (current.length ? current : normalizedSalaryRows));
+  }, [normalizedSalaryRows]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");

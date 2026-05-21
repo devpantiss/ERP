@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Building2,
   CalendarDays,
@@ -13,131 +13,8 @@ import {
   X,
 } from "lucide-react";
 import { BackButton, PageHeader, Pagination, usePagination } from "./SuperAdminSharedComponents";
-
-const PROJECTS = ["PMKVY 4.0", "CSR - Tata Steel", "DDUGKY", "State Skill Mission"];
-const TRADES = ["Electrical", "Fitter", "Safety", "Welder", "HEMM", "Dumper Operator"];
-const STATUSES = ["Planned", "Approved", "Completed", "Submitted"];
-const PROOF_IMAGES = [
-  "/Frames/scene1/frame_0000.webp",
-  "/Frames/scene1/frame_0024.webp",
-  "/Frames/scene1/frame_0045.webp",
-  "/Frames/scene2/frame_0000.webp",
-  "/Frames/scene2/frame_0024.webp",
-  "/Frames/scene3/frame_0002.webp",
-  "/Frames/scene4/frame_0004.webp",
-  "/Frames/scene4/frame_0049.webp",
-];
-
-const VISITS = [
-  {
-    id: "EV-2026-001",
-    industry: "Tata Power Substation",
-    spocName: "Rajesh Mishra",
-    spocPhone: "+91 98765 11001",
-    project: "PMKVY 4.0",
-    center: "Angul",
-    trainer: "Amit Panda",
-    batch: "Batch 101",
-    trade: "Electrical",
-    date: "2026-02-12",
-    candidates: 42,
-    attended: 39,
-    status: "Submitted",
-    location: "Angul Industrial Estate",
-    proofImages: [PROOF_IMAGES[0], PROOF_IMAGES[1], PROOF_IMAGES[2]],
-    notes: "Students observed substation safety protocol, earthing systems, and relay panels.",
-  },
-  {
-    id: "EV-2026-002",
-    industry: "JSW Steel Plant",
-    spocName: "Priya Sahu",
-    spocPhone: "+91 98765 11002",
-    project: "CSR - Tata Steel",
-    center: "Jharsuguda",
-    trainer: "Sneha Mohanty",
-    batch: "Batch 301",
-    trade: "Welder",
-    date: "2026-02-18",
-    candidates: 39,
-    attended: 35,
-    status: "Submitted",
-    location: "Jharsuguda Works",
-    proofImages: [PROOF_IMAGES[3], PROOF_IMAGES[4], PROOF_IMAGES[5], PROOF_IMAGES[6]],
-    notes: "Plant tour covered PPE checks, fabrication bays, and supervisor interaction.",
-  },
-  {
-    id: "EV-2026-003",
-    industry: "Aditya Aluminium Ltd",
-    spocName: "Amit Das",
-    spocPhone: "+91 98765 11003",
-    project: "DDUGKY",
-    center: "Keonjhar",
-    trainer: "Ritu Mohapatra",
-    batch: "Batch 501",
-    trade: "Fitter",
-    date: "2026-02-20",
-    candidates: 35,
-    attended: 31,
-    status: "Completed",
-    location: "Keonjhar Industrial Cluster",
-    proofImages: [PROOF_IMAGES[1], PROOF_IMAGES[7]],
-    notes: "Visit completed; final documentation is pending trainer submission.",
-  },
-  {
-    id: "EV-2026-004",
-    industry: "Odisha Hydro Power Corp",
-    spocName: "Sonal Behera",
-    spocPhone: "+91 98765 11004",
-    project: "State Skill Mission",
-    center: "Sundargarh",
-    trainer: "Deepak Sahu",
-    batch: "Batch 207",
-    trade: "Safety",
-    date: "2026-02-26",
-    candidates: 44,
-    attended: 0,
-    status: "Approved",
-    location: "Sundargarh Field Office",
-    proofImages: [],
-    notes: "Approved by center manager; visit yet to be conducted.",
-  },
-  {
-    id: "EV-2026-005",
-    industry: "L&T Construction Yard",
-    spocName: "Kabita Das",
-    spocPhone: "+91 98765 11005",
-    project: "PMKVY 4.0",
-    center: "Bolangir",
-    trainer: "Sanjay Das",
-    batch: "Batch 201",
-    trade: "Dumper Operator",
-    date: "2026-03-02",
-    candidates: 34,
-    attended: 0,
-    status: "Planned",
-    location: "Bolangir Construction Yard",
-    proofImages: [],
-    notes: "Planned for operator safety orientation and equipment walkthrough.",
-  },
-  {
-    id: "EV-2026-006",
-    industry: "Vedanta Mining Yard",
-    spocName: "Harsha Nayak",
-    spocPhone: "+91 98765 11006",
-    project: "DDUGKY",
-    center: "Kalahandi",
-    trainer: "Bikash Naik",
-    batch: "Batch 401",
-    trade: "HEMM",
-    date: "2026-03-05",
-    candidates: 56,
-    attended: 52,
-    status: "Submitted",
-    location: "Kalahandi Mining Belt",
-    proofImages: [PROOF_IMAGES[2], PROOF_IMAGES[3], PROOF_IMAGES[6]],
-    notes: "HEMM demonstration covered site movement rules and dumper blind zones.",
-  },
-];
+import { useProjectStore } from "../../stores/projectStore";
+import { selectExposureVisitReports } from "../../stores/selectors/superAdminSelectors";
 
 const STATUS_BADGE = {
   Planned: "bg-amber-500/10 text-amber-400 border-amber-500/20",
@@ -237,6 +114,7 @@ function ProofCell({ visit, onView }) {
 }
 
 export default function SuperAdminExposureVisits() {
+  const { records: projects, fetchAll } = useProjectStore();
   const [search, setSearch] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
   const [tradeFilter, setTradeFilter] = useState("");
@@ -244,20 +122,17 @@ export default function SuperAdminExposureVisits() {
   const [selectedVisit, setSelectedVisit] = useState(null);
   const [activeImage, setActiveImage] = useState(null);
 
-  const projectStats = useMemo(() => PROJECTS.map((project) => {
-    const visits = VISITS.filter((visit) => visit.project === project);
-    return {
-      project,
-      visits: visits.length,
-      submitted: visits.filter((visit) => visit.status === "Submitted").length,
-      proofs: visits.reduce((sum, visit) => sum + visit.proofImages.length, 0),
-    };
-  }), []);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const { projectStats, visits, trades, statuses } = useMemo(() => selectExposureVisitReports(projects), [projects]);
 
   const projectVisits = useMemo(
-    () => VISITS.filter((visit) => visit.project === selectedProject),
-    [selectedProject]
+    () => visits.filter((visit) => visit.projectId === selectedProject),
+    [selectedProject, visits]
   );
+  const selectedProjectName = projectStats.find((project) => project.projectId === selectedProject)?.project || selectedProject;
 
   const filteredVisits = useMemo(() => {
     const q = search.toLowerCase();
@@ -282,8 +157,8 @@ export default function SuperAdminExposureVisits() {
 
   const pg = usePagination(filteredVisits, 8);
 
-  const chooseProject = (project) => {
-    setSelectedProject(project);
+  const chooseProject = (projectId) => {
+    setSelectedProject(projectId);
     setSearch("");
     setTradeFilter("");
     setStatusFilter("");
@@ -312,11 +187,11 @@ export default function SuperAdminExposureVisits() {
       {!selectedProject ? (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {projectStats.map(({ project, visits, submitted, proofs }) => (
+            {projectStats.map(({ projectId, project, visits, submitted, proofs }) => (
               <button
                 type="button"
-                key={project}
-                onClick={() => chooseProject(project)}
+                key={projectId}
+                onClick={() => chooseProject(projectId)}
                 className="rounded-2xl border border-slate-700/50 bg-[#111827]/80 p-5 text-left transition hover:border-slate-600"
               >
                 <div className="flex items-start justify-between gap-4">
@@ -364,7 +239,7 @@ export default function SuperAdminExposureVisits() {
           <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-[#111827]/80 backdrop-blur-sm">
             <div className="flex flex-col gap-4 border-b border-white/[0.08] p-5 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <p className="text-sm font-black text-white">{selectedProject}</p>
+                <p className="text-sm font-black text-white">{selectedProjectName}</p>
                 <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   {filteredVisits.length} of {projectVisits.length} exposure visit reports
                 </p>
@@ -385,11 +260,11 @@ export default function SuperAdminExposureVisits() {
                 </div>
                 <select value={tradeFilter} onChange={(e) => { setTradeFilter(e.target.value); pg.setPage(1); }} className="rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs text-white/80 outline-none focus:border-red-500">
                   <option value="">All Trades</option>
-                  {TRADES.map((trade) => <option key={trade} value={trade}>{trade}</option>)}
+                  {trades.map((trade) => <option key={trade} value={trade}>{trade}</option>)}
                 </select>
                 <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); pg.setPage(1); }} className="rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs text-white/80 outline-none focus:border-red-500">
                   <option value="">All Status</option>
-                  {STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                  {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import MentionInput from "../../components/common/MentionInput";
 import { toast } from "react-toastify";
@@ -21,7 +21,11 @@ import {
   Building2,
   FolderKanban,
 } from "lucide-react";
-import { EMPLOYEE_GRIEVANCES, ADMIN_TO_SUPERADMIN_GRIEVANCES, GRIEVANCE_PEOPLE_DIRECTORY } from "../shared/grievanceData";
+import { useGrievanceStore } from "../../stores/grievanceStore.js";
+import {
+  selectGrievanceRows,
+  selectPeopleDirectory,
+} from "../../stores/selectors/grievanceSelectors.js";
 
 /* ═══════════════════════════════════════════════════════════════
    CONSTANTS
@@ -50,9 +54,8 @@ const STATUS_OPTIONS = ["Open", "Under Review", "Resolved", "Escalated"];
 ═══════════════════════════════════════════════════════════════ */
 
 export default function AdminGrievancePortal() {
+  const { records, fetchAll, create, update } = useGrievanceStore();
   const [activeTab, setActiveTab] = useState("employee"); // "employee" | "raise"
-  const [empGrievances, setEmpGrievances] = useState(EMPLOYEE_GRIEVANCES);
-  const [adminGrievances, setAdminGrievances] = useState(ADMIN_TO_SUPERADMIN_GRIEVANCES);
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [filterStatus, setFilterStatus] = useState("All");
@@ -70,6 +73,21 @@ export default function AdminGrievancePortal() {
   const [statusModal, setStatusModal] = useState(null);
   const [newStatus, setNewStatus] = useState("");
 
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const allGrievances = useMemo(() => selectGrievanceRows(records), [records]);
+  const empGrievances = useMemo(
+    () => allGrievances.filter((grievance) => grievance.raisedBy !== "Admin"),
+    [allGrievances]
+  );
+  const adminGrievances = useMemo(
+    () => allGrievances.filter((grievance) => grievance.raisedBy === "Admin"),
+    [allGrievances]
+  );
+  const peopleDirectory = useMemo(() => selectPeopleDirectory(), []);
+
   const resetForm = () => {
     setCategory(""); setSubject(""); setDescription(""); setPriority("Medium"); setAttachFile(null); setAddressedTo([]);
     setShowForm(false);
@@ -77,8 +95,11 @@ export default function AdminGrievancePortal() {
 
   /* Submit new grievance (Admin → Super Admin) */
   const handleSubmit = () => {
-    const newGrievance = {
-      id: `GRV-A${String(adminGrievances.length + 10).padStart(3, "0")}`,
+    create({
+      raisedByType: "EMPLOYEE",
+      raisedById: "EMP-0007",
+      projectId: "PRJ-0001",
+      centerId: "CTR-0001",
       raisedBy: "Admin",
       role: "Admin",
       project: "—",
@@ -88,12 +109,11 @@ export default function AdminGrievancePortal() {
       subject,
       description,
       priority,
-      status: "Open",
+      status: "OPEN",
       submittedOn: new Date().toISOString().split("T")[0],
       resolvedOn: null,
       timeline: [{ date: new Date().toISOString().split("T")[0], status: "Open", note: "Grievance raised by Admin" }],
-    };
-    setAdminGrievances([newGrievance, ...adminGrievances]);
+    });
     resetForm();
     toast.success("Grievance raised to Super Admin");
   };
@@ -101,21 +121,15 @@ export default function AdminGrievancePortal() {
   /* Update status of employee grievance */
   const handleStatusUpdate = () => {
     if (!statusModal || !newStatus) return;
-    setEmpGrievances((prev) =>
-      prev.map((g) => {
-        if (g.id !== statusModal.id) return g;
-        const updatedTimeline = [
-          ...g.timeline,
-          { date: new Date().toISOString().split("T")[0], status: newStatus, note: `Status changed to ${newStatus} by Admin` },
-        ];
-        return {
-          ...g,
-          status: newStatus,
-          resolvedOn: newStatus === "Resolved" ? new Date().toISOString().split("T")[0] : g.resolvedOn,
-          timeline: updatedTimeline,
-        };
-      })
-    );
+    const statusMap = { Open: "OPEN", "Under Review": "IN_REVIEW", Resolved: "RESOLVED", Escalated: "ESCALATED" };
+    update(statusModal.id, {
+      status: statusMap[newStatus] || "OPEN",
+      resolvedOn: newStatus === "Resolved" ? new Date().toISOString().split("T")[0] : statusModal.resolvedOn,
+      timeline: [
+        ...statusModal.timeline,
+        { date: new Date().toISOString().split("T")[0], status: newStatus, note: `Status changed to ${newStatus} by Admin` },
+      ],
+    });
     toast.success(`Grievance ${statusModal.id} updated to ${newStatus}`);
     setStatusModal(null);
     setNewStatus("");
@@ -365,7 +379,7 @@ export default function AdminGrievancePortal() {
           <MentionInput
             values={addressedTo}
             onChange={setAddressedTo}
-            people={GRIEVANCE_PEOPLE_DIRECTORY}
+            people={peopleDirectory}
             placeholder="Type @ to search people..."
             accentColor="violet"
             label="Addressed To *"

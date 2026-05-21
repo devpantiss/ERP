@@ -3,10 +3,14 @@ import Webcam from "react-webcam";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import SlidePanel from "../../components/common/SlidePanel";
+import { useAuthStore } from "../../stores/authStore";
+import { useAttendanceStore } from "../../stores/attendanceStore";
+import {
+  selectTrainerAttendanceScope,
+  selectTrainerPunchLedger,
+} from "../../stores/selectors/trainingSelectors";
 
 /* ================= CONFIG ================= */
-
-const STORAGE_KEY = "trainer-attendance-v4";
 
 /* ✅ UPDATED SESSIONS */
 
@@ -74,6 +78,12 @@ const reverseGeocode = async (lat, lng) => {
 export default function TrainerAttendance() {
   const webcamRef = useRef(null);
   const navigate = useNavigate();
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const attendanceRecords = useAttendanceStore((state) => state.records);
+  const fetchAttendance = useAttendanceStore((state) => state.fetchAll);
+  const createAttendance = useAttendanceStore((state) => state.create);
+  const updateAttendance = useAttendanceStore((state) => state.update);
+  const trainerEmployeeId = currentUser?.employeeId || "EMP-0001";
 
   const [attendance, setAttendance] = useState({});
   const [activePunch, setActivePunch] = useState(null);
@@ -83,13 +93,49 @@ export default function TrainerAttendance() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    setAttendance(stored);
-  }, []);
+    fetchAttendance({ filters: { subjectType: "EMPLOYEE" } });
+  }, [fetchAttendance]);
 
-  const persist = (data) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    setAttendance(data);
+  const normalizedLedger = useMemo(
+    () => selectTrainerPunchLedger(attendanceRecords, trainerEmployeeId),
+    [attendanceRecords, trainerEmployeeId]
+  );
+
+  useEffect(() => {
+    setAttendance(normalizedLedger);
+  }, [normalizedLedger]);
+
+  const upsertAttendanceRecord = async (date, sessionKey, sessionData) => {
+    const scope = selectTrainerAttendanceScope(trainerEmployeeId);
+    const existing = attendanceRecords.find(
+      (record) =>
+        record.subjectType === "EMPLOYEE" &&
+        record.subjectId === trainerEmployeeId &&
+        record.date === date &&
+        (record.sessionKey || "s1") === sessionKey
+    );
+    const payload = {
+      subjectType: "EMPLOYEE",
+      subjectId: trainerEmployeeId,
+      employeeId: trainerEmployeeId,
+      projectId: scope.projectId,
+      centerId: scope.centerId,
+      batchId: scope.batchId,
+      date,
+      status: "PRESENT",
+      markedByEmployeeId: trainerEmployeeId,
+      sessionKey,
+      sessionTitle: SESSIONS.find((session) => session.key === sessionKey)?.title,
+      punchIn: sessionData.punchIn,
+      punchOut: sessionData.punchOut,
+    };
+
+    if (existing) {
+      await updateAttendance(existing.id, payload);
+      return;
+    }
+
+    await createAttendance(payload);
   };
 
   /* ================= SESSION VALIDATION ================= */
@@ -166,7 +212,8 @@ export default function TrainerAttendance() {
           },
         };
 
-        persist(updated);
+        setAttendance(updated);
+        await upsertAttendanceRecord(today, activePunch.key, updated[today].sessions[activePunch.key]);
         setActivePunch(null);
         setLoading(false);
 
@@ -438,5 +485,3 @@ const Stat = ({ label, value, highlight }) => (
     </p>
   </div>
 );
-
-

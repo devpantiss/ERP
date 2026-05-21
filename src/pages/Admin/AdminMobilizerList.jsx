@@ -1,41 +1,40 @@
 import Pagination from "../../components/common/Pagination";
 import ExportPDFButton from "../../components/common/ExportPDFButton";
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Users, Eye, TrendingUp, MapPin, BarChart3, UserCheck } from "lucide-react";
-
-/* ===================== MOCK DATA ===================== */
-
-const MOBILIZERS = [
-  { id: 1, name: "Priya Mishra", center: "Jajpur", status: "Active", avatar: "https://i.pravatar.cc/40?img=5", candidatesMobilized: 85, eventsCompleted: 12, attendanceRate: 94, phone: "+91 9876543211", email: "priya@example.com" },
-  { id: 2, name: "Vikram Singh", center: "Keonjhar", status: "Active", avatar: "https://i.pravatar.cc/40?img=11", candidatesMobilized: 72, eventsCompleted: 9, attendanceRate: 88, phone: "+91 9876543214", email: "vikram@example.com" },
-  { id: 3, name: "Kavita Behera", center: "Jajpur", status: "Inactive", avatar: "https://i.pravatar.cc/40?img=20", candidatesMobilized: 45, eventsCompleted: 6, attendanceRate: 72, phone: "+91 9876543217", email: "kavita@example.com" },
-  { id: 4, name: "Rajan Nayak", center: "Angul", status: "Active", avatar: "https://i.pravatar.cc/40?img=33", candidatesMobilized: 96, eventsCompleted: 15, attendanceRate: 97, phone: "+91 9876543220", email: "rajan@example.com" },
-  { id: 5, name: "Sunita Patra", center: "Kalahandi", status: "Active", avatar: "https://i.pravatar.cc/40?img=23", candidatesMobilized: 63, eventsCompleted: 8, attendanceRate: 91, phone: "+91 9876543221", email: "sunita@example.com" },
-  { id: 6, name: "Manoj Sahu", center: "Sundargarh", status: "Active", avatar: "https://i.pravatar.cc/40?img=14", candidatesMobilized: 78, eventsCompleted: 11, attendanceRate: 89, phone: "+91 9876543222", email: "manoj@example.com" },
-];
+import { useEmployeeStore } from "../../stores/employeeStore.js";
+import { selectEmployeesByRole } from "../../stores/selectors/employeeSelectors.js";
 
 export default function AdminMobilizerList() {
   const navigate = useNavigate();
+  const { records, fetchWithAssignments } = useEmployeeStore();
   const [search, setSearch] = useState("");
   const [centerFilter, setCenterFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  const centers = ["All", ...new Set(MOBILIZERS.map((m) => m.center))];
-  const statuses = ["All", ...new Set(MOBILIZERS.map((m) => m.status))];
+  useEffect(() => {
+    fetchWithAssignments();
+  }, [fetchWithAssignments]);
+
+  const mobilizers = useMemo(() => selectEmployeesByRole("Mobilizer", records), [records]);
+  const centers = useMemo(() => ["All", ...new Set(mobilizers.map((m) => m.center))], [mobilizers]);
+  const statuses = useMemo(() => ["All", ...new Set(mobilizers.map((m) => m.status))], [mobilizers]);
 
   const filtered = useMemo(() => {
-    return MOBILIZERS.filter((m) => {
+    return mobilizers.filter((m) => {
       const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
       const matchCenter = centerFilter === "All" || m.center === centerFilter;
       const matchStatus = statusFilter === "All" || m.status === statusFilter;
       return matchSearch && matchCenter && matchStatus;
     });
-  }, [search, centerFilter, statusFilter]);
+  }, [mobilizers, search, centerFilter, statusFilter]);
 
-  const totalMobilized = MOBILIZERS.reduce((s, m) => s + m.candidatesMobilized, 0);
-  const totalEvents = MOBILIZERS.reduce((s, m) => s + m.eventsCompleted, 0);
-  const avgAttendance = Math.round(MOBILIZERS.reduce((s, m) => s + m.attendanceRate, 0) / MOBILIZERS.length);
+  const totalMobilized = mobilizers.reduce((s, m) => s + m.candidatesMobilized, 0);
+  const totalEvents = mobilizers.reduce((s, m) => s + m.eventsCompleted, 0);
+  const avgAttendance = mobilizers.length
+    ? Math.round(mobilizers.reduce((s, m) => s + m.attendanceRate, 0) / mobilizers.length)
+    : 0;
 
   
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,7 +64,7 @@ export default function AdminMobilizerList() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Mobilizers", value: MOBILIZERS.length, icon: Users },
+          { label: "Total Mobilizers", value: mobilizers.length, icon: Users },
           { label: "Candidates Mobilized", value: totalMobilized, icon: UserCheck },
           { label: "Events Completed", value: totalEvents, icon: BarChart3 },
           { label: "Avg. Attendance", value: `${avgAttendance}%`, icon: TrendingUp },

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Building2,
   CalendarDays,
@@ -15,184 +15,8 @@ import {
   X,
 } from "lucide-react";
 import { BackButton, PageHeader, Pagination, usePagination } from "./SuperAdminSharedComponents";
-
-const PROJECTS = ["PMKVY 4.0", "CSR - Tata Steel", "DDUGKY", "State Skill Mission"];
-const BLOCKS = ["Angul", "Bolangir", "Jharsuguda", "Kalahandi", "Keonjhar", "Sundargarh"];
-const DRIVE_TYPES = ["Village Camp", "SHG Meeting", "School Outreach", "Panchayat Drive", "Market Activation"];
-const STATUSES = ["Planned", "Approved", "Completed", "Submitted"];
-const PROOF_IMAGES = [
-  "/Frames/scene1/frame_0000.webp",
-  "/Frames/scene1/frame_0024.webp",
-  "/Frames/scene1/frame_0045.webp",
-  "/Frames/scene2/frame_0000.webp",
-  "/Frames/scene2/frame_0024.webp",
-  "/Frames/scene3/frame_0002.webp",
-  "/Frames/scene4/frame_0004.webp",
-  "/Frames/scene4/frame_0049.webp",
-];
-
-const DRIVES = [
-  {
-    id: "CED-2026-001",
-    driveName: "Women Skill Awareness Camp",
-    mobilizer: "Nihar Ranjan",
-    mobilizerPhone: "+91 98765 21001",
-    project: "PMKVY 4.0",
-    center: "Angul",
-    block: "Angul",
-    gp: "Turanga GP",
-    type: "Village Camp",
-    date: "2026-02-10",
-    participants: 84,
-    leads: 48,
-    enrolled: 22,
-    status: "Submitted",
-    location: "Turanga Community Hall",
-    communityPartner: "Turanga Gram Panchayat",
-    proofImages: [PROOF_IMAGES[0], PROOF_IMAGES[1], PROOF_IMAGES[2]],
-    notes: "Mobilizer covered course options, stipend eligibility, center transport, and parent counselling follow-ups.",
-  },
-  {
-    id: "CED-2026-002",
-    driveName: "Youth Career Chaupal",
-    mobilizer: "Rahul Pradhan",
-    mobilizerPhone: "+91 98765 21002",
-    project: "CSR - Tata Steel",
-    center: "Jharsuguda",
-    block: "Jharsuguda",
-    gp: "Laikera GP",
-    type: "Panchayat Drive",
-    date: "2026-02-14",
-    participants: 112,
-    leads: 61,
-    enrolled: 27,
-    status: "Submitted",
-    location: "Laikera Panchayat Ground",
-    communityPartner: "Laikera PRI Committee",
-    proofImages: [PROOF_IMAGES[3], PROOF_IMAGES[4], PROOF_IMAGES[5], PROOF_IMAGES[6]],
-    notes: "Drive focused on welding, safety, and industrial electrician pathways with village youth club support.",
-  },
-  {
-    id: "CED-2026-003",
-    driveName: "SHG Livelihood Orientation",
-    mobilizer: "Sonal Behera",
-    mobilizerPhone: "+91 98765 21003",
-    project: "DDUGKY",
-    center: "Kalahandi",
-    block: "Kalahandi",
-    gp: "Bhawanipatna GP",
-    type: "SHG Meeting",
-    date: "2026-02-18",
-    participants: 76,
-    leads: 35,
-    enrolled: 14,
-    status: "Completed",
-    location: "Mission Shakti Bhawan",
-    communityPartner: "Block Mission Management Unit",
-    proofImages: [PROOF_IMAGES[1], PROOF_IMAGES[7]],
-    notes: "SHG leaders collected household interest forms; final lead verification is pending.",
-  },
-  {
-    id: "CED-2026-004",
-    driveName: "Safety Trade Awareness Session",
-    mobilizer: "Kabita Das",
-    mobilizerPhone: "+91 98765 21004",
-    project: "State Skill Mission",
-    center: "Sundargarh",
-    block: "Sundargarh",
-    gp: "Balisankara GP",
-    type: "School Outreach",
-    date: "2026-02-22",
-    participants: 68,
-    leads: 26,
-    enrolled: 0,
-    status: "Approved",
-    location: "Balisankara Higher Secondary School",
-    communityPartner: "School Management Committee",
-    proofImages: [],
-    notes: "Approved by center manager; mobilizer will conduct final consent round before enrolment.",
-  },
-  {
-    id: "CED-2026-005",
-    driveName: "Weekly Market Mobilization",
-    mobilizer: "Prakash Majhi",
-    mobilizerPhone: "+91 98765 21005",
-    project: "PMKVY 4.0",
-    center: "Bolangir",
-    block: "Bolangir",
-    gp: "Deogaon GP",
-    type: "Market Activation",
-    date: "2026-03-01",
-    participants: 96,
-    leads: 44,
-    enrolled: 0,
-    status: "Planned",
-    location: "Deogaon Weekly Haat",
-    communityPartner: "Market Committee",
-    proofImages: [],
-    notes: "Planned outreach for retail sales and data entry batches starting next month.",
-  },
-  {
-    id: "CED-2026-006",
-    driveName: "Tribal Hamlet Outreach",
-    mobilizer: "Rina Pattnaik",
-    mobilizerPhone: "+91 98765 21006",
-    project: "DDUGKY",
-    center: "Keonjhar",
-    block: "Keonjhar",
-    gp: "Ghatagaon GP",
-    type: "Village Camp",
-    date: "2026-03-04",
-    participants: 103,
-    leads: 58,
-    enrolled: 31,
-    status: "Submitted",
-    location: "Ghatagaon Community Center",
-    communityPartner: "Village Education Committee",
-    proofImages: [PROOF_IMAGES[2], PROOF_IMAGES[3], PROOF_IMAGES[6]],
-    notes: "Door-to-door mobilisation was followed by a community meeting and document readiness checks.",
-  },
-  {
-    id: "CED-2026-007",
-    driveName: "Parent Counselling Camp",
-    mobilizer: "Aparna Sethy",
-    mobilizerPhone: "+91 98765 21007",
-    project: "CSR - Tata Steel",
-    center: "Jharsuguda",
-    block: "Jharsuguda",
-    gp: "Kolabira GP",
-    type: "Village Camp",
-    date: "2026-03-08",
-    participants: 89,
-    leads: 42,
-    enrolled: 19,
-    status: "Completed",
-    location: "Kolabira Community Hall",
-    communityPartner: "Youth Club Kolabira",
-    proofImages: [PROOF_IMAGES[0], PROOF_IMAGES[5]],
-    notes: "Parent counselling addressed hostel safety, placement linkage, and course duration concerns.",
-  },
-  {
-    id: "CED-2026-008",
-    driveName: "School Dropout Reconnect Drive",
-    mobilizer: "Tapan Rout",
-    mobilizerPhone: "+91 98765 21008",
-    project: "PMKVY 4.0",
-    center: "Angul",
-    block: "Angul",
-    gp: "Banarpal GP",
-    type: "School Outreach",
-    date: "2026-03-11",
-    participants: 72,
-    leads: 39,
-    enrolled: 16,
-    status: "Submitted",
-    location: "Banarpal High School",
-    communityPartner: "School Alumni Group",
-    proofImages: [PROOF_IMAGES[4], PROOF_IMAGES[7]],
-    notes: "Reconnect drive identified interested learners for electrical and solar technician batches.",
-  },
-];
+import { useProjectStore } from "../../stores/projectStore";
+import { selectCommunityEngagementReports } from "../../stores/selectors/superAdminSelectors";
 
 const STATUS_BADGE = {
   Planned: "bg-amber-500/10 text-amber-400 border-amber-500/20",
@@ -292,6 +116,7 @@ function ProofCell({ drive, onView }) {
 }
 
 export default function SuperAdminCommunityEngagementDrives() {
+  const { records: projects, fetchAll } = useProjectStore();
   const [search, setSearch] = useState("");
   const [selectedProject, setSelectedProject] = useState("");
   const [blockFilter, setBlockFilter] = useState("");
@@ -300,21 +125,20 @@ export default function SuperAdminCommunityEngagementDrives() {
   const [selectedDrive, setSelectedDrive] = useState(null);
   const [activeImage, setActiveImage] = useState(null);
 
-  const projectStats = useMemo(() => PROJECTS.map((project) => {
-    const drives = DRIVES.filter((drive) => drive.project === project);
-    return {
-      project,
-      drives: drives.length,
-      submitted: drives.filter((drive) => drive.status === "Submitted").length,
-      participants: drives.reduce((sum, drive) => sum + drive.participants, 0),
-      proofs: drives.reduce((sum, drive) => sum + drive.proofImages.length, 0),
-    };
-  }), []);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
+
+  const { projectStats, drives, blocks, types, statuses } = useMemo(
+    () => selectCommunityEngagementReports(projects),
+    [projects]
+  );
 
   const projectDrives = useMemo(
-    () => DRIVES.filter((drive) => drive.project === selectedProject),
-    [selectedProject]
+    () => drives.filter((drive) => drive.projectId === selectedProject),
+    [drives, selectedProject]
   );
+  const selectedProjectName = projectStats.find((project) => project.projectId === selectedProject)?.project || selectedProject;
 
   const filteredDrives = useMemo(() => {
     const q = search.toLowerCase();
@@ -342,8 +166,8 @@ export default function SuperAdminCommunityEngagementDrives() {
 
   const pg = usePagination(filteredDrives, 8);
 
-  const chooseProject = (project) => {
-    setSelectedProject(project);
+  const chooseProject = (projectId) => {
+    setSelectedProject(projectId);
     setSearch("");
     setBlockFilter("");
     setTypeFilter("");
@@ -374,11 +198,11 @@ export default function SuperAdminCommunityEngagementDrives() {
       {!selectedProject ? (
         <>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {projectStats.map(({ project, drives, submitted, participants, proofs }) => (
+            {projectStats.map(({ projectId, project, drives, submitted, participants, proofs }) => (
               <button
                 type="button"
-                key={project}
-                onClick={() => chooseProject(project)}
+                key={projectId}
+                onClick={() => chooseProject(projectId)}
                 className="rounded-2xl border border-slate-700/50 bg-[#111827]/80 p-5 text-left transition hover:border-slate-600"
               >
                 <div className="flex items-start justify-between gap-4">
@@ -430,7 +254,7 @@ export default function SuperAdminCommunityEngagementDrives() {
           <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-[#111827]/80 backdrop-blur-sm">
             <div className="flex flex-col gap-4 border-b border-white/[0.08] p-5 xl:flex-row xl:items-center xl:justify-between">
               <div>
-                <p className="text-sm font-black text-white">{selectedProject}</p>
+                <p className="text-sm font-black text-white">{selectedProjectName}</p>
                 <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   {filteredDrives.length} of {projectDrives.length} community engagement drive reports
                 </p>
@@ -451,15 +275,15 @@ export default function SuperAdminCommunityEngagementDrives() {
                 </div>
                 <select value={blockFilter} onChange={(e) => { setBlockFilter(e.target.value); pg.setPage(1); }} className="rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs text-white/80 outline-none focus:border-red-500">
                   <option value="">All Blocks</option>
-                  {BLOCKS.map((block) => <option key={block} value={block}>{block}</option>)}
+                  {blocks.map((block) => <option key={block} value={block}>{block}</option>)}
                 </select>
                 <select value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); pg.setPage(1); }} className="rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs text-white/80 outline-none focus:border-red-500">
                   <option value="">All Types</option>
-                  {DRIVE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+                  {types.map((type) => <option key={type} value={type}>{type}</option>)}
                 </select>
                 <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); pg.setPage(1); }} className="rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs text-white/80 outline-none focus:border-red-500">
                   <option value="">All Status</option>
-                  {STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                  {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
                 </select>
               </div>
             </div>

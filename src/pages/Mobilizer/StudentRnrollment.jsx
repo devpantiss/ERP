@@ -1,20 +1,11 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
 import TableExportActions from "../../components/common/TableExportActions";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import CandidateEnrollmentStepper from "../../components/Mobilizer/CandidateEnrollmentStepper";
 import jsPDF from "jspdf";
-import { saveSubmittedEnrollment } from "../../components/utils/enrollmentStorage";
-
-/* ===================== CONSTANTS ===================== */
-
-const SCHOOLS = ["Govt High School", "Model School", "ITI Jajpur"];
-const CENTERS = ["Jajpur Center", "Sukinda Center", "Dharmasala Center"];
-const JOBROLES = ["Welder", "Fitter", "Electrician"];
-const BATCHES = ["Batch 101", "Batch 102", "Batch 103", "Batch 104"];
-
-const samplePDF =
-  "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+import { useCandidateStore } from "../../stores/candidateStore";
+import { selectCandidateLifecycle } from "../../stores/selectors/candidateSelectors";
 
 const sampleImage = (i) => `https://i.pravatar.cc/400?img=${(i % 70) + 1}`;
 
@@ -124,36 +115,11 @@ function downloadAdmitCardPdf(candidate) {
   doc.save(`${admitCard.id}-${candidate.name || "candidate"}.pdf`);
 }
 
-/* ===================== DUMMY DATA ===================== */
-
-const CANDIDATES = Array.from({ length: 40 }, (_, i) => ({
-  id: i + 1,
-  name: `Candidate ${i + 1}`,
-  phone: `98765${String(10000 + i).slice(-5)}`,
-  school: SCHOOLS[i % SCHOOLS.length],
-  center: CENTERS[i % CENTERS.length],
-  jobrole: JOBROLES[i % JOBROLES.length],
-  batch: BATCHES[i % BATCHES.length],
-  address: "Binjharpur, Jajpur",
-  dob: `199${i % 5}-0${(i % 8) + 1}-15`,
-  gender: i % 2 === 0 ? "Male" : "Female",
-  aadhaar: `XXXX-XXXX-${2000 + i}`,
-  qualification: "10th Pass",
-  experience: `${i % 3} Years`,
-  enrollmentDate: `2024-0${(i % 8) + 1}-15`,
-  image: sampleImage(i),
-  aadhaarFile: i % 2 ? samplePDF : sampleImage(i + 10),
-  qualificationFile: i % 2 ? sampleImage(i + 20) : samplePDF,
-  licenceFile: samplePDF,
-  verified: i % 3 === 0,
-  enrolled: i % 2 === 0,
-  admitCard: null,
-}));
-
 /* ===================== COMPONENT ===================== */
 
 export default function CandidatesTableDark() {
-  const [data, setData] = useState(CANDIDATES);
+  const { records, fetchLifecycle, createLifecycle } = useCandidateStore();
+  const [admitCardsByCandidateId, setAdmitCardsByCandidateId] = useState({});
   const [search, setSearch] = useState("");
   const [school, setSchool] = useState("");
   const [center, setCenter] = useState("");
@@ -170,25 +136,42 @@ export default function CandidatesTableDark() {
     ...ensureAdmitCard(candidate),
   });
 
+  useEffect(() => {
+    fetchLifecycle();
+  }, [fetchLifecycle]);
+
+  const data = useMemo(
+    () =>
+      selectCandidateLifecycle(records).map((candidate) => ({
+        ...candidate,
+        admitCard: admitCardsByCandidateId[candidate.id] || candidate.admitCard || null,
+      })),
+    [admitCardsByCandidateId, records]
+  );
+
+  const schools = useMemo(() => Array.from(new Set(data.map((c) => c.school))).filter(Boolean), [data]);
+  const centers = useMemo(() => Array.from(new Set(data.map((c) => c.center))).filter(Boolean), [data]);
+  const jobroles = useMemo(() => Array.from(new Set(data.map((c) => c.jobrole))).filter(Boolean), [data]);
+  const batches = useMemo(() => Array.from(new Set(data.map((c) => c.batch))).filter(Boolean), [data]);
+
   const handleGenerateAdmitCard = (candidateId) => {
-    setData((prev) =>
-      prev.map((candidate) =>
-        candidate.id === candidateId
-          ? { ...candidate, admitCard: candidate.admitCard || createAdmitCard(candidate) }
-          : candidate
-      )
-    );
+    const candidate = data.find((item) => item.id === candidateId);
+    if (!candidate) return;
+    setAdmitCardsByCandidateId((prev) => ({
+      ...prev,
+      [candidateId]: prev[candidateId] || createAdmitCard(candidate),
+    }));
   };
 
-  const handleEnrollmentComplete = (enrollment) => {
+  const handleEnrollmentComplete = async (enrollment) => {
     const basic = enrollment.basic || {};
     const roleProject = enrollment.roleProject || {};
     const address = enrollment.address?.address || {};
-    const nextId = data.reduce((max, candidate) => Math.max(max, candidate.id), 0) + 1;
-    const image = enrollment.capture?.photo || sampleImage(nextId);
+    const image = enrollment.capture?.photo || sampleImage(data.length + 1);
     const dob = basic.dateOfBirth
       ? new Date(basic.dateOfBirth).toISOString().split("T")[0]
       : "";
+    const [firstName, ...lastNameParts] = String(basic.fullName || "New Candidate").trim().split(" ");
 
     const documents = {
       aadhaar: basic.aadharFile || null,
@@ -197,19 +180,18 @@ export default function CandidatesTableDark() {
       license: basic.licenseCert || null,
     };
 
-    const newCandidate = {
-      id: nextId,
-      name: basic.fullName || `Candidate ${nextId}`,
+    const candidatePayload = {
+      firstName,
+      lastName: lastNameParts.join(" "),
       phone: basic.phoneNumber || "",
-      school: roleProject.school || "Not Assigned",
-      center: roleProject.center || "Not Assigned",
-      jobrole: roleProject.role || "Not Assigned",
-      batch: roleProject.batch || "Not Assigned",
+      gender: basic.gender || "",
+      district: address.district || "Odisha",
+      mobilizerEmployeeId: "EMP-0003",
+      status: roleProject.batchId ? "IN_TRAINING" : "MOBILIZED",
       address: [address.house, address.street, address.city, address.district, address.state, address.pincode]
         .filter(Boolean)
         .join(", "),
       dob,
-      gender: basic.gender || "",
       aadhaar: basic.aadharNumber ? `XXXX-XXXX-${String(basic.aadharNumber).slice(-4)}` : "",
       qualification: basic.qualificationLevel || "",
       qualificationTrade: basic.qualificationTrade || "",
@@ -222,18 +204,26 @@ export default function CandidatesTableDark() {
       liveLocation: enrollment.capture?.location || null,
       geoLocation: enrollment.address ? { lat: enrollment.address.lat, lng: enrollment.address.lng } : null,
       documents,
-      aadhaarFile: documents.aadhaar?.url || samplePDF,
-      qualificationFile: documents.qualification?.url || samplePDF,
-      licenceFile: documents.license?.url || samplePDF,
-      verified: true,
-      enrolled: false,
-      status: "Pending",
-      admitCard: null,
     };
 
-    newCandidate.admitCard = createAdmitCard(newCandidate);
-    saveSubmittedEnrollment(newCandidate);
-    setData((prev) => [newCandidate, ...prev]);
+    const created = await createLifecycle({
+      ...candidatePayload,
+      enrollment: roleProject.batchId
+        ? {
+            projectId: roleProject.projectId,
+            centerId: roleProject.centerId,
+            batchId: roleProject.batchId,
+            enrolledOn: new Date().toISOString().split("T")[0],
+            status: "IN_TRAINING",
+          }
+        : null,
+    });
+
+    const candidateRow = selectCandidateLifecycle([created])[0];
+    setAdmitCardsByCandidateId((prev) => ({
+      ...prev,
+      [created.id]: createAdmitCard(candidateRow),
+    }));
     setCurrentPage(1);
   };
 
@@ -337,10 +327,10 @@ export default function CandidatesTableDark() {
               />
             </div>
 
-            <Select options={SCHOOLS} value={school} setValue={setSchool} label="School" />
-            <Select options={CENTERS} value={center} setValue={setCenter} label="Center" />
-            <Select options={JOBROLES} value={jobrole} setValue={setJobrole} label="Job Role" />
-            <Select options={BATCHES} value={batch} setValue={setBatch} label="Batch" />
+            <Select options={schools} value={school} setValue={setSchool} label="School" />
+            <Select options={centers} value={center} setValue={setCenter} label="Center" />
+            <Select options={jobroles} value={jobrole} setValue={setJobrole} label="Job Role" />
+            <Select options={batches} value={batch} setValue={setBatch} label="Batch" />
 
             {/* MONTH */}
             <select
@@ -626,16 +616,17 @@ function Select({ options, value, setValue, label }) {
 }
 
 function DocThumb({ file, setPreview, label }) {
-  const isPDF = file?.includes(".pdf");
+  const url = typeof file === "string" ? file : file?.url;
+  const isPDF = url?.includes(".pdf");
 
   return (
     <div
-      onClick={() => setPreview(file)}
+      onClick={() => url && setPreview(url)}
       className="w-10 h-10 rounded border border-yellow-400/30
       flex items-center justify-center cursor-pointer
       hover:bg-yellow-400/10 text-xs"
     >
-      {isPDF ? label : <img src={file} className="w-full h-full object-cover" />}
+      {isPDF ? label : <img src={url} className="w-full h-full object-cover" />}
     </div>
   );
 }
