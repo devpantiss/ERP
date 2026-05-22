@@ -75,11 +75,11 @@ export function selectInvoiceRows(invoices) {
 
 export function selectInvoiceApprovalRows(invoices) {
   return selectInvoiceRows(invoices).map((invoice) => {
-    const adminReady = ["Approved", "Paid"].includes(invoice.status)
+    const approved = ["Approved", "Paid"].includes(invoice.status)
     return {
       ...invoice,
-      adminReady,
-      superAdminStatus: invoice.status === "Paid" ? "Approved" : adminReady ? "Pending Review" : "Waiting Admin",
+      adminReady: true,
+      superAdminStatus: approved ? "Approved" : invoice.status === "Rejected" ? "Returned" : "Pending Review",
     }
   })
 }

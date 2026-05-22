@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import SlidePanel from "../../components/common/SlidePanel";
+import Pagination from "../../components/common/Pagination";
 import {
   GraduationCap,
   Clock,
@@ -21,6 +22,7 @@ import {
 
 const SHIFT_START = "09:00";
 const LATE_AFTER_MINUTES = 15;
+const ROWS_PER_PAGE = 10;
 
 const todayKey = () => new Date().toISOString().split("T")[0];
 const monthKey = (date) => date.slice(0, 7);
@@ -74,6 +76,8 @@ const TeachingManagementSystem = () => {
   const [activePunch, setActivePunch] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [error, setError] = useState("");
+  const [sessionsPage, setSessionsPage] = useState(1);
+  const [attendancePage, setAttendancePage] = useState(1);
 
   useEffect(() => {
     fetchAttendance({ filters: { subjectType: "EMPLOYEE" } });
@@ -249,7 +253,9 @@ const TeachingManagementSystem = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-emerald-500/10">
-                {teachingSessions.map((session) => (
+                {teachingSessions
+                  .slice((sessionsPage - 1) * ROWS_PER_PAGE, sessionsPage * ROWS_PER_PAGE)
+                  .map((session) => (
                   <tr key={session.id} className="hover:bg-emerald-500/5 transition-colors">
                     <td className="px-4 py-3 font-medium text-white/90">{session.date}</td>
                     <td className="px-4 py-3">
@@ -269,6 +275,12 @@ const TeachingManagementSystem = () => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={sessionsPage}
+            totalPages={Math.ceil(teachingSessions.length / ROWS_PER_PAGE)}
+            onPageChange={setSessionsPage}
+          />
         </div>
 
         {/* ─── Attendance History Table ────────────────────── */}
@@ -291,6 +303,7 @@ const TeachingManagementSystem = () => {
               <tbody className="divide-y divide-emerald-500/10">
                 {Object.entries(attendance)
                   .reverse()
+                  .slice((attendancePage - 1) * ROWS_PER_PAGE, attendancePage * ROWS_PER_PAGE)
                   .map(([date, r]) => {
                     const status = getStatus(r.punchIn?.time);
                     return (
@@ -328,6 +341,12 @@ const TeachingManagementSystem = () => {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={attendancePage}
+            totalPages={Math.ceil(Object.keys(attendance).length / ROWS_PER_PAGE)}
+            onPageChange={setAttendancePage}
+          />
         </div>
       </div>
 

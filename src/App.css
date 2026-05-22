@@ -267,3 +267,38 @@ main {
     inset 18px 0 22px rgba(15, 23, 42, 0.1);
   transform: perspective(1400px) rotateX(0.7deg);
 }
+
+.super-admin-placement-tracking .text-cyan-400 {
+  color: rgb(248 113 113) !important;
+}
+
+.super-admin-placement-tracking .text-cyan-300 {
+  color: rgb(252 165 165) !important;
+}
+
+.super-admin-placement-tracking .border-cyan-900 {
+  border-color: rgb(127 29 29 / 0.86) !important;
+}
+
+.super-admin-placement-tracking .border-cyan-700 {
+  border-color: rgb(185 28 28 / 0.8) !important;
+}
+
+.super-admin-placement-tracking .border-cyan-500,
+.super-admin-placement-tracking .border-cyan-500\/30 {
+  border-color: rgb(239 68 68 / 0.55) !important;
+}
+
+.super-admin-placement-tracking .bg-cyan-500 {
+  background-color: rgb(239 68 68) !important;
+  color: white !important;
+}
+
+.super-admin-placement-tracking .bg-cyan-900\/30 {
+  background-color: rgb(127 29 29 / 0.3) !important;
+}
+
+.super-admin-placement-tracking .bg-cyan-400,
+.super-admin-placement-tracking .hover\:bg-cyan-400:hover {
+  background-color: rgb(248 113 113) !important;
+}

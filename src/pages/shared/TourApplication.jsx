@@ -192,68 +192,80 @@ export default function TourApplication() {
         </div>
       </div>
 
-      {showForm ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-          <form
-            onSubmit={submitTour}
-            className="w-full max-w-3xl rounded-2xl border border-white/10 bg-[#080b13] p-6 shadow-2xl shadow-black/40"
-          >
-            <div className="mb-6 flex items-start justify-between gap-4">
-              <div>
-                <p className={`mb-2 text-xs font-semibold uppercase tracking-widest ${accent.text}`}>
-                  New Request
-                </p>
-                <h2 className="text-2xl font-bold text-white">Apply for Tour</h2>
-                <p className="mt-1 text-sm text-white/45">
-                  Submit planned destination, dates, purpose, and estimated expense for approval.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="rounded-xl p-2 text-white/45 transition hover:bg-white/10 hover:text-white"
-              >
-                <X size={20} />
-              </button>
-            </div>
+      {/* Backdrop */}
+      <div
+        className={`fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${showForm ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        onClick={resetForm}
+      />
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Input label="Tour Title" value={form.title} onChange={(value) => updateForm("title", value)} required />
-              <Input label="Destination" value={form.destination} onChange={(value) => updateForm("destination", value)} required />
+      {/* Right-side Zoho-style slide-in panel */}
+      <div
+        className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-white/10 bg-[#080b13] shadow-2xl shadow-black/60 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${showForm ? "translate-x-0" : "translate-x-full"}`}
+      >
+        {/* Panel Header */}
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-9 w-9 items-center justify-center rounded-lg border ${accent.border} ${accent.bg}`}>
+              <Route size={16} className={accent.text} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-white">New Tour Request</h2>
+              <p className="text-xs text-white/40">Fill in the details below</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="rounded-lg p-2 text-white/40 transition hover:bg-white/10 hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Panel Body — scrollable */}
+        <form onSubmit={submitTour} className="flex flex-1 flex-col overflow-y-auto">
+          <div className="flex-1 space-y-5 px-6 py-6">
+            <Input label="Tour Title" value={form.title} onChange={(value) => updateForm("title", value)} required />
+            <Input label="Destination" value={form.destination} onChange={(value) => updateForm("destination", value)} required />
+            <div className="grid grid-cols-2 gap-4">
               <Input label="Start Date" type="date" value={form.startDate} onChange={(value) => updateForm("startDate", value)} required />
               <Input label="End Date" type="date" value={form.endDate} onChange={(value) => updateForm("endDate", value)} />
-              <Input label="Estimated Cost" type="number" value={form.estimate} onChange={(value) => updateForm("estimate", value)} required />
-              <label className="md:col-span-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Purpose</span>
-                <textarea
-                  value={form.purpose}
-                  onChange={(event) => updateForm("purpose", event.target.value)}
-                  required
-                  rows={4}
-                  className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white outline-none transition focus:border-white/30"
-                />
-              </label>
             </div>
+            <Input label="Estimated Cost (₹)" type="number" value={form.estimate} onChange={(value) => updateForm("estimate", value)} required />
+            <label>
+              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/40">Purpose</span>
+              <textarea
+                value={form.purpose}
+                onChange={(event) => updateForm("purpose", event.target.value)}
+                required
+                rows={5}
+                placeholder="Describe the purpose of this tour…"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white placeholder-white/20 outline-none transition focus:border-white/30"
+              />
+            </label>
+          </div>
 
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          {/* Panel Footer — sticky at bottom */}
+          <div className="border-t border-white/10 bg-[#080b13] px-6 py-4">
+            <div className="flex gap-3">
               <button
                 type="button"
                 onClick={resetForm}
-                className="rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-white/60 transition hover:bg-white/5 hover:text-white"
+                className="flex-1 rounded-xl border border-white/10 px-4 py-3 text-sm font-semibold text-white/50 transition hover:bg-white/5 hover:text-white"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition ${accent.btn}`}
+                className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition ${accent.btn}`}
               >
                 <Send size={16} />
-                Submit Request
+                Submit
               </button>
             </div>
-          </form>
-        </div>
-      ) : null}
+          </div>
+        </form>
+      </div>
     </section>
   );
 }

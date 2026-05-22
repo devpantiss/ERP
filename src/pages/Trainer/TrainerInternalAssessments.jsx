@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import * as XLSX from "xlsx";
 import { Upload, Download } from "lucide-react";
 import SlidePanel from "../../components/common/SlidePanel";
+import Pagination from "../../components/common/Pagination";
 import { useAuthStore } from "../../stores/authStore";
 import { useAssessmentStore } from "../../stores/assessmentStore";
 import {
@@ -13,6 +14,7 @@ import {
 /* ================= CONFIG ================= */
 
 const TYPES = ["Theory", "Practical", "Viva", "Mock Final"];
+const ROWS_PER_PAGE = 10;
 
 /* ================= MAIN COMPONENT ================= */
 
@@ -26,6 +28,7 @@ export default function TrainerInternalAssessments() {
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState("All");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const catalog = useMemo(() => selectTrainingCatalog(trainerEmployeeId), [trainerEmployeeId]);
   const assessments = useMemo(
     () => selectTrainerAssessmentRows(assessmentRecords, trainerEmployeeId),
@@ -110,7 +113,9 @@ export default function TrainerInternalAssessments() {
             </thead>
 
             <tbody className="divide-y divide-slate-700">
-              {filteredData.map((a) => (
+              {filteredData
+                .slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE)
+                .map((a) => (
                 <tr key={a.id} className="hover:bg-transparent/60 transition">
 
                   <td className="px-4 py-3 text-white/90">{a.batch}</td>
@@ -165,6 +170,12 @@ export default function TrainerInternalAssessments() {
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredData.length / ROWS_PER_PAGE)}
+          onPageChange={setCurrentPage}
+        />
 
       </section>
 

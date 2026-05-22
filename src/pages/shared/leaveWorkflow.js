@@ -61,6 +61,22 @@ export const INITIAL_LEAVES = [
     superAdminDecision: "Rejected by Super Admin due to placement drive coverage conflict.",
     decisionNote: "Rejected at final approval.",
   },
+  {
+    id: "LV-004",
+    role: "trainer",
+    employee: "Priya Mohanty",
+    type: "Casual Leave",
+    from: "2026-05-28",
+    to: "2026-05-29",
+    days: 2,
+    reason: "Family medical appointment",
+    status: "Pending Super Admin Review",
+    appliedOn: "2026-05-22",
+    approver: "Admin Office",
+    adminDecision: "Approved by Admin and forwarded for Super Admin final approval.",
+    superAdminDecision: "",
+    decisionNote: "Waiting for Super Admin final approval.",
+  },
 ];
 
 export const readLeaveRequests = () => {
@@ -68,7 +84,19 @@ export const readLeaveRequests = () => {
 
   try {
     const stored = localStorage.getItem(LEAVE_STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      const existingIds = new Set(parsed.map((request) => request.id));
+      const missingSeedRequests = INITIAL_LEAVES.filter((request) => !existingIds.has(request.id));
+
+      if (missingSeedRequests.length) {
+        const merged = [...parsed, ...missingSeedRequests];
+        localStorage.setItem(LEAVE_STORAGE_KEY, JSON.stringify(merged));
+        return merged;
+      }
+
+      return parsed;
+    }
     localStorage.setItem(LEAVE_STORAGE_KEY, JSON.stringify(INITIAL_LEAVES));
     return INITIAL_LEAVES;
   } catch {

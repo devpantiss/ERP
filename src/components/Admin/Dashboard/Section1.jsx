@@ -14,6 +14,41 @@ import {
   Tooltip,
 } from "recharts";
 
+/* ===================== FALLBACK PROJECT CARDS ===================== */
+
+const FALLBACK_PROJECT_CARDS = [
+  {
+    project: "PMKVY 4.0",
+    center: "Pantiss Skill Resort, Angul",
+    status: "Active",
+  },
+  {
+    project: "CSR – Tata Steel",
+    center: "Jajpur Training Center",
+    status: "Ongoing",
+  },
+  {
+    project: "DDUGKY",
+    center: "Kalahandi Center",
+    status: "Active",
+  },
+  {
+    project: "State Skill Mission",
+    center: "Jharsuguda Campus",
+    status: "Ongoing",
+  },
+  {
+    project: "Shaksham Sundargarh",
+    center: "Sundargarh Skill Center",
+    status: "Active",
+  },
+  {
+    project: "DMF Keonjhar",
+    center: "Keonjhar Training Hub",
+    status: "Ongoing",
+  },
+];
+
 /* ===================== COUNT UP HOOK ===================== */
 
 function useCountUp(value, duration = 1200) {
@@ -78,15 +113,17 @@ export default function AdminDashboardSection1({
     { name: "Remaining", value: Math.max(target - achieved, 0) },
   ];
 
+  const tickerCards = projectCards.length > 0 ? projectCards : FALLBACK_PROJECT_CARDS;
+
   return (
     <section className="relative w-full rounded-2xl p-8
       bg-[#111827] border border-slate-700 overflow-hidden">
 
       {/* ================= PROJECT MARQUEE ================= */}
 
-      <div className="mb-6">
+      <div className="relative z-10 mb-6">
         <ProjectTicker>
-          {[...projectCards, ...projectCards].map((item, i) => (
+          {[...tickerCards, ...tickerCards].map((item, i) => (
             <ProjectCard key={`${item.project}-${i}`} data={item} />
           ))}
         </ProjectTicker>

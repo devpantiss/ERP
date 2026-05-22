@@ -22,6 +22,9 @@ const emptyProject = {
   startDate: "",
   endDate: "",
   centerName: "",
+  jobRoles: "",
+  totalBatchTarget: "",
+  plannedBatches: "",
   lead: [],
 };
 
@@ -58,6 +61,7 @@ function seedProjects(projectHierarchy, adminUsers) {
       }))
     );
     const assignedAdmin = getAssignedAdmin(project.id, adminUsers);
+    const jobRoles = [...new Set(batches.map((batch) => batch.jobRole).filter(Boolean))];
 
     return {
       id: project.id,
@@ -67,6 +71,9 @@ function seedProjects(projectHierarchy, adminUsers) {
       startDate: project.startDate,
       endDate: project.endDate,
       centerName: project.centers[0]?.name || "Unassigned",
+      jobRoles: jobRoles.join(", "),
+      totalBatchTarget: project.totalBatchTarget || "",
+      plannedBatches: batches.length,
       lead: assignedAdmin ? [assignedAdmin] : [],
       batches,
     };
@@ -129,7 +136,9 @@ export default function SuperAdminCreateProjects() {
     projectDraft.fundingAgency &&
     projectDraft.startDate &&
     projectDraft.endDate &&
-    projectDraft.centerName;
+    projectDraft.centerName &&
+    projectDraft.jobRoles &&
+    Number(projectDraft.totalBatchTarget) > 0;
   const canAddBatch =
     batchDraft.label && batchDraft.jobRole && batchDraft.trainer && Number(batchDraft.learners) > 0;
 
@@ -156,6 +165,8 @@ export default function SuperAdminCreateProjects() {
     if (!canSaveProject) return;
     const nextProject = {
       ...projectDraft,
+      totalBatchTarget: Number(projectDraft.totalBatchTarget),
+      plannedBatches: Number(projectDraft.plannedBatches || 0),
       id: `SA-P-${String(Date.now()).slice(-5)}`,
       batches: [],
     };
@@ -290,12 +301,13 @@ export default function SuperAdminCreateProjects() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1200px] text-left text-sm">
+          <table className="w-full min-w-[1360px] text-left text-sm">
             <thead className="bg-[#0b1220] text-xs font-black uppercase tracking-[0.14em] text-slate-500">
               <tr>
                 <th className="px-5 py-4">Project</th>
                 <th className="px-5 py-4">Funding Agency</th>
                 <th className="px-5 py-4">Center</th>
+                <th className="px-5 py-4">Training Plan</th>
                 <th className="px-5 py-4">Project Lead/Admin</th>
                 <th className="px-5 py-4">Timeline</th>
                 <th className="px-5 py-4">Batches</th>
@@ -306,6 +318,7 @@ export default function SuperAdminCreateProjects() {
             <tbody className="divide-y divide-slate-700/50">
               {filteredProjects.map((project) => {
                 const learners = project.batches.reduce((sum, batch) => sum + Number(batch.learners || 0), 0);
+                const targetMentioned = Number(project.totalBatchTarget || 0);
                 return (
                   <tr key={project.id} className="text-slate-300 transition hover:bg-white/[0.025]">
                     <td className="px-5 py-4">
@@ -315,6 +328,13 @@ export default function SuperAdminCreateProjects() {
                     <td className="px-5 py-4">{project.fundingAgency}</td>
                     <td className="px-5 py-4">
                       {project.centerName}
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="max-w-[240px] truncate font-bold text-white">{project.jobRoles || "Not set"}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Mentioned target {targetMentioned ? targetMentioned.toLocaleString("en-IN") : "Not mentioned"}
+                        {project.plannedBatches ? ` · ${project.plannedBatches} planned batch(es)` : ""}
+                      </p>
                     </td>
                     <td className="min-w-72 px-5 py-4 align-top">
                       <InlineAdminAssign
@@ -335,23 +355,23 @@ export default function SuperAdminCreateProjects() {
                         {project.status}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="w-44 px-5 py-4 text-right align-top">
+                      <div className="flex flex-col items-end gap-2">
                         <button
                           type="button"
                           onClick={() => openBatchModal(project.id, "edit")}
-                          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-black text-slate-300 transition hover:bg-white/5 hover:text-white"
+                          className="inline-flex w-32 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-[#0b1220] px-3 py-2 text-xs font-black text-slate-300 transition hover:bg-white/5 hover:text-white"
                         >
                           <SquarePen size={13} />
-                          Edit Batch
+                          Manage
                         </button>
                         <button
                           type="button"
                           onClick={() => openBatchModal(project.id, "create")}
-                          className="inline-flex items-center gap-2 rounded-lg border border-red-400/20 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-500/10"
+                          className="inline-flex w-32 items-center justify-center gap-2 rounded-lg border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs font-black text-red-300 transition hover:bg-red-500/15"
                         >
                           <Plus size={13} />
-                          Create Batch
+                          Add Batch
                         </button>
                       </div>
                     </td>
@@ -360,7 +380,7 @@ export default function SuperAdminCreateProjects() {
               })}
               {!filteredProjects.length && (
                 <tr>
-                  <td colSpan={8} className="px-5 py-10 text-center text-sm font-bold text-slate-500">
+                  <td colSpan={9} className="px-5 py-10 text-center text-sm font-bold text-slate-500">
                     No projects match the selected filters.
                   </td>
                 </tr>
@@ -494,6 +514,26 @@ function ProjectModal({ adminUsers, project, canSave, onClose, onSave, onUpdate 
           <Field label="Funding Agency" value={project.fundingAgency} onChange={(value) => onUpdate("fundingAgency", value)} placeholder="NSDC" />
           <SelectField label="Status" value={project.status} onChange={(value) => onUpdate("status", value)} options={["Active", "Monitoring", "Planning"]} />
           <Field label="Primary Center" value={project.centerName} onChange={(value) => onUpdate("centerName", value)} placeholder="Angul Training Center" />
+          <Field
+            label="Job Role/s to be Trained"
+            value={project.jobRoles}
+            onChange={(value) => onUpdate("jobRoles", value)}
+            placeholder="Electrical, Fitter, Solar Technician"
+          />
+          <Field
+            type="number"
+            label="Total Batch Target"
+            value={project.totalBatchTarget}
+            onChange={(value) => onUpdate("totalBatchTarget", value)}
+            placeholder="120"
+          />
+          <Field
+            type="number"
+            label="Planned Batches"
+            value={project.plannedBatches}
+            onChange={(value) => onUpdate("plannedBatches", value)}
+            placeholder="3"
+          />
           <div className="grid grid-cols-2 gap-3">
             <Field type="date" label="Start Date" value={project.startDate} onChange={(value) => onUpdate("startDate", value)} />
             <Field type="date" label="End Date" value={project.endDate} onChange={(value) => onUpdate("endDate", value)} />
@@ -510,7 +550,7 @@ function ProjectModal({ adminUsers, project, canSave, onClose, onSave, onUpdate 
         />
 
         <div className="rounded-xl border border-slate-700/50 bg-[#0b1220] p-4 text-xs font-bold leading-5 text-slate-400">
-          Type <span className="text-red-300">@</span> in the lead field to show only users with the Admin role.
+          Add all job roles in a comma-separated list. Batch setup can later split the total target into individual batches.
         </div>
 
         <button
@@ -540,7 +580,7 @@ function BatchModal({ project, mode, batch, canAdd, onAdd, onClose, onRemove, on
               <Field label="Batch Label" value={batch.label} onChange={(value) => onUpdate("label", value)} placeholder="Batch 101" />
               <Field label="Job Role" value={batch.jobRole} onChange={(value) => onUpdate("jobRole", value)} placeholder="Electrical" />
               <Field label="Trainer" value={batch.trainer} onChange={(value) => onUpdate("trainer", value)} placeholder="Trainer name" />
-              <Field type="number" label="Learners" value={batch.learners} onChange={(value) => onUpdate("learners", value)} placeholder="40" />
+              <Field type="number" label="Batch Target" value={batch.learners} onChange={(value) => onUpdate("learners", value)} placeholder="40" />
               <SelectField label="Status" value={batch.status} onChange={(value) => onUpdate("status", value)} options={batchStatuses} />
             </div>
             <button
@@ -559,7 +599,7 @@ function BatchModal({ project, mode, batch, canAdd, onAdd, onClose, onRemove, on
               <thead className="bg-[#0b1220] text-xs font-black uppercase tracking-[0.14em] text-slate-500">
                 <tr>
                   <th className="px-4 py-3">Batch</th>
-                  <th className="px-4 py-3">Learners</th>
+                  <th className="px-4 py-3">Batch Target</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3 text-right">Action</th>
                 </tr>

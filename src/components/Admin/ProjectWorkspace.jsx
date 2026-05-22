@@ -118,16 +118,19 @@ export function DataTable({ columns, rows, minWidth = "900px", emptyMessage = "N
   );
 }
 
-export function ApprovalToggle({ checked, onChange, approveLabel = "Approve", holdLabel = "Hold" }) {
+export function ApprovalToggle({ checked, onChange, approveLabel = "Approve", holdLabel = "Hold", disabled = false }) {
   return (
     <button
       type="button"
-      onClick={() => onChange(!checked)}
+      onClick={() => {
+        if (!disabled) onChange(!checked);
+      }}
+      disabled={disabled}
       className={`inline-flex min-w-[132px] items-center justify-between whitespace-nowrap rounded-full border px-2 py-1 text-xs font-semibold transition ${
         checked
           ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
           : "border-amber-400/30 bg-amber-500/15 text-amber-200"
-      }`}
+      } ${disabled ? "cursor-not-allowed opacity-60" : ""}`}
       aria-pressed={checked}
     >
       <span className={`rounded-full px-2 py-1 ${checked ? "bg-emerald-400 text-slate-950" : "bg-transparent"}`}>

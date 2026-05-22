@@ -4,6 +4,7 @@ const STATUS_LABELS = {
   DRAFT: "Draft",
   SUBMITTED: "Pending Admin Review",
   UNDER_REVIEW: "Pending Admin Review",
+  ADMIN_APPROVED: "Pending Super Admin Review",
   APPROVED: "Approved",
   REJECTED: "Rejected",
   PAID: "Paid",

@@ -37,6 +37,8 @@ export default function AdminSalaryApprovals() {
   );
 
   const updateApproval = (id, key, value) => {
+    const salary = salaryRows.find((row) => row.id === id);
+    if (salary?.status === "Paid") return;
     updateSalary(id, key === "salaryApproved" ? { status: value ? "APPROVED" : "SUBMITTED" } : { [key]: value });
   };
 
@@ -98,6 +100,7 @@ export default function AdminSalaryApprovals() {
         <ApprovalToggle
           checked={row.salaryApproved}
           onChange={(value) => updateApproval(row.id, "salaryApproved", value)}
+          disabled={row.status === "Paid"}
         />
       ),
     },
@@ -108,6 +111,7 @@ export default function AdminSalaryApprovals() {
         <ApprovalToggle
           checked={row.bonusApproved}
           onChange={(value) => updateApproval(row.id, "bonusApproved", value)}
+          disabled={row.status === "Paid"}
         />
       ),
     },

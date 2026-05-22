@@ -1,5 +1,6 @@
 import { useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
+import Pagination from "../../components/common/Pagination";
 import {
   IndianRupee,
   Clock,
@@ -23,6 +24,7 @@ const HOURS_COMPONENT   = 0.70;   // 70 %
 const VISITS_COMPONENT  = 0.30;   // 30 %
 const TARGET_HOURS      = 160;    // per month
 const TARGET_VISITS     = 4;      // per month
+const ROWS_PER_PAGE     = 10;
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -62,6 +64,7 @@ export default function TrainerRevenue() {
   const [invoiceModal, setInvoiceModal]   = useState(false);
   const [invoiceNotes, setInvoiceNotes]   = useState("");
   const [invoices, setInvoices]           = useState(workflow.invoices);
+  const [invoicePage, setInvoicePage]     = useState(1);
 
   const data     = monthlyData[selectedMonth] || { hoursClocked: 0, visitsCompleted: 0 };
   const earnings = calcEarnings(data);
@@ -239,7 +242,9 @@ export default function TrainerRevenue() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.05]">
-                {invoices.map((inv, idx) => (
+                {invoices
+                  .slice((invoicePage - 1) * ROWS_PER_PAGE, invoicePage * ROWS_PER_PAGE)
+                  .map((inv, idx) => (
                   <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors group animate-fade-in" style={{ animationDelay: `${850 + idx * 50}ms` }}>
                     <td className="px-6 py-4 font-mono text-white/80 group-hover:text-emerald-300 transition-colors">{inv.id}</td>
                     <td className="px-6 py-4 text-white/90">{inv.month}</td>
@@ -261,6 +266,12 @@ export default function TrainerRevenue() {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={invoicePage}
+            totalPages={Math.ceil(invoices.length / ROWS_PER_PAGE)}
+            onPageChange={setInvoicePage}
+          />
         </div>
       </div>
 

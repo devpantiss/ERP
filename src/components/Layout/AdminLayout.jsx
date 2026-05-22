@@ -54,6 +54,7 @@ const DRAWER_ITEMS = [
       { label: "Tour Approvals", path: "/admin/approvals/tour", icon: MapPinned },
       { label: "Leave Approvals", path: "/admin/approvals/leave", icon: CalendarDays },
       { label: "Salary Approvals", path: "/admin/approvals/salary", icon: Wallet },
+      { label: "Reimbursement Approvals", path: "/admin/approvals/reimbursements", icon: HandCoins },
       { label: "Operations Approvals", path: "/admin/approvals/operations", icon: FileCheck },
     ],
   },

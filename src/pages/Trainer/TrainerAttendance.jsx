@@ -3,6 +3,7 @@ import Webcam from "react-webcam";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import SlidePanel from "../../components/common/SlidePanel";
+import Pagination from "../../components/common/Pagination";
 import { useAuthStore } from "../../stores/authStore";
 import { useAttendanceStore } from "../../stores/attendanceStore";
 import {
@@ -36,6 +37,7 @@ const SESSIONS = [
 ];
 
 const LATE_BUFFER = 10;
+const ROWS_PER_PAGE = 10;
 const todayKey = () => new Date().toISOString().split("T")[0];
 
 /* ================= UTILITIES ================= */
@@ -91,6 +93,7 @@ export default function TrainerAttendance() {
   const [mapData, setMapData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attendancePage, setAttendancePage] = useState(1);
 
   useEffect(() => {
     fetchAttendance({ filters: { subjectType: "EMPLOYEE" } });
@@ -336,6 +339,8 @@ export default function TrainerAttendance() {
           attendance={attendance}
           setPreviewImage={setPreviewImage}
           setMapData={setMapData}
+          currentPage={attendancePage}
+          onPageChange={setAttendancePage}
         />
 
       </div>
@@ -369,7 +374,11 @@ export default function TrainerAttendance() {
 
 /* ================= TABLE ================= */
 
-function AttendanceTable({ attendance, setPreviewImage, setMapData }) {
+function AttendanceTable({ attendance, setPreviewImage, setMapData, currentPage, onPageChange }) {
+  const allEntries = Object.entries(attendance).reverse();
+  const totalPages = Math.ceil(allEntries.length / ROWS_PER_PAGE);
+  const paginatedEntries = allEntries.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
+
   return (
     <div className="bg-[#111827] rounded-xl border border-slate-700 overflow-x-auto">
       <table className="w-full text-xs">
@@ -387,7 +396,7 @@ function AttendanceTable({ attendance, setPreviewImage, setMapData }) {
         </thead>
 
         <tbody>
-          {Object.entries(attendance).reverse().map(([date, day]) => {
+          {paginatedEntries.map(([date, day]) => {
             let dayTotal = 0;
 
             return (
@@ -465,6 +474,12 @@ function AttendanceTable({ attendance, setPreviewImage, setMapData }) {
           })}
         </tbody>
       </table>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={onPageChange}
+      />
     </div>
   );
 }

@@ -17,7 +17,6 @@ import {
   ReceiptText,
   Search,
   ShieldCheck,
-  UserCheck,
   Utensils,
   Wallet,
 } from "lucide-react";
@@ -41,7 +40,6 @@ const CATEGORY_TABS = [
   { key: "Others", label: "Others", icon: ReceiptText },
 ];
 
-const ADMIN_REVIEWABLE_STATUSES = ["Verified", "Approved", "Paid"];
 const FOOD_RATE_PER_STUDENT = 3000;
 const MIN_ATTENDANCE_PCT = 70;
 
@@ -51,12 +49,10 @@ function formatCurrency(value) {
 
 function buildInvoiceRecords(invoices) {
   return selectInvoiceApprovalRows(invoices).map((bill) => {
-    const adminReady = ADMIN_REVIEWABLE_STATUSES.includes(bill.status);
-
     return {
       ...bill,
-      adminReady,
-      superAdminStatus: bill.status === "Paid" ? "Approved" : adminReady ? "Pending Review" : "Waiting Admin",
+      adminReady: true,
+      superAdminStatus: bill.status === "Paid" || bill.status === "Approved" ? "Approved" : bill.status === "Rejected" ? "Returned" : "Pending Review",
     };
   });
 }
@@ -68,7 +64,6 @@ function getStatusClass(status) {
     Verified: "border-sky-400/25 bg-sky-500/10 text-sky-300",
     Pending: "border-amber-400/25 bg-amber-500/10 text-amber-300",
     "Pending Review": "border-amber-400/25 bg-amber-500/10 text-amber-300",
-    "Waiting Admin": "border-slate-500/25 bg-slate-500/10 text-slate-300",
     Returned: "border-red-400/25 bg-red-500/10 text-red-300",
   };
 
@@ -83,7 +78,6 @@ function summarizeProjects(records) {
           name: record.project,
           invoiceCount: 0,
           totalInvoice: 0,
-          adminReady: 0,
           pendingReview: 0,
           superApproved: 0,
           returned: 0,
@@ -94,7 +88,6 @@ function summarizeProjects(records) {
           ...current,
           invoiceCount: current.invoiceCount + 1,
           totalInvoice: current.totalInvoice + record.amount,
-          adminReady: current.adminReady + (record.adminReady ? 1 : 0),
           pendingReview: current.pendingReview + (record.superAdminStatus === "Pending Review" ? 1 : 0),
           superApproved: current.superApproved + (record.superAdminStatus === "Approved" ? 1 : 0),
           returned: current.returned + (record.superAdminStatus === "Returned" ? 1 : 0),
@@ -184,11 +177,10 @@ export default function SuperAdminInvoiceApprovals() {
       invoiceRows.reduce(
         (summary, row) => ({
           totalInvoice: summary.totalInvoice + row.amount,
-          adminReady: summary.adminReady + (row.adminReady ? 1 : 0),
           pendingReview: summary.pendingReview + (row.superAdminStatus === "Pending Review" ? 1 : 0),
           superApproved: summary.superApproved + (row.superAdminStatus === "Approved" ? 1 : 0),
         }),
-        { totalInvoice: 0, adminReady: 0, pendingReview: 0, superApproved: 0 }
+        { totalInvoice: 0, pendingReview: 0, superApproved: 0 }
       ),
     [invoiceRows]
   );
@@ -200,9 +192,8 @@ export default function SuperAdminInvoiceApprovals() {
           totalValue: summary.totalValue + bill.amount,
           reviewable: summary.reviewable + (bill.superAdminStatus === "Pending Review" ? 1 : 0),
           approved: summary.approved + (bill.superAdminStatus === "Approved" ? 1 : 0),
-          waiting: summary.waiting + (bill.superAdminStatus === "Waiting Admin" ? 1 : 0),
         }),
-        { totalValue: 0, reviewable: 0, approved: 0, waiting: 0 }
+        { totalValue: 0, reviewable: 0, approved: 0 }
       ),
     [visibleBills]
   );
@@ -261,7 +252,7 @@ export default function SuperAdminInvoiceApprovals() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard icon={Wallet} label="Total Invoice Value" value={formatCurrency(totals.totalInvoice)} tone="red" />
-        <MetricCard icon={UserCheck} label="Admin Ready" value={totals.adminReady} tone="sky" />
+        <MetricCard icon={FileText} label="Invoices Raised" value={invoiceRows.length} tone="sky" />
         <MetricCard icon={Clock} label="Pending Review" value={totals.pendingReview} tone="amber" />
         <MetricCard icon={ShieldCheck} label="Super Admin Approved" value={totals.superApproved} tone="emerald" />
       </div>
@@ -274,7 +265,7 @@ export default function SuperAdminInvoiceApprovals() {
                 Select Project
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Super Admin approvals follow the same project, month, and bill-category structure used by Admin.
+                Invoices raised by Admin come directly here for Super Admin review.
               </p>
             </div>
             <Link
@@ -313,7 +304,7 @@ export default function SuperAdminInvoiceApprovals() {
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.16em] text-red-300">Selected Project</p>
                   <h2 className="mt-1 text-xl font-black text-white">{selectedProject}</h2>
-                  <p className="mt-1 text-xs text-slate-500">Admin invoice workspace mirror</p>
+                  <p className="mt-1 text-xs text-slate-500">Direct Super Admin review queue</p>
                 </div>
               </div>
 
@@ -321,7 +312,7 @@ export default function SuperAdminInvoiceApprovals() {
                 {selectedProjectSummary && (
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <MiniStat label="Invoices" value={selectedProjectSummary.invoiceCount} />
-                    <MiniStat label="Admin Ready" value={selectedProjectSummary.adminReady} tone="text-sky-300" />
+                    <MiniStat label="Raised" value={selectedProjectSummary.invoiceCount} tone="text-sky-300" />
                     <MiniStat label="Pending" value={selectedProjectSummary.pendingReview} tone="text-amber-300" />
                   </div>
                 )}
@@ -395,7 +386,7 @@ export default function SuperAdminInvoiceApprovals() {
                 <div className="mt-5 grid grid-cols-3 gap-2 text-center">
                   <MiniStat label="Ready" value={categorySummary.reviewable} tone="text-amber-300" />
                   <MiniStat label="Approved" value={categorySummary.approved} tone="text-emerald-300" />
-                  <MiniStat label="Waiting" value={categorySummary.waiting} tone="text-slate-300" />
+                  <MiniStat label="Returned" value={visibleBills.filter((bill) => bill.superAdminStatus === "Returned").length} tone="text-red-300" />
                 </div>
               </div>
             </div>
@@ -410,7 +401,7 @@ export default function SuperAdminInvoiceApprovals() {
             onStatusFilter={setStatusFilter}
             onApprove={(id) => updateSuperAdminStatus(id, "Approved")}
             onReturn={(id) => updateSuperAdminStatus(id, "Returned")}
-            onReopen={(bill) => updateSuperAdminStatus(bill.id, bill.adminReady ? "Pending Review" : "Waiting Admin")}
+            onReopen={(bill) => updateSuperAdminStatus(bill.id, "Pending Review")}
           />
         </section>
       )}
@@ -442,7 +433,7 @@ function ProjectInvoiceCard({ project, onSelect }) {
       </div>
 
       <div className="relative mt-6 grid grid-cols-3 gap-2 text-center">
-        <MiniStat label="Admin Ready" value={project.adminReady} tone="text-sky-300" />
+        <MiniStat label="Raised" value={project.invoiceCount} tone="text-sky-300" />
         <MiniStat label="Pending" value={project.pendingReview} tone="text-amber-300" />
         <MiniStat label="Approved" value={project.superApproved} tone="text-emerald-300" />
       </div>
@@ -582,7 +573,7 @@ function InvoiceApprovalTable({
             <FilterSelect
               value={statusFilter}
               onChange={onStatusFilter}
-              options={["All", "Pending Review", "Approved", "Returned", "Waiting Admin"]}
+              options={["All", "Pending Review", "Approved", "Returned"]}
             />
 
             <Link
@@ -605,7 +596,6 @@ function InvoiceApprovalTable({
               <th className="px-5 py-4">File</th>
               <th className="px-5 py-4">Raised On</th>
               <th className="px-5 py-4">Amount</th>
-              <th className="px-5 py-4">Admin Handling</th>
               <th className="px-5 py-4">Super Admin</th>
               <th className="px-5 py-4 text-right">Action</th>
             </tr>
@@ -623,7 +613,7 @@ function InvoiceApprovalTable({
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="px-5 py-12 text-center text-sm text-slate-500">
+                <td colSpan={7} className="px-5 py-12 text-center text-sm text-slate-500">
                   No {activeTab.toLowerCase()} bills match the selected filters.
                 </td>
               </tr>
@@ -659,15 +649,9 @@ function InvoiceRow({ bill, onApprove, onReturn, onReopen }) {
         <p className="text-base font-black text-emerald-300">{formatCurrency(bill.amount)}</p>
       </td>
       <td className="px-5 py-4">
-        <StatusPill status={bill.status} />
-        <p className="mt-2 text-xs font-semibold text-slate-500">
-          {bill.adminReady ? "Ready for Super Admin" : "Admin review pending"}
-        </p>
-      </td>
-      <td className="px-5 py-4">
         <StatusPill status={bill.superAdminStatus} />
         <p className="mt-2 text-xs font-semibold text-slate-500">
-          {bill.decidedOn ? `Updated ${bill.decidedOn}` : bill.adminReady ? "Awaiting decision" : "Locked until Admin clears"}
+          {bill.decidedOn ? `Updated ${bill.decidedOn}` : "Awaiting Super Admin decision"}
         </p>
       </td>
       <td className="px-5 py-4 text-right">
@@ -690,7 +674,7 @@ function InvoiceRow({ bill, onApprove, onReturn, onReopen }) {
               Return
             </button>
           </div>
-        ) : bill.adminReady ? (
+        ) : (
           <button
             type="button"
             onClick={onReopen}
@@ -699,11 +683,6 @@ function InvoiceRow({ bill, onApprove, onReturn, onReopen }) {
             <Clock size={14} />
             Reopen
           </button>
-        ) : (
-          <span className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2 text-xs font-black text-slate-500">
-            <Clock size={14} />
-            Awaiting Admin
-          </span>
         )}
       </td>
     </tr>

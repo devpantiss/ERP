@@ -15,6 +15,7 @@ const formatDate = (date) =>
 
 export default function AdminLeaveApprovals() {
   const [requests, setRequests] = useState(() => readLeaveRequests());
+  const [rejectDraft, setRejectDraft] = useState(null);
 
   const summary = useMemo(
     () => ({
@@ -25,7 +26,7 @@ export default function AdminLeaveApprovals() {
     [requests]
   );
 
-  const decide = (id, status) => {
+  const decide = (id, status, rejectionReason = "") => {
     const updated = requests.map((request) =>
       request.id === id
         ? {
@@ -35,16 +36,26 @@ export default function AdminLeaveApprovals() {
             adminDecision:
               status === "Pending Super Admin Review"
                 ? "Approved by Admin and forwarded for Super Admin final approval."
-                : "Rejected by Admin after coverage review.",
+                : `Rejected by Admin: ${rejectionReason}`,
+            adminRejectionReason: status === "Rejected" ? rejectionReason : "",
             decisionNote:
               status === "Pending Super Admin Review"
                 ? "Waiting for Super Admin final approval."
-                : "Rejected by Admin after coverage review.",
+                : `Admin rejection reason: ${rejectionReason}`,
           }
         : request
     );
     writeLeaveRequests(updated);
     setRequests(updated);
+  };
+
+  const submitRejection = (event) => {
+    event.preventDefault();
+    const reason = rejectDraft?.reason.trim();
+    if (!rejectDraft || !reason) return;
+
+    decide(rejectDraft.id, "Rejected", reason);
+    setRejectDraft(null);
   };
 
   return (
@@ -110,10 +121,10 @@ export default function AdminLeaveApprovals() {
                             onClick={() => decide(request.id, "Pending Super Admin Review")}
                             className="rounded-lg bg-emerald-500/15 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
                           >
-                            Forward
+                            Approve
                           </button>
                           <button
-                            onClick={() => decide(request.id, "Rejected")}
+                            onClick={() => setRejectDraft({ id: request.id, reason: "" })}
                             className="rounded-lg bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/25"
                           >
                             Reject
@@ -130,6 +141,46 @@ export default function AdminLeaveApprovals() {
           </div>
         </div>
       </div>
+
+      {rejectDraft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={submitRejection}
+            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0b1220] p-5 shadow-2xl shadow-black/40"
+          >
+            <h2 className="text-lg font-bold text-white">Reject Leave Request</h2>
+            <p className="mt-1 text-sm text-white/45">
+              Add the reason for rejection. This will be visible in the decision note.
+            </p>
+
+            <textarea
+              required
+              autoFocus
+              rows={5}
+              value={rejectDraft.reason}
+              onChange={(event) => setRejectDraft({ ...rejectDraft, reason: event.target.value })}
+              placeholder="Enter rejection reason"
+              className="mt-5 w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-red-400/50"
+            />
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setRejectDraft(null)}
+                className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/65 transition hover:bg-white/5 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-xl bg-red-500/15 px-4 py-2 text-sm font-bold text-red-300 transition hover:bg-red-500/25"
+              >
+                Reject Request
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   );
 }

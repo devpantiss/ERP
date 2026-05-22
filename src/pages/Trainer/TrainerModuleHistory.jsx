@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
+import Pagination from "../../components/common/Pagination";
+
+const ROWS_PER_PAGE = 10;
 
 /* ================= DUMMY DATA ================= */
 
@@ -24,6 +27,7 @@ const MODULE_HISTORY = Array.from({ length: 25 }, (_, i) => ({
 
 export default function TrainerModuleHistory() {
   const [preview, setPreview] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     department: "",
     batch: "",
@@ -121,7 +125,9 @@ export default function TrainerModuleHistory() {
 
             <tbody className="divide-y divide-slate-700">
 
-              {data.map((row) => (
+              {data
+                .slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE)
+                .map((row) => (
                 <tr key={row.id} className="hover:bg-transparent/60">
 
                   <td className="p-4">{row.date}</td>
@@ -162,6 +168,12 @@ export default function TrainerModuleHistory() {
           </table>
 
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(data.length / ROWS_PER_PAGE)}
+          onPageChange={setCurrentPage}
+        />
 
       </div>
 

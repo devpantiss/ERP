@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
-import { BarChart3 } from "lucide-react";
+import { ArrowLeft, BarChart3 } from "lucide-react";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import SlidePanel from "../../components/common/SlidePanel";
+import Pagination from "../../components/common/Pagination";
 import { useAuthStore } from "../../stores/authStore";
 import { selectTrainerModuleHistory } from "../../stores/selectors/trainingSelectors";
 
 /* ================= COMPONENT ================= */
+
+const ROWS_PER_PAGE = 10;
 
 export default function TrainerModuleHistoryEnterprise() {
   const currentUser = useAuthStore((state) => state.currentUser);
@@ -17,6 +20,7 @@ export default function TrainerModuleHistoryEnterprise() {
   const [typeFilter, setTypeFilter] = useState("All");
   const [selectedBatch, setSelectedBatch] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   /* ================= FILTERED DATA ================= */
 
@@ -137,12 +141,25 @@ export default function TrainerModuleHistoryEnterprise() {
 
         {/* ================= BATCH PROGRESS ================= */}
 
+        {selectedBatch && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => { setSelectedBatch(null); setCurrentPage(1); }}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 hover:bg-slate-600 text-white/90 transition"
+            >
+              <ArrowLeft size={16} />
+              Back to All Batches
+            </button>
+            <span className="text-sm text-white/50">Showing modules for <span className="text-emerald-400 font-semibold">{selectedBatch}</span></span>
+          </div>
+        )}
+
         <div className="grid md:grid-cols-3 gap-6">
 
           {batchStats.map((b) => (
             <div
               key={b.batch}
-              onClick={() => setSelectedBatch(selectedBatch === b.batch ? null : b.batch)}
+              onClick={() => { setSelectedBatch(selectedBatch === b.batch ? null : b.batch); setCurrentPage(1); }}
               className={`bg-[#111827] border rounded-xl p-5 cursor-pointer transition-all
                 ${selectedBatch === b.batch
                   ? "border-emerald-400 ring-2 ring-emerald-400/30 scale-[1.02]"
@@ -206,6 +223,7 @@ export default function TrainerModuleHistoryEnterprise() {
         {/* ================= TABLE VIEW ================= */}
 
         {view === "table" && (
+          <>
           <div className="bg-[#111827] border border-slate-700 rounded-xl overflow-x-auto">
 
             <table className="w-full text-sm">
@@ -223,7 +241,9 @@ export default function TrainerModuleHistoryEnterprise() {
 
               <tbody className="divide-y divide-slate-700">
 
-                {filteredData.map((row) => (
+                {filteredData
+                .slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE)
+                .map((row) => (
                   <tr key={row.id} className="hover:bg-transparent/60">
 
                     <td className="p-4">{row.date}</td>
@@ -251,6 +271,13 @@ export default function TrainerModuleHistoryEnterprise() {
               </tbody>
             </table>
           </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={Math.ceil(filteredData.length / ROWS_PER_PAGE)}
+            onPageChange={setCurrentPage}
+          />
+          </>
         )}
 
         {/* ================= TIMELINE VIEW ================= */}

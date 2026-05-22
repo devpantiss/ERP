@@ -1,5 +1,5 @@
 import { useState, memo } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import {
   ShieldAlert,
   Users,
@@ -23,6 +23,7 @@ import {
   MessageSquareWarning,
   ReceiptText,
   Wallet,
+  HandCoins,
 } from "lucide-react";
 
 /* ================= MENU CONFIG ================= */
@@ -42,6 +43,8 @@ const SECTIONS = [
       { label: "Community Engagement Drives", path: "/super-admin/community-engagement-drives", icon: Megaphone },
       { heading: "Placements" },
       { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
+      { label: "Industry Database", path: "/super-admin/industry-database", icon: Building2 },
+      { label: "Openings Dashboard", path: "/super-admin/openings-dashboard", icon: Briefcase },
     ],
   },
   {
@@ -68,6 +71,7 @@ const SECTIONS = [
     items: [
       { label: "Salaries", path: "/super-admin/salaries", icon: Wallet },
       { label: "Invoices", path: "/super-admin/invoices", icon: ReceiptText },
+      { label: "Reimbursements", path: "/super-admin/reimbursements", icon: HandCoins },
     ],
   },
   {
@@ -95,6 +99,7 @@ const SECTIONS = [
 const SuperAdminSidebar = () => {
   const [collapsed, setCollapsed] = useState(true);
   const [openSections, setOpenSections] = useState(["operations"]);
+  const location = useLocation();
 
   const toggleSection = (key) => {
     setOpenSections((prev) =>
@@ -105,6 +110,7 @@ const SuperAdminSidebar = () => {
   return (
     <aside
       data-collapsed={collapsed}
+      onMouseLeave={() => setCollapsed(true)}
       className="perf-sidebar h-screen sticky top-0 hidden md:flex flex-col
       bg-[#0f172a] text-white/80
       border-r border-slate-700/50
@@ -130,6 +136,7 @@ const SuperAdminSidebar = () => {
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
         <NavLink
           to="/super-admin/dashboard"
+          onClick={() => setCollapsed(true)}
           className={({ isActive }) =>
             `relative mb-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
               isActive ? "bg-red-500/10 text-red-500" : "text-white/60 hover:bg-transparent hover:text-white"
@@ -146,19 +153,15 @@ const SuperAdminSidebar = () => {
         </NavLink>
 
         {SECTIONS.map((section) => {
-          const isOpen = openSections.includes(section.key);
+          const hasActiveItem = section.items.some((item) => item.path && location.pathname === item.path);
+          const isOpen = openSections.includes(section.key) || hasActiveItem;
           const SectionIcon = section.icon;
 
           return (
             <div key={section.key}>
               <button
                 onClick={() => {
-                  if (collapsed) {
-                    setCollapsed(false);
-                    if (!isOpen) toggleSection(section.key);
-                  } else {
-                    toggleSection(section.key);
-                  }
+                  toggleSection(section.key);
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
                 text-sm font-semibold transition-all duration-200 cursor-pointer
@@ -200,6 +203,7 @@ const SuperAdminSidebar = () => {
                           key={item.path}
                           to={item.path}
                           end={item.path === "/super-admin"}
+                          onClick={() => setCollapsed(true)}
                           className={({ isActive }) =>
                             `relative w-full flex items-center gap-3 px-3 py-2 rounded-lg
                             text-sm font-medium transition-all duration-200
@@ -234,6 +238,7 @@ const SuperAdminSidebar = () => {
       <div className="px-3 py-4 border-t border-slate-700 space-y-2">
         <Link
           to="/"
+          onClick={() => setCollapsed(true)}
           className="flex items-center gap-3 px-3 py-2 rounded-lg
           text-sm text-red-500 hover:bg-red-500/10
           hover:text-red-400 transition"

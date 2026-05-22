@@ -1,9 +1,12 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
+import Pagination from "../../components/common/Pagination";
 import ExposureVisitEnterprisePro from "./ExposureVisitsStepper";
 import { useAuthStore } from "../../stores/authStore";
 import { useExposureVisitStore } from "../../stores/exposureVisitStore";
 import { selectExposureVisitRows } from "../../stores/selectors/trainingSelectors";
+
+const ROWS_PER_PAGE = 10;
 
 /* ===================== COMPONENT ===================== */
 
@@ -18,6 +21,7 @@ export default function ExposureVisitReportTable() {
   const fileRefs = useRef({});
 
   const [showExposureForm, setShowExposureForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const visits = useMemo(() => selectExposureVisitRows(visitRecords), [visitRecords]);
 
   useEffect(() => {
@@ -50,13 +54,16 @@ export default function ExposureVisitReportTable() {
     fileRefs.current[index]?.click();
   };
 
-  const handleFileChange = (e, index) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleFileChange = (e, visitId) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
-    const imageURL = URL.createObjectURL(file);
+    const imageURLs = files.map((f) => URL.createObjectURL(f));
+    const visit = filteredVisits.find((v) => v.id === visitId);
+    const existingImages = visit?.images || (visit?.image ? [visit.image] : []);
+    const allImages = [...existingImages, ...imageURLs];
 
-    updateVisit(filteredVisits[index].id, { image: imageURL, status: "SUBMITTED" });
+    updateVisit(visitId, { images: allImages, image: allImages[0], status: "SUBMITTED" });
   };
 
   /* ===================== SUMMARY ===================== */
@@ -163,7 +170,11 @@ export default function ExposureVisitReportTable() {
 
             <tbody className="divide-y divide-slate-700">
 
-              {filteredVisits.map((report, index) => (
+              {filteredVisits
+                .slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE)
+                .map((report) => {
+                  const allImages = report.images || (report.image ? [report.image] : []);
+                  return (
                 <tr
                   key={report.id}
                   className="hover:bg-transparent/60 transition"
@@ -228,24 +239,25 @@ export default function ExposureVisitReportTable() {
                       </button>
                     )}
 
-                    {/* COMPLETED */}
-                    {report.status === "Completed" && !report.image && (
+                    {/* COMPLETED — upload multiple images */}
+                    {report.status === "Completed" && allImages.length === 0 && (
                       <>
                         <input
                           type="file"
                           accept="image/*"
+                          multiple
                           ref={(el) =>
-                            (fileRefs.current[index] = el)
+                            (fileRefs.current[report.id] = el)
                           }
                           className="hidden"
                           onChange={(e) =>
-                            handleFileChange(e, index)
+                            handleFileChange(e, report.id)
                           }
                         />
 
                         <button
                           onClick={() =>
-                            handleUploadClick(index)
+                            fileRefs.current[report.id]?.click()
                           }
                           className="px-3 py-1.5 text-xs rounded-md
                           bg-transparent border border-slate-600
@@ -256,27 +268,47 @@ export default function ExposureVisitReportTable() {
                       </>
                     )}
 
-                    {/* SUBMITTED */}
-                    {report.image && (
-                      <img
-                        src={report.image}
-                        alt="Visit"
-                        onClick={() =>
-                          setPreviewImage(report.image)
-                        }
-                        className="w-16 h-12 object-cover rounded-md
-                        border border-slate-600 cursor-pointer
-                        hover:scale-105 transition"
-                      />
+                    {/* SUBMITTED / has images — show thumbnails + add more */}
+                    {allImages.length > 0 && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {allImages.map((img, imgIdx) => (
+                          <img
+                            key={imgIdx}
+                            src={img}
+                            alt={`Visit ${imgIdx + 1}`}
+                            onClick={() => setPreviewImage(img)}
+                            className="w-12 h-10 object-cover rounded-md
+                            border border-slate-600 cursor-pointer
+                            hover:scale-105 transition"
+                          />
+                        ))}
+                        <label className="w-10 h-10 flex items-center justify-center rounded-md border border-dashed border-slate-500 text-slate-400 hover:border-emerald-400 hover:text-emerald-400 cursor-pointer transition text-lg">
+                          +
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => handleFileChange(e, report.id)}
+                          />
+                        </label>
+                      </div>
                     )}
 
                   </td>
                 </tr>
-              ))}
+                  );
+                })}
 
             </tbody>
           </table>
         </div>
+
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredVisits.length / ROWS_PER_PAGE)}
+          onPageChange={setCurrentPage}
+        />
       </section>
 
       <SlidePanel open={!!previewImage} onClose={() => setPreviewImage(null)} title="Visit Documentation" width="lg">

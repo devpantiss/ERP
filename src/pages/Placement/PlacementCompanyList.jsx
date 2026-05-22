@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import SlidePanel from "../../components/common/SlidePanel";
 import PlacementCompanyDatabaseStepper from "./PlacementCompanyDatabaseStepper";
 import { usePlacementStore } from "../../stores/placementStore.js";
@@ -11,9 +12,24 @@ import {
 /* ================= COMPONENT ================= */
 
 export default function CompanyDatabase() {
+  const location = useLocation();
+  const isTrackingMode = location.pathname.startsWith("/super-admin");
   const fileRefs = useRef({});
   const { companies: companyRecords, fetchCompanies, updateCompany } = usePlacementStore();
   const companies = useMemo(() => selectCompanyRows(companyRecords), [companyRecords]);
+  const theme = isTrackingMode
+    ? {
+        border: "border-red-500/40",
+        title: "Industry Database Tracking",
+        action: "bg-red-500 text-white hover:bg-red-400 shadow-red-500/20",
+        link: "text-red-300",
+      }
+    : {
+        border: "border-cyan-500",
+        title: "Company Database",
+        action: "bg-cyan-500 text-black hover:bg-cyan-400 shadow-cyan-500/20",
+        link: "text-cyan-400",
+      };
 
   useEffect(() => {
     fetchCompanies();
@@ -146,22 +162,22 @@ export default function CompanyDatabase() {
 
   return (
     <>
-    <section className="mt-8 rounded-2xl p-8 bg-[#111827] border border-cyan-500">
+    <section className={`mt-8 rounded-2xl p-8 bg-[#111827] border ${theme.border}`}>
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-slate-100">
-          Company Database
+          {theme.title}
         </h2>
 
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-lg
-          bg-cyan-500 text-black font-semibold
-          hover:bg-cyan-400 transition shadow-lg shadow-cyan-500/20"
-        >
-          + Enter Company Details
-        </button>
+        {!isTrackingMode && (
+          <button
+            onClick={() => setShowForm(true)}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold transition shadow-lg ${theme.action}`}
+          >
+            + Enter Company Details
+          </button>
+        )}
       </div>
 
       {/* SUMMARY */}
@@ -244,7 +260,7 @@ export default function CompanyDatabase() {
                   {c.location} ({c.locationType})
                 </td>
 
-                <td className="p-3 text-cyan-400">
+                <td className={`p-3 ${theme.link}`}>
                   <a href={c.website} target="_blank">
                     Visit
                   </a>
@@ -264,6 +280,8 @@ export default function CompanyDatabase() {
                     >
                       View LOI
                     </button>
+                  ) : isTrackingMode ? (
+                    <span className="text-xs text-white/40">Not generated</span>
                   ) : (
                     <button
                       onClick={() => openGenerateModal(c)}
@@ -291,12 +309,14 @@ export default function CompanyDatabase() {
                 {/* MOU */}
                 <td className="p-3">
 
-                  <input
-                    type="file"
-                    className="hidden"
-                    ref={(el) => (fileRefs.current[c.id] = el)}
-                    onChange={(e) => handleFileChange(e, c.id)}
-                  />
+                  {!isTrackingMode && (
+                    <input
+                      type="file"
+                      className="hidden"
+                      ref={(el) => (fileRefs.current[c.id] = el)}
+                      onChange={(e) => handleFileChange(e, c.id)}
+                    />
+                  )}
 
                   {c.mou ? (
                     <a
@@ -306,6 +326,8 @@ export default function CompanyDatabase() {
                     >
                       View
                     </a>
+                  ) : isTrackingMode ? (
+                    <span className="text-xs text-white/40">Not uploaded</span>
                   ) : (
                     <button
                       onClick={() => fileRefs.current[c.id]?.click()}
@@ -325,7 +347,7 @@ export default function CompanyDatabase() {
 
       {/* ================= GENERATE LOI MODAL ================= */}
 
-      {loiModal.open && (
+      {!isTrackingMode && loiModal.open && (
         <Modal title="Generate Letter of Intent">
 
           <div className="grid grid-cols-2 gap-3">
@@ -451,7 +473,7 @@ export default function CompanyDatabase() {
     </section>
 
       {/* SlidePanel Form */}
-      {showForm && (
+      {!isTrackingMode && showForm && (
         <PlacementCompanyDatabaseStepper onClose={() => setShowForm(false)} />
       )}
     </>

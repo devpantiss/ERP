@@ -100,7 +100,16 @@ export default function ReimbursementPortal() {
       submittedOn: new Date().toISOString().split("T")[0],
       claimNote,
       category: claimTitle || "Reimbursement",
-      bills: bills.map(b => ({ date: b.date, desc: b.desc, amount: parseFloat(b.amount) || 0, mode: b.mode })),
+      bills: bills.map(b => ({
+        date: b.date,
+        desc: b.desc,
+        amount: parseFloat(b.amount) || 0,
+        mode: b.mode,
+        billFile: b.billFile?.name || null,
+        billFilePreview: b.billFile?.type?.startsWith("image/") ? URL.createObjectURL(b.billFile) : null,
+        paymentScreenshot: b.paymentScreenshot?.name || null,
+        paymentScreenshotPreview: b.paymentScreenshot?.type?.startsWith("image/") ? URL.createObjectURL(b.paymentScreenshot) : null,
+      })),
     });
     resetForm();
   };

@@ -91,6 +91,7 @@ const AdminCandidateApprovals = lazy(() => import("./pages/Admin/AdminCandidateA
 const AdminCommunityEvents = lazy(() => import("./pages/Admin/AdminCommunityEvents"));
 const AdminTrainerList = lazy(() => import("./pages/Admin/AdminTrainerList"));
 const AdminSalaryApprovals = lazy(() => import("./pages/Admin/AdminSalaryApprovals"));
+const AdminReimbursementApprovals = lazy(() => import("./pages/Admin/AdminReimbursementApprovals"));
 const AdminProcurement = lazy(() => import("./pages/Admin/AdminProcurement"));
 const AdminApprovals = lazy(() => import("./pages/Admin/AdminApprovals"));
 const AdminLeaveApprovals = lazy(() => import("./pages/Admin/AdminLeaveApprovals"));
@@ -98,7 +99,6 @@ const AdminTourApprovals = lazy(() => import("./pages/Admin/AdminTourApprovals")
 const AdminTrainerDashboard = lazy(() => import("./pages/Admin/AdminTrainerDashboard"));
 const AdminExposureVisitApprovals = lazy(() => import("./pages/Admin/AdminExposureVisitApprovals"));
 const AdminModuleProgress = lazy(() => import("./pages/Admin/AdminModuleProgress"));
-const AdminTrainerAttendance = lazy(() => import("./pages/Admin/AdminTrainerAttendance"));
 const AdminTrainerLiveFeed = lazy(() => import("./pages/Admin/AdminTrainerLiveFeed"));
 const AdminPlacementDriveApprovals = lazy(() => import("./pages/Admin/AdminPlacementDriveApprovals"));
 const AdminPlacementTracker = lazy(() => import("./pages/Admin/AdminPlacementTracker"));
@@ -118,6 +118,7 @@ const SuperAdminAttendanceMonitor = lazy(() => import("./pages/SuperAdmin/SuperA
 const SuperAdminInvoiceTracking = lazy(() => import("./pages/SuperAdmin/SuperAdminInvoiceTracking"));
 const SuperAdminFinanceManagement = lazy(() => import("./pages/SuperAdmin/SuperAdminFinanceManagement"));
 const SuperAdminInvoiceApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminInvoiceApprovals"));
+const SuperAdminReimbursementApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminReimbursementApprovals"));
 const SuperAdminUserManagement = lazy(() => import("./pages/SuperAdmin/SuperAdminUserManagement"));
 const SuperAdminProjectAssignment = lazy(() => import("./pages/SuperAdmin/SuperAdminProjectAssignment"));
 const SuperAdminTrainerAssignment = lazy(() => import("./pages/SuperAdmin/SuperAdminTrainerAssignment"));
@@ -268,7 +269,7 @@ function App() {
             <Route path="student-insurance-details" element={<AdminStudentInsuranceDetails />} />
             <Route path="batch-certification" element={<AdminBatchCertification />} />
             <Route path="testimonials" element={<AdminTestimonials />} />
-            <Route path="hr/attendance" element={<AdminTrainerAttendance />} />
+            <Route path="hr/attendance" element={<SharedAttendancePage employeeId="EMP-0007" eyebrow="Admin Attendance" />} />
             <Route path="hr/leave" element={<LeaveManagement />} />
             <Route path="hr/salary" element={<SalaryDashboard />} />
             <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
@@ -277,6 +278,7 @@ function App() {
             <Route path="approvals/tour" element={<AdminTourApprovals />} />
             <Route path="approvals/leave" element={<AdminLeaveApprovals />} />
             <Route path="approvals/salary" element={<AdminSalaryApprovals />} />
+            <Route path="approvals/reimbursements" element={<AdminReimbursementApprovals />} />
             <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
 
             {/* Legacy admin routes kept for compatibility */}
@@ -297,7 +299,7 @@ function App() {
             <Route path="trainer-dashboard/:id" element={<AdminTrainerDashboard />} />
             <Route path="exposure-visit-approvals" element={<AdminExposureVisitApprovals />} />
             <Route path="module-progress" element={<AdminModuleProgress />} />
-            <Route path="trainer-attendance" element={<AdminTrainerAttendance />} />
+            <Route path="trainer-attendance" element={<SharedAttendancePage employeeId="EMP-0007" eyebrow="Admin Attendance" />} />
             <Route path="trainer-live-feed" element={<AdminTrainerLiveFeed />} />
             <Route path="placement-drive-approvals" element={<AdminPlacementDriveApprovals />} />
             <Route path="placement-tracker" element={<AdminPlacementTracker />} />
@@ -320,6 +322,8 @@ function App() {
             <Route path="financial-management" element={<SuperAdminFinanceManagement />} />
             <Route path="invoices" element={<SuperAdminInvoiceApprovals />} />
             <Route path="financial-management/invoices" element={<SuperAdminInvoiceApprovals />} />
+            <Route path="reimbursements" element={<SuperAdminReimbursementApprovals />} />
+            <Route path="financial-management/reimbursements" element={<SuperAdminReimbursementApprovals />} />
 
             {/* Individual Detail Dashboards */}
             <Route path="mobilizer/:id" element={<SuperAdminMobilizerDetail />} />
@@ -336,6 +340,10 @@ function App() {
             {/* Operations */}
             <Route path="candidate-details" element={<SuperAdminCandidateDetails />} />
             <Route path="placement-drives" element={<SuperAdminPlacementDrivesPage />} />
+            <Route path="industry-database" element={<PlacementCompanyList />} />
+            <Route path="company-database" element={<PlacementCompanyList />} />
+            <Route path="openings-dashboard" element={<PlacementOpeningsDashboard />} />
+            <Route path="job-openings" element={<PlacementOpeningsDashboard />} />
             <Route path="mobilization" element={<SuperAdminMobilizationPage />} />
             <Route path="community-engagement-drives" element={<SuperAdminCommunityEngagementDrives />} />
             <Route path="training-tracking" element={<SuperAdminTrainingTracking />} />

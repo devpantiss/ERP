@@ -72,8 +72,10 @@ function getProjectStats(project, employees, placementDrives) {
     ...project,
     attendanceAvg,
     activeCandidates,
+    batchRecords: batches,
     batches: batches.length,
     candidates: candidates.length || learners,
+    centerRecords: centers,
     centers: centers.length,
     certifiedCandidates,
     completedCandidates,
@@ -142,7 +144,11 @@ function buildDashboardTotals(projects) {
 function getCenterChartData(project) {
   if (!project) return [];
 
-  return (project.centers || []).map((center) => {
+  const centers = Array.isArray(project.centers)
+    ? project.centers
+    : project.centerRecords || [];
+
+  return centers.map((center) => {
     const batches = center.batches || [];
     const candidates = batches.flatMap((batch) => batch.candidates || []);
 

@@ -43,6 +43,10 @@ export default function SuperAdminPlacementDrives() {
       (s) => s.name.toLowerCase().includes(q) || s.center.toLowerCase().includes(q) || s.course.toLowerCase().includes(q)
     );
   }, [drive, search]);
+  const placedCandidates = useMemo(
+    () => (drive?.students || []).filter((student) => student.status === "Selected"),
+    [drive]
+  );
 
   const pg = usePagination(students);
   const resetPage = pg.setPage;
@@ -149,6 +153,58 @@ export default function SuperAdminPlacementDrives() {
             ))}
           </div>
 
+          <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.04] backdrop-blur-sm">
+            <div className="flex flex-col gap-2 border-b border-emerald-400/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.16em] text-emerald-200">
+                  Candidates Placed During This Drive
+                </p>
+                <p className="mt-1 text-xs text-emerald-100/45">
+                  {placedCandidates.length} selected candidate{placedCandidates.length === 1 ? "" : "s"} from {drive.driveName}.
+                </p>
+              </div>
+              <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-black text-emerald-200">
+                <Trophy size={13} />
+                {placedCandidates.length} placed
+              </span>
+            </div>
+
+            {placedCandidates.length ? (
+              <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-3">
+                {placedCandidates.map((candidate) => (
+                  <div
+                    key={candidate.id}
+                    className="rounded-2xl border border-emerald-400/15 bg-[#0b1220]/80 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-white">{candidate.name}</p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {candidate.center} · {candidate.batch}
+                        </p>
+                      </div>
+                      <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-300">
+                        Placed
+                      </span>
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <MiniInfo label="Job Role" value={candidate.course} />
+                      <MiniInfo
+                        label="Salary"
+                        value={candidate.salary ? `₹${candidate.salary.toLocaleString("en-IN")}` : "Not added"}
+                        tone="text-emerald-300"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-5 py-10 text-center text-sm font-bold text-emerald-100/45">
+                No candidates have been marked as placed for this drive yet.
+              </div>
+            )}
+          </section>
+
           <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-[#111827]/80 backdrop-blur-sm">
             <div className="flex items-center justify-between border-b border-white/[0.08] p-5">
               <p className="text-sm font-black text-white">{students.length} students</p>
@@ -205,6 +261,15 @@ export default function SuperAdminPlacementDrives() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function MiniInfo({ label, value, tone = "text-white/80" }) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+      <p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/35">{label}</p>
+      <p className={`mt-1 truncate text-xs font-black ${tone}`}>{value}</p>
     </div>
   );
 }

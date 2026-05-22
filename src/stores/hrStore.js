@@ -53,4 +53,14 @@ export const useHrStore = create((set) => ({
     set((state) => ({ reimbursements: [response.data, ...state.reimbursements] }))
     return response.data
   },
+
+  async updateReimbursement(id, patch, options = {}) {
+    const response = await reimbursementService.update(id, patch, options)
+    set((state) => ({
+      reimbursements: state.reimbursements.map((claim) =>
+        claim.id === id ? { ...claim, ...response.data } : claim
+      ),
+    }))
+    return response.data
+  },
 }))

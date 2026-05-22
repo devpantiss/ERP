@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
+import AddJobOpeningForm from "./AddJobOpeningForm";
 import SlidePanel from "../../common/SlidePanel";
 import * as XLSX from "xlsx";
 import {
@@ -19,7 +21,24 @@ import { selectJobOpeningRows } from "../../../stores/selectors/placementSelecto
 
 /* ================= MAIN ================= */
 
-export default function Section1() {
+export default function Section1({ trackingMode }) {
+  const location = useLocation();
+  const isTrackingMode = trackingMode ?? location.pathname.startsWith("/super-admin");
+  const accent = isTrackingMode
+    ? {
+        border: "border-red-900",
+        borderStrong: "border-red-700",
+        text: "text-red-300",
+        heading: "text-red-400",
+        view: "bg-red-900/30 border-red-500 text-red-200",
+      }
+    : {
+        border: "border-cyan-900",
+        borderStrong: "border-cyan-700",
+        text: "text-cyan-300",
+        heading: "text-cyan-400",
+        view: "bg-cyan-900/30 border-cyan-500 text-cyan-300",
+      };
   const { drives, fetchDrives } = usePlacementStore();
   const [editedRows, setEditedRows] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,6 +46,7 @@ export default function Section1() {
   const [salaryFilter, setSalaryFilter] = useState("");
   const [modalContent, setModalContent] = useState(null);
   const [editJob, setEditJob] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [page, setPage] = useState(1);
 
   const pageSize = 10;
@@ -93,27 +113,27 @@ export default function Section1() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1120] text-white/90 p-6 space-y-6">
+    <div className="bg-[#0B1120] text-white/90 p-6 space-y-6">
 
       {/* ================= SUMMARY ================= */}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
 
-        <StatCard title="Total Openings" value={totalOpenings} icon={<FaBriefcase />} />
-        <StatCard title="Companies" value={totalCompanies} icon={<FaBuilding />} />
-        <StatCard title="Vacancies" value={totalVacancies} icon={<FaUsers />} />
-        <StatCard title="Avg Salary" value={`₹ ${Math.round(avgSalary)}`} icon={<FaMoneyBillWave />} />
+        <StatCard title="Total Openings" value={totalOpenings} icon={<FaBriefcase />} accent={accent} />
+        <StatCard title="Companies" value={totalCompanies} icon={<FaBuilding />} accent={accent} />
+        <StatCard title="Vacancies" value={totalVacancies} icon={<FaUsers />} accent={accent} />
+        <StatCard title="Avg Salary" value={`₹ ${Math.round(avgSalary)}`} icon={<FaMoneyBillWave />} accent={accent} />
 
       </div>
 
       {/* ================= FILTER + ACTION ================= */}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${isTrackingMode ? "" : "lg:grid-cols-4"}`}>
 
-        <div className="lg:col-span-3 bg-[#111827] border border-cyan-900 rounded-xl p-5">
+        <div className={`${isTrackingMode ? "" : "lg:col-span-3"} bg-[#111827] border ${accent.border} rounded-xl p-5`}>
 
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-cyan-400 text-sm font-semibold">
+            <h3 className={`${accent.heading} text-sm font-semibold`}>
               FILTER JOB OPENINGS
             </h3>
 
@@ -178,9 +198,13 @@ export default function Section1() {
 
         {/* ACTION BUTTONS */}
 
+        {!isTrackingMode && (
         <div className="flex flex-col gap-3">
 
-          <button className="bg-cyan-500 text-black px-4 py-2 rounded-lg flex items-center gap-2">
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="bg-cyan-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/20"
+          >
             <FaPlus /> Add Job Opening
           </button>
 
@@ -192,18 +216,19 @@ export default function Section1() {
           </button>
 
         </div>
+        )}
 
       </div>
 
       {/* ================= TABLE ================= */}
 
-      <div className="bg-[#111827] border border-cyan-900 rounded-xl overflow-hidden">
+      <div className={`bg-[#111827] border ${accent.border} rounded-xl overflow-hidden`}>
 
         <div className="overflow-x-auto">
 
-          <table className="min-w-[1100px] w-full text-sm">
+          <table className={`${isTrackingMode ? "min-w-[1000px]" : "min-w-[1100px]"} w-full text-sm`}>
 
-            <thead className="bg-[#020617] text-cyan-300">
+            <thead className={`bg-[#020617] ${accent.text}`}>
 
               <tr className="text-xs uppercase tracking-wider">
                 <th className="px-4 py-3 text-left">Company</th>
@@ -214,7 +239,7 @@ export default function Section1() {
                 <th className="px-4 py-3 text-center">Description</th>
                 <th className="px-4 py-3">Vacancies</th>
                 <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-center">Edit</th>
+                {!isTrackingMode && <th className="px-4 py-3 text-center">Edit</th>}
               </tr>
 
             </thead>
@@ -235,6 +260,7 @@ export default function Section1() {
 
                   <td className="px-4 py-3 text-center">
                     <ViewButton
+                      accent={accent}
                       onClick={() =>
                         setModalContent({
                           title: "Eligibility",
@@ -246,6 +272,7 @@ export default function Section1() {
 
                   <td className="px-4 py-3 text-center">
                     <ViewButton
+                      accent={accent}
                       onClick={() =>
                         setModalContent({
                           title: "Job Description",
@@ -261,14 +288,16 @@ export default function Section1() {
                     <StatusBadge status={job.status} />
                   </td>
 
-                  <td className="px-4 py-3 text-center">
-                    <button
-                      onClick={() => setEditJob(job)}
-                      className="text-cyan-400"
-                    >
-                      <FaEdit />
-                    </button>
-                  </td>
+                  {!isTrackingMode && (
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => setEditJob(job)}
+                        className="text-cyan-400"
+                      >
+                        <FaEdit />
+                      </button>
+                    </td>
+                  )}
 
                 </tr>
 
@@ -294,7 +323,7 @@ export default function Section1() {
             <button
               disabled={page === 1}
               onClick={() => setPage((p) => p - 1)}
-              className="px-3 py-1 border border-cyan-700 rounded"
+              className={`px-3 py-1 border ${accent.borderStrong} rounded`}
             >
               <FaChevronLeft />
             </button>
@@ -306,7 +335,7 @@ export default function Section1() {
             <button
               disabled={page === totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="px-3 py-1 border border-cyan-700 rounded"
+              className={`px-3 py-1 border ${accent.borderStrong} rounded`}
             >
               <FaChevronRight />
             </button>
@@ -327,11 +356,23 @@ export default function Section1() {
         />
       )}
 
-      {editJob && (
+      {!isTrackingMode && editJob && (
         <EditModal
           job={editJob}
           onClose={() => setEditJob(null)}
           onSave={saveEdit}
+        />
+      )}
+
+      {/* ADD JOB OPENING FORM */}
+      {!isTrackingMode && (
+        <AddJobOpeningForm
+          open={showAddForm}
+          onClose={() => setShowAddForm(false)}
+          onSubmit={(data) => {
+            console.log("New Job Opening:", data);
+            setShowAddForm(false);
+          }}
         />
       )}
 
@@ -341,10 +382,10 @@ export default function Section1() {
 
 /* ================= COMPONENTS ================= */
 
-function StatCard({ title, value, icon }) {
+function StatCard({ title, value, icon, accent }) {
   return (
-    <div className="bg-linear-to-br from-[#0B1120] to-[#020617] border border-cyan-900 rounded-xl p-5 flex items-center gap-4">
-      <div className="text-cyan-400 text-xl">{icon}</div>
+    <div className={`bg-linear-to-br from-[#0B1120] to-[#020617] border ${accent.border} rounded-xl p-5 flex items-center gap-4`}>
+      <div className={`${accent.heading} text-xl`}>{icon}</div>
       <div>
         <p className="text-white/60 text-sm">{title}</p>
         <h2 className="text-xl font-bold">{value}</h2>
@@ -370,11 +411,11 @@ function StatusBadge({ status }) {
   );
 }
 
-function ViewButton({ onClick }) {
+function ViewButton({ onClick, accent }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-1 bg-cyan-900/30 border border-cyan-500 text-cyan-300 px-3 py-1 rounded-lg text-xs"
+      className={`flex items-center gap-1 border px-3 py-1 rounded-lg text-xs ${accent.view}`}
     >
       <FaEye /> View
     </button>

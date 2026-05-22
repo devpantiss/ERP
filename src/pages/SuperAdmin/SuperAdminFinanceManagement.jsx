@@ -29,11 +29,30 @@ function formatCurrency(value) {
   return `₹${value.toLocaleString("en-IN")}`;
 }
 
+function toSalaryStatusLabel(status) {
+  const map = {
+    PAID: "Paid",
+    APPROVED: "Approved",
+    SUBMITTED: "Pending",
+    REJECTED: "Rejected",
+  };
+
+  return map[status] || status;
+}
+
 function buildSalaryRecords(salaries) {
   return selectSalaryRows(salaries).map((salary, index) => {
     const target2 = salary.role === "Placement Officer" ? 40 + index * 2 : 80 + index * 4;
     const achievement2 = Math.max(Math.round(target2 * (salary.attendance / 100)) - (index % 3), 0);
-    const adminApproved = salary.status === "Approved";
+    const adminApproved = ["Approved", "Paid"].includes(salary.status);
+    const superAdminStatus =
+      salary.status === "Paid"
+        ? "Paid"
+        : salary.status === "Rejected"
+          ? "Returned"
+          : adminApproved
+            ? "Pending Review"
+            : "Waiting Admin";
 
     return {
       ...salary,
@@ -43,14 +62,15 @@ function buildSalaryRecords(salaries) {
       achievement2,
       evidence: buildSalaryWorkEvidence(salary, index),
       adminApproved,
-      superAdminStatus: adminApproved ? "Pending Review" : "Waiting Admin",
+      superAdminStatus,
     };
   });
 }
 
 function getStatusClass(status) {
   const map = {
-    Approved: "border-emerald-400/25 bg-emerald-500/10 text-emerald-300",
+    Approved: "border-sky-400/25 bg-sky-500/10 text-sky-300",
+    Paid: "border-emerald-400/25 bg-emerald-500/10 text-emerald-300",
     Pending: "border-amber-400/25 bg-amber-500/10 text-amber-300",
     "Pending Review": "border-amber-400/25 bg-amber-500/10 text-amber-300",
     "Waiting Admin": "border-slate-500/25 bg-slate-500/10 text-slate-300",
@@ -81,7 +101,7 @@ function summarizeProjects(records) {
           totalSalary: current.totalSalary + record.amount,
           adminApproved: current.adminApproved + (record.adminApproved ? 1 : 0),
           pendingReview: current.pendingReview + (record.superAdminStatus === "Pending Review" ? 1 : 0),
-          superApproved: current.superApproved + (record.superAdminStatus === "Approved" ? 1 : 0),
+          superApproved: current.superApproved + (record.superAdminStatus === "Paid" ? 1 : 0),
           returned: current.returned + (record.superAdminStatus === "Returned" ? 1 : 0),
           avgAttendance: current.avgAttendance + record.attendance,
         });
@@ -96,7 +116,7 @@ function summarizeProjects(records) {
 }
 
 export default function SuperAdminFinanceManagement() {
-  const { salaries, fetchSalaries } = useSalaryStore();
+  const { salaries, fetchSalaries, updateSalary } = useSalaryStore();
   useEffect(() => {
     fetchSalaries();
   }, [fetchSalaries]);
@@ -141,26 +161,30 @@ export default function SuperAdminFinanceManagement() {
           totalSalary: summary.totalSalary + row.amount,
           adminApproved: summary.adminApproved + (row.adminApproved ? 1 : 0),
           pendingReview: summary.pendingReview + (row.superAdminStatus === "Pending Review" ? 1 : 0),
-          superApproved: summary.superApproved + (row.superAdminStatus === "Approved" ? 1 : 0),
+          superApproved: summary.superApproved + (row.superAdminStatus === "Paid" ? 1 : 0),
         }),
         { totalSalary: 0, adminApproved: 0, pendingReview: 0, superApproved: 0 }
       ),
     [salaryRows]
   );
 
-  const updateSuperAdminStatus = (id, status) => {
+  const updateSuperAdminStatus = (id, status, salaryStatus) => {
     const decidedOn = new Date().toISOString().split("T")[0];
     setSalaryRows((current) =>
       current.map((row) =>
         row.id === id
           ? {
               ...row,
+              ...(salaryStatus ? { status: toSalaryStatusLabel(salaryStatus) } : {}),
               superAdminStatus: status,
               decidedOn,
             }
           : row
       )
     );
+    if (salaryStatus) {
+      updateSalary(id, { status: salaryStatus, decidedOn });
+    }
   };
 
   const approveProjectSalaries = () => {
@@ -170,10 +194,13 @@ export default function SuperAdminFinanceManagement() {
     setSalaryRows((current) =>
       current.map((row) =>
         row.project === selectedProject && row.superAdminStatus === "Pending Review"
-          ? { ...row, superAdminStatus: "Approved", decidedOn }
+          ? { ...row, superAdminStatus: "Paid", status: "Paid", decidedOn }
           : row
       )
     );
+    salaryRows
+      .filter((row) => row.project === selectedProject && row.superAdminStatus === "Pending Review")
+      .forEach((row) => updateSalary(row.id, { status: "PAID", decidedOn }));
   };
 
   const clearProjectSelection = () => {
@@ -199,7 +226,7 @@ export default function SuperAdminFinanceManagement() {
         <MetricCard icon={Wallet} label="Total Salary Value" value={formatCurrency(totals.totalSalary)} tone="red" />
         <MetricCard icon={UserCheck} label="Admin Approved" value={totals.adminApproved} tone="sky" />
         <MetricCard icon={Clock} label="Pending Review" value={totals.pendingReview} tone="amber" />
-        <MetricCard icon={ShieldCheck} label="Super Admin Approved" value={totals.superApproved} tone="emerald" />
+        <MetricCard icon={ShieldCheck} label="Paid Salaries" value={totals.superApproved} tone="emerald" />
       </div>
 
       {!selectedProject ? (
@@ -266,7 +293,7 @@ export default function SuperAdminFinanceManagement() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-500/20 transition hover:opacity-90"
               >
                 <CheckCircle2 size={15} />
-                Approve Cleared Salaries
+                Mark Cleared as Paid
               </button>
             </div>
           </div>
@@ -302,7 +329,7 @@ export default function SuperAdminFinanceManagement() {
                   <FilterSelect
                     value={statusFilter}
                     onChange={setStatusFilter}
-                    options={["All", "Pending Review", "Approved", "Returned", "Waiting Admin"]}
+                    options={["All", "Pending Review", "Paid", "Returned", "Waiting Admin"]}
                   />
 
                   <Link
@@ -338,9 +365,9 @@ export default function SuperAdminFinanceManagement() {
                       <SalaryRow
                         key={row.id}
                         row={row}
-                        onApprove={() => updateSuperAdminStatus(row.id, "Approved")}
-                        onReturn={() => updateSuperAdminStatus(row.id, "Returned")}
-                        onReopen={() => updateSuperAdminStatus(row.id, row.adminApproved ? "Pending Review" : "Waiting Admin")}
+                        onApprove={() => updateSuperAdminStatus(row.id, "Paid", "PAID")}
+                        onReturn={() => updateSuperAdminStatus(row.id, "Returned", "REJECTED")}
+                        onReopen={() => updateSuperAdminStatus(row.id, row.adminApproved ? "Pending Review" : "Waiting Admin", row.adminApproved ? "APPROVED" : "SUBMITTED")}
                       />
                     ))
                   ) : (
@@ -386,7 +413,7 @@ function ProjectSalaryCard({ project, onSelect }) {
       <div className="relative mt-6 grid grid-cols-3 gap-2 text-center">
         <MiniStat label="Admin OK" value={project.adminApproved} tone="text-sky-300" />
         <MiniStat label="Pending" value={project.pendingReview} tone="text-amber-300" />
-        <MiniStat label="Approved" value={project.superApproved} tone="text-emerald-300" />
+        <MiniStat label="Paid" value={project.superApproved} tone="text-emerald-300" />
       </div>
 
       <div className="relative mt-5 rounded-xl border border-slate-700/50 bg-[#0b1220] p-4">
@@ -465,7 +492,7 @@ function SalaryRow({ row, onApprove, onReturn, onReopen }) {
               className="inline-flex min-w-[104px] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-emerald-500/15 px-4 py-2.5 text-xs font-black text-emerald-200 transition hover:bg-emerald-500/25"
             >
               <CheckCircle2 size={14} />
-              Approve
+              Mark Paid
             </button>
             <button
               type="button"

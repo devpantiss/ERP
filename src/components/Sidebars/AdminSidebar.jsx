@@ -138,6 +138,11 @@ const MENU_ITEMS = [
         icon: Wallet,
       },
       {
+        label: "Reimbursement Approvals",
+        path: "/admin/approvals/reimbursements",
+        icon: HandCoins,
+      },
+      {
         label: "Operations Approvals",
         path: "/admin/approvals/operations",
         icon: FileCheck,
@@ -170,6 +175,7 @@ function AdminSidebar() {
     >
       <div
         data-collapsed={collapsed}
+        onMouseLeave={() => setCollapsed(true)}
         className="perf-sidebar admin-future-sidebar flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 shadow-2xl shadow-black/20 [--sidebar-expanded-width:18rem]"
       >
       <div className="admin-future-sidebar__brand flex h-16 items-center justify-between border-b border-slate-700 px-4">
@@ -217,9 +223,6 @@ function AdminSidebar() {
             <div key={item.key} className="space-y-1">
               <button
                 onClick={() => {
-                  if (collapsed) {
-                    setCollapsed(false);
-                  }
                   toggleGroup(item.key);
                 }}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${

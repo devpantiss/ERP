@@ -15,6 +15,7 @@ import {
   MessageSquareWarning,
   Wallet,
   ReceiptText,
+  HandCoins,
   UserPlus,
   Settings,
   UserRoundPen,
@@ -40,6 +41,8 @@ const DRAWER_ITEMS = [
       { label: "Community Drives", path: "/super-admin/community-engagement-drives", icon: Megaphone },
       { heading: "Placements" },
       { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
+      { label: "Industry Database", path: "/super-admin/industry-database", icon: Building2 },
+      { label: "Openings Dashboard", path: "/super-admin/openings-dashboard", icon: Briefcase },
     ],
   },
   {
@@ -57,6 +60,7 @@ const DRAWER_ITEMS = [
     children: [
       { label: "Salaries", path: "/super-admin/salaries", icon: Wallet },
       { label: "Invoices", path: "/super-admin/invoices", icon: ReceiptText },
+      { label: "Reimbursements", path: "/super-admin/reimbursements", icon: HandCoins },
     ],
   },
   {

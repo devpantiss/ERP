@@ -11,6 +11,7 @@ const formatDate = (date) =>
 
 export default function SuperAdminLeaveMonitor() {
   const [requests, setRequests] = useState(() => readLeaveRequests());
+  const [rejectDraft, setRejectDraft] = useState(null);
 
   const summary = useMemo(
     () => ({
@@ -23,7 +24,7 @@ export default function SuperAdminLeaveMonitor() {
     [requests]
   );
 
-  const decide = (id, status) => {
+  const decide = (id, status, rejectionReason = "") => {
     const updated = requests.map((request) =>
       request.id === id
         ? {
@@ -33,16 +34,26 @@ export default function SuperAdminLeaveMonitor() {
             superAdminDecision:
               status === "Approved"
                 ? "Final approval by Super Admin."
-                : "Rejected by Super Admin at final approval.",
+                : `Rejected by Super Admin: ${rejectionReason}`,
+            superAdminRejectionReason: status === "Rejected" ? rejectionReason : "",
             decisionNote:
               status === "Approved"
                 ? "Approved after Admin and Super Admin dual approval."
-                : "Rejected at Super Admin final approval.",
+                : `Super Admin rejection reason: ${rejectionReason}`,
           }
         : request
     );
     writeLeaveRequests(updated);
     setRequests(updated);
+  };
+
+  const submitRejection = (event) => {
+    event.preventDefault();
+    const reason = rejectDraft?.reason.trim();
+    if (!rejectDraft || !reason) return;
+
+    decide(rejectDraft.id, "Rejected", reason);
+    setRejectDraft(null);
   };
 
   return (
@@ -64,53 +75,84 @@ export default function SuperAdminLeaveMonitor() {
         <Stat icon={CheckCircle2} label="Approved" value={summary.approved} />
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] shadow-xl shadow-black/20">
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220]/80 shadow-xl shadow-black/20">
+        <div className="flex flex-col gap-2 border-b border-white/10 bg-white/[0.025] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-black text-white">Leave Request Queue</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Review Admin-cleared leave requests and track final decisions.
+            </p>
+          </div>
+          <span className="inline-flex w-fit rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-red-300">
+            {requests.length} records
+          </span>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
-            <thead className="border-b border-white/10 bg-white/[0.03] text-xs uppercase tracking-[0.16em] text-slate-500">
+          <table className="w-full min-w-[1180px] text-sm">
+            <thead className="border-b border-white/10 bg-[#07111f] text-[11px] uppercase tracking-[0.16em] text-slate-500">
               <tr>
-                {["Request", "Role", "Employee", "Leave", "Dates", "Days", "Status", "Decision"].map((header) => (
-                  <th key={header} className="px-5 py-3 text-left font-black">
+                {["Request Details", "Employee", "Leave Window", "Duration", "Current Status", "Decision"].map((header) => (
+                  <th key={header} className="px-6 py-4 text-left font-black">
                     {header}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody className="divide-y divide-white/[0.07]">
               {requests.map((request) => (
-                <tr key={request.id} className="hover:bg-white/[0.03]">
-                  <td className="px-5 py-4">
-                    <p className="font-black text-white">{request.id}</p>
-                    <p className="text-xs text-slate-500">Applied {formatDate(request.appliedOn)}</p>
+                <tr key={request.id} className="align-top transition hover:bg-white/[0.025]">
+                  <td className="px-6 py-5">
+                    <div className="min-w-[190px]">
+                      <p className="font-mono text-xs font-black uppercase tracking-[0.1em] text-red-300">{request.id}</p>
+                      <p className="mt-2 text-xs font-semibold text-slate-500">Applied {formatDate(request.appliedOn)}</p>
+                    </div>
                   </td>
-                  <td className="px-5 py-4 text-slate-300">{ROLE_LABEL[request.role]}</td>
-                  <td className="px-5 py-4 text-slate-300">{request.employee}</td>
-                  <td className="px-5 py-4 text-slate-300">{request.type}</td>
-                  <td className="px-5 py-4 text-slate-400">
-                    {formatDate(request.from)} - {formatDate(request.to)}
+                  <td className="px-6 py-5">
+                    <div className="min-w-[220px]">
+                      <p className="text-sm font-black text-white">{request.employee}</p>
+                      <p className="mt-2 inline-flex rounded-full border border-white/10 bg-white/[0.035] px-2.5 py-1 text-xs font-semibold text-slate-300">
+                        {ROLE_LABEL[request.role]}
+                      </p>
+                    </div>
                   </td>
-                  <td className="px-5 py-4 text-slate-300">{request.days}</td>
-                  <td className="px-5 py-4">
-                    <StatusBadge status={request.status} />
+                  <td className="px-6 py-5">
+                    <div className="min-w-[260px] rounded-xl border border-white/[0.06] bg-white/[0.025] px-4 py-3">
+                      <p className="text-sm font-bold text-white">{request.type}</p>
+                      <p className="mt-2 text-xs font-medium text-slate-400">
+                        {formatDate(request.from)} to {formatDate(request.to)}
+                      </p>
+                    </div>
                   </td>
-                  <td className="max-w-[280px] px-5 py-4 text-slate-500">
+                  <td className="px-6 py-5">
+                    <span className="inline-flex min-w-[76px] justify-center rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-sm font-black text-white">
+                      {request.days} {request.days === 1 ? "day" : "days"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="min-w-[190px]">
+                      <StatusBadge status={request.status} />
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 text-slate-500">
                     {request.status === "Pending Super Admin Review" ? (
-                      <div className="flex gap-2">
+                      <div className="flex min-w-[260px] gap-3">
                         <button
                           onClick={() => decide(request.id, "Approved")}
-                          className="rounded-lg bg-emerald-500/15 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
+                          className="inline-flex flex-1 items-center justify-center rounded-xl bg-emerald-500/15 px-4 py-2.5 text-xs font-black text-emerald-300 transition hover:bg-emerald-500/25"
                         >
                           Final Approve
                         </button>
                         <button
-                          onClick={() => decide(request.id, "Rejected")}
-                          className="rounded-lg bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/25"
+                          onClick={() => setRejectDraft({ id: request.id, reason: "" })}
+                          className="inline-flex flex-1 items-center justify-center rounded-xl bg-red-500/15 px-4 py-2.5 text-xs font-black text-red-300 transition hover:bg-red-500/25"
                         >
                           Reject
                         </button>
                       </div>
                     ) : (
-                      request.decisionNote || "Awaiting admin decision"
+                      <p className="max-w-[360px] text-sm leading-6 text-slate-400">
+                        {request.decisionNote || "Awaiting admin decision"}
+                      </p>
                     )}
                   </td>
                 </tr>
@@ -119,6 +161,46 @@ export default function SuperAdminLeaveMonitor() {
           </table>
         </div>
       </div>
+
+      {rejectDraft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <form
+            onSubmit={submitRejection}
+            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0b1220] p-5 shadow-2xl shadow-black/40"
+          >
+            <h2 className="text-lg font-black text-white">Reject Leave Request</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Add the final rejection reason. This will be saved with the Super Admin decision.
+            </p>
+
+            <textarea
+              required
+              autoFocus
+              rows={5}
+              value={rejectDraft.reason}
+              onChange={(event) => setRejectDraft({ ...rejectDraft, reason: event.target.value })}
+              placeholder="Enter rejection reason"
+              className="mt-5 w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-red-400/50"
+            />
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setRejectDraft(null)}
+                className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/5 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-xl bg-red-500/15 px-4 py-2 text-sm font-black text-red-300 transition hover:bg-red-500/25"
+              >
+                Reject Request
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   );
 }
@@ -144,7 +226,7 @@ function StatusBadge({ status }) {
   };
 
   return (
-    <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${config[status]}`}>
+    <span className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold ${config[status]}`}>
       {status}
     </span>
   );

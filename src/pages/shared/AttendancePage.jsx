@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import SlidePanel from "../../components/common/SlidePanel";
 import { useAttendanceStore } from "../../stores/attendanceStore.js";
+import { mockDb } from "../../mock-db/index.js";
 
 /* ================= CONFIG ================= */
 
 const SHIFT_START = "10:00";
 const LATE_AFTER_MINUTES = 15;
-const MOCK_EMPLOYEE_ID = "EMP-0001";
 const MOCK_PROJECT_ID = "PRJ-0001";
 const MOCK_CENTER_ID = "CTR-0001";
 const MOCK_BATCH_ID = "BTH-0001";
@@ -51,9 +51,21 @@ const getStatus = (timeStr) => {
 
 /* ================= MAIN COMPONENT ================= */
 
-const AttendancePage = () => {
+const getEmployeeAttendanceScope = (employeeId) => {
+  const employee = mockDb.employees.byId[employeeId];
+
+  return {
+    employeeId,
+    projectId: employee?.projectIds?.[0] || MOCK_PROJECT_ID,
+    centerId: employee?.centerIds?.[0] || MOCK_CENTER_ID,
+    batchId: employee?.assignedBatchIds?.[0] || MOCK_BATCH_ID,
+  };
+};
+
+const AttendancePage = ({ employeeId = "EMP-0001", eyebrow = "HR Entitlement" }) => {
   const webcamRef = useRef(null);
   const { records, fetchAll, create, update } = useAttendanceStore();
+  const attendanceScope = getEmployeeAttendanceScope(employeeId);
 
   const [activePunch, setActivePunch] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
@@ -61,23 +73,29 @@ const AttendancePage = () => {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchAll({ filters: { subjectType: "EMPLOYEE", subjectId: MOCK_EMPLOYEE_ID } });
-  }, [fetchAll]);
+    fetchAll({ filters: { subjectType: "EMPLOYEE", subjectId: attendanceScope.employeeId } });
+  }, [attendanceScope.employeeId, fetchAll]);
 
-  const attendance = records.reduce((acc, record) => {
-    acc[record.date] = {
-      id: record.id,
-      punchIn: record.punchIn || (record.status === "PRESENT" ? {
-        time: record.markedAt ? new Date(record.markedAt).toLocaleTimeString() : "10:00:00 AM",
-        place: record.place || "Center",
-        lat: record.lat,
-        lng: record.lng,
-        image: record.image,
-      } : null),
-      punchOut: record.punchOut || null,
-    };
-    return acc;
-  }, {});
+  const attendance = records
+    .filter(
+      (record) =>
+        record.subjectType === "EMPLOYEE" &&
+        record.subjectId === attendanceScope.employeeId
+    )
+    .reduce((acc, record) => {
+      acc[record.date] = {
+        id: record.id,
+        punchIn: record.punchIn || (record.status === "PRESENT" ? {
+          time: record.markedAt ? new Date(record.markedAt).toLocaleTimeString() : "10:00:00 AM",
+          place: record.place || "Center",
+          lat: record.lat,
+          lng: record.lng,
+          image: record.image,
+        } : null),
+        punchOut: record.punchOut || null,
+      };
+      return acc;
+    }, {});
 
   const handlePunch = async () => {
     setError("");
@@ -118,13 +136,14 @@ const AttendancePage = () => {
         } else {
           create({
             subjectType: "EMPLOYEE",
-            subjectId: MOCK_EMPLOYEE_ID,
-            projectId: MOCK_PROJECT_ID,
-            centerId: MOCK_CENTER_ID,
-            batchId: MOCK_BATCH_ID,
+            subjectId: attendanceScope.employeeId,
+            employeeId: attendanceScope.employeeId,
+            projectId: attendanceScope.projectId,
+            centerId: attendanceScope.centerId,
+            batchId: attendanceScope.batchId,
             date: today,
             status: "PRESENT",
-            markedByEmployeeId: MOCK_EMPLOYEE_ID,
+            markedByEmployeeId: attendanceScope.employeeId,
             markedAt: new Date().toISOString(),
             punchIn: punchPayload,
           });
@@ -158,7 +177,7 @@ const AttendancePage = () => {
 
         {/* Header */}
         <div>
-          <p className="text-xs tracking-widest text-cyan-400 uppercase mb-2 font-medium">HR Entitlement</p>
+          <p className="text-xs tracking-widest text-cyan-400 uppercase mb-2 font-medium">{eyebrow}</p>
           <h1 className="text-2xl font-semibold">Attendance Management</h1>
           <p className="text-sm text-white/60">
             Photo & location verified daily attendance

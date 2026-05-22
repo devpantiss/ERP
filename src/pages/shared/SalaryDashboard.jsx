@@ -319,7 +319,6 @@ export default function SalaryDashboard() {
                       <th className="px-6 py-4 text-left font-medium">Target</th>
                       <th className="px-6 py-4 text-left font-medium">Achieved</th>
                       <th className="px-6 py-4 text-left font-medium">Net Pay</th>
-                      <th className="px-6 py-4 text-left font-medium">Status</th>
                       <th className="px-6 py-4 text-left font-medium"></th>
                     </tr>
                   </thead>
@@ -338,9 +337,6 @@ export default function SalaryDashboard() {
                             </span>
                           </td>
                           <td className={`px-6 py-4 font-bold ${a.text}`}>₹{c.netPay.toLocaleString("en-IN")}</td>
-                          <td className="px-6 py-4">
-                            <StatusBadge status={row.status} />
-                          </td>
                           <td className="px-6 py-4">
                             {isExpanded ? <ChevronUp size={16} className="text-white/40" /> : <ChevronDown size={16} className="text-white/40" />}
                           </td>
