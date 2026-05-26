@@ -136,6 +136,12 @@ const SuperAdminEmployeeManagement = lazy(() => import("./pages/SuperAdmin/Super
 const SuperAdminGrievancePortal = lazy(() => import("./pages/SuperAdmin/SuperAdminGrievancePortal"));
 const SuperAdminLeaveMonitor = lazy(() => import("./pages/SuperAdmin/SuperAdminLeaveMonitor"));
 const SuperAdminCreateProjects = lazy(() => import("./pages/SuperAdmin/SuperAdminCreateProjects"));
+const SuperAdminProjectDetails = lazy(() => import("./pages/SuperAdmin/SuperAdminProjectDetails"));
+const SuperAdminApprovalsHub = lazy(() => import("./pages/SuperAdmin/SuperAdminApprovalsHub"));
+const SuperAdminOperationsApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminOperationsApprovals"));
+const SuperAdminTourApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminTourApprovals"));
+const SuperAdminLeaveApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminLeaveApprovals"));
+const SuperAdminSalaryApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminSalaryApprovals"));
 
 // ─── Suspense fallback ───────────────────────────────────────────────────────
 const PageFallback = (
@@ -151,212 +157,227 @@ function App() {
       <Suspense fallback={PageFallback}>
         <div className="page-fade-in">
           <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Home2 />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/client-login" element={<ClientLogin />} />
-          <Route path="/live/:sessionId" element={<TrainerLiveFeedViewer />} />
-          <Route path="/trainer/live/:sessionId" element={<TrainerLiveFeedViewer />} />
+            {/* Public Routes */}
+            <Route path="/" element={<Home2 />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/client-login" element={<ClientLogin />} />
+            <Route path="/live/:sessionId" element={<TrainerLiveFeedViewer />} />
+            <Route path="/trainer/live/:sessionId" element={<TrainerLiveFeedViewer />} />
 
-          {/* Client Portal Routes */}
-          <Route element={<ClientProtectedRoute />}>
-            <Route path="/client" element={<ClientLayout />}>
-              <Route index element={<Navigate to="/client/dashboard" replace />} />
-              <Route path="dashboard" element={<ClientDashboard />} />
-              <Route path="projects" element={<ClientProjects />} />
-              <Route path="projects/:projectId" element={<ClientProjectDetail />} />
-              <Route path="performance" element={<ClientPerformance />} />
-              <Route path="reports" element={<ClientReports />} />
-              <Route path="success-story" element={<ClientSuccessStory />} />
-              <Route path="live-feed" element={<ClientLiveFeed />} />
+            {/* Client Portal Routes */}
+            <Route element={<ClientProtectedRoute />}>
+              <Route path="/client" element={<ClientLayout />}>
+                <Route index element={<Navigate to="/client/dashboard" replace />} />
+                <Route path="dashboard" element={<ClientDashboard />} />
+                <Route path="projects" element={<ClientProjects />} />
+                <Route path="projects/:projectId" element={<ClientProjectDetail />} />
+                <Route path="performance" element={<ClientPerformance />} />
+                <Route path="reports" element={<ClientReports />} />
+                <Route path="success-story" element={<ClientSuccessStory />} />
+                <Route path="live-feed" element={<ClientLiveFeed />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Mobilizer Layout Routes */}
-          <Route path="/mobilizer" element={<MobilizerLayout />}>
-            {/* Default page */}
-            <Route index element={<MobilizerDashboard />} />
+            {/* Mobilizer Layout Routes */}
+            <Route path="/mobilizer" element={<MobilizerLayout />}>
+              {/* Default page */}
+              <Route index element={<MobilizerDashboard />} />
 
-            {/* Explicit pages */}
-            <Route path="dashboard" element={<MobilizerDashboard />} />
-            <Route path="student-enrollment" element={<StudentEnrollment />} />
-            <Route path="community-engagement" element={<CommunityHistory />} />
-            <Route path="attendance" element={<MobilizerAttendance />} />
-            <Route path="profile" element={<MobilizerProfile />} />
-            <Route path="revenue" element={<MobilizerRevenue />} />
+              {/* Explicit pages */}
+              <Route path="dashboard" element={<MobilizerDashboard />} />
+              <Route path="student-enrollment" element={<StudentEnrollment />} />
+              <Route path="community-engagement" element={<CommunityHistory />} />
+              <Route path="attendance" element={<MobilizerAttendance />} />
+              <Route path="profile" element={<MobilizerProfile />} />
+              <Route path="revenue" element={<MobilizerRevenue />} />
 
-            {/* HR Entitlement */}
-            <Route path="hr/attendance" element={<MobilizerAttendance />} />
-            <Route path="hr/leave" element={<LeaveManagement />} />
-            <Route path="hr/tour" element={<TourApplication />} />
-            <Route path="hr/salary" element={<SalaryDashboard />} />
-            <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
+              {/* HR Entitlement */}
+              <Route path="hr/attendance" element={<MobilizerAttendance />} />
+              <Route path="hr/leave" element={<LeaveManagement />} />
+              <Route path="hr/tour" element={<TourApplication />} />
+              <Route path="hr/salary" element={<SalaryDashboard />} />
+              <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
 
-            {/* Grievance */}
-            <Route path="grievance" element={<GrievancePortal />} />
-          </Route>
+              {/* Grievance */}
+              <Route path="grievance" element={<GrievancePortal />} />
+            </Route>
 
-          {/* Trainer Layout Routes */}
-          <Route path="/trainer" element={<TrainerLayout />}>
-            <Route index element={<TrainerDashboard />} />
+            {/* Trainer Layout Routes */}
+            <Route path="/trainer" element={<TrainerLayout />}>
+              <Route index element={<TrainerDashboard />} />
 
-            <Route path="dashboard" element={<TrainerDashboard />} />
-            <Route path="attendance" element={<TrainerAttendance />} />
-            <Route path="exposure-visits" element={<TrainerExposureVisits />} />
-            <Route path="study-modules" element={<TrainerStudyModules />} />
-            <Route path="profile" element={<TrainerProfile />} />
-            <Route path="labs" element={<TrainerLab />} />
-            <Route path="module-progress" element={<TrainersModuleHistory />} />
-            <Route path="live-feed-host" element={<TrainerLiveFeedHost />} />
-            <Route path="revenue" element={<TrainerRevenue />} />
+              <Route path="dashboard" element={<TrainerDashboard />} />
+              <Route path="attendance" element={<TrainerAttendance />} />
+              <Route path="exposure-visits" element={<TrainerExposureVisits />} />
+              <Route path="study-modules" element={<TrainerStudyModules />} />
+              <Route path="profile" element={<TrainerProfile />} />
+              <Route path="labs" element={<TrainerLab />} />
+              <Route path="module-progress" element={<TrainersModuleHistory />} />
+              <Route path="live-feed-host" element={<TrainerLiveFeedHost />} />
+              <Route path="revenue" element={<TrainerRevenue />} />
+              <Route path="testimonials" element={<AdminTestimonials />} />
 
-            {/* Teaching Management System (separate from HR — uses original attendance) */}
-            <Route path="teaching-management" element={<TrainerAttendance />} />
+              {/* Teaching Management System (separate from HR — uses original attendance) */}
+              <Route path="teaching-management" element={<TrainerAttendance />} />
 
-            {/* HR Entitlement (no attendance for Trainer) */}
-            <Route path="hr/leave" element={<LeaveManagement />} />
-            <Route path="hr/salary" element={<SalaryDashboard />} />
-            <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
+              {/* HR Entitlement (no attendance for Trainer) */}
+              <Route path="hr/leave" element={<LeaveManagement />} />
+              <Route path="hr/salary" element={<SalaryDashboard />} />
+              <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
 
-            {/* Grievance */}
-            <Route path="grievance" element={<GrievancePortal />} />
-          </Route>
+              {/* Grievance */}
+              <Route path="grievance" element={<GrievancePortal />} />
+            </Route>
 
-          {/* Placement Layout Routes */}
-          <Route path="/placement-officer" element={<PlacementLayout />}>
-            <Route index element={<PlacementDashboard />} />
+            {/* Placement Layout Routes */}
+            <Route path="/placement-officer" element={<PlacementLayout />}>
+              <Route index element={<PlacementDashboard />} />
 
-            <Route path="dashboard" element={<PlacementDashboard />} />
-            <Route path="company-database" element={<PlacementCompanyList />} />
-            <Route path="placement-drives" element={<PlacementDrivesDetails />} />
-            <Route path="placements-list" element={<PlacementStudentsList />} />
-            <Route path="job-openings" element={<PlacementOpeningsDashboard />} />
-            <Route path="revenue" element={<PlacementRevenue />} />
-            <Route path="profile" element={<PlacementProfile />} />
+              <Route path="dashboard" element={<PlacementDashboard />} />
+              <Route path="company-database" element={<PlacementCompanyList />} />
+              <Route path="placement-drives" element={<PlacementDrivesDetails />} />
+              <Route path="placements-list" element={<PlacementStudentsList />} />
+              <Route path="job-openings" element={<PlacementOpeningsDashboard />} />
+              <Route path="revenue" element={<PlacementRevenue />} />
+              <Route path="testimonials" element={<AdminTestimonials />} />
+              <Route path="profile" element={<PlacementProfile />} />
 
-            {/* HR Entitlement */}
-            <Route path="hr/attendance" element={<SharedAttendancePage />} />
-            <Route path="hr/leave" element={<LeaveManagement />} />
-            <Route path="hr/tour" element={<TourApplication />} />
-            <Route path="hr/salary" element={<SalaryDashboard />} />
-            <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
+              {/* HR Entitlement */}
+              <Route path="hr/attendance" element={<SharedAttendancePage />} />
+              <Route path="hr/leave" element={<LeaveManagement />} />
+              <Route path="hr/tour" element={<TourApplication />} />
+              <Route path="hr/salary" element={<SalaryDashboard />} />
+              <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
 
-            {/* Grievance */}
-            <Route path="grievance" element={<GrievancePortal />} />
-          </Route>
+              {/* Grievance */}
+              <Route path="grievance" element={<GrievancePortal />} />
+            </Route>
 
-          {/* Admin Layout Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
+            {/* Admin Layout Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
 
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="employee-list" element={<AdminTrainerList />} />
-            <Route
-              path="financial-management/salary-approvals"
-              element={<AdminSalaryApprovals />}
-            />
-            <Route
-              path="financial-management/invoices-raised"
-              element={<AdminInvoiceManagement />}
-            />
-            <Route
-              path="financial-management/procurement"
-              element={<AdminProcurement />}
-            />
-            <Route path="live-feed" element={<AdminTrainerLiveFeed />} />
-            <Route path="project-details-reports" element={<AdminProjectManagement />} />
-            <Route path="students-kit-distribution" element={<AdminStudentsKitDistribution />} />
-            <Route path="student-insurance-details" element={<AdminStudentInsuranceDetails />} />
-            <Route path="batch-certification" element={<AdminBatchCertification />} />
-            <Route path="testimonials" element={<AdminTestimonials />} />
-            <Route path="hr/attendance" element={<SharedAttendancePage employeeId="EMP-0007" eyebrow="Admin Attendance" />} />
-            <Route path="hr/leave" element={<LeaveManagement />} />
-            <Route path="hr/salary" element={<SalaryDashboard />} />
-            <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
-            <Route path="approvals" element={<AdminApprovals />} />
-            <Route path="approvals/operations" element={<AdminApprovals />} />
-            <Route path="approvals/tour" element={<AdminTourApprovals />} />
-            <Route path="approvals/leave" element={<AdminLeaveApprovals />} />
-            <Route path="approvals/salary" element={<AdminSalaryApprovals />} />
-            <Route path="approvals/reimbursements" element={<AdminReimbursementApprovals />} />
-            <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="employee-list" element={<AdminTrainerList />} />
+              <Route
+                path="financial-management/salary-approvals"
+                element={<AdminSalaryApprovals />}
+              />
+              <Route
+                path="financial-management/invoices-raised"
+                element={<AdminInvoiceManagement />}
+              />
+              <Route
+                path="financial-management/procurement"
+                element={<AdminProcurement />}
+              />
+              <Route path="live-feed" element={<AdminTrainerLiveFeed />} />
+              <Route path="project-details-reports" element={<AdminProjectManagement />} />
+              <Route path="students-kit-distribution" element={<AdminStudentsKitDistribution />} />
+              <Route path="testimonials" element={<AdminTestimonials />} />
+              <Route path="hr/attendance" element={<SharedAttendancePage employeeId="EMP-0007" eyebrow="Admin Attendance" />} />
+              <Route path="hr/leave" element={<LeaveManagement />} />
+              <Route path="hr/salary" element={<SalaryDashboard />} />
+              <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
+              <Route path="approvals" element={<AdminApprovals />} />
+              <Route path="approvals/operations" element={<AdminApprovals />} />
+              <Route path="approvals/tour" element={<AdminTourApprovals />} />
+              <Route path="approvals/leave" element={<AdminLeaveApprovals />} />
+              <Route path="approvals/salary" element={<AdminSalaryApprovals />} />
+              <Route path="approvals/reimbursements" element={<AdminReimbursementApprovals />} />
+              <Route path="leave-approvals" element={<AdminLeaveApprovals />} />
 
-            {/* Legacy admin routes kept for compatibility */}
-            <Route path="user-management" element={<AdminUserManagement />} />
-            <Route path="user-management/new" element={<AdminAddUserStepper />} />
-            <Route path="project-management" element={<AdminProjectManagement />} />
-            <Route path="project-management/new" element={<AdminAddProjectStepper />} />
-            <Route path="center-management" element={<AdminCenterManagement />} />
-            <Route path="reports" element={<AdminReports />} />
-            <Route path="invoice-management" element={<AdminInvoiceManagement />} />
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="profile" element={<AdminProfile />} />
-            <Route path="mobilizer-list" element={<AdminMobilizerList />} />
-            <Route path="mobilizer-dashboard/:id" element={<AdminMobilizerDashboard />} />
-            <Route path="candidate-approvals" element={<AdminCandidateApprovals />} />
-            <Route path="community-events" element={<AdminCommunityEvents />} />
-            <Route path="trainer-list" element={<AdminTrainerList />} />
-            <Route path="trainer-dashboard/:id" element={<AdminTrainerDashboard />} />
-            <Route path="exposure-visit-approvals" element={<AdminExposureVisitApprovals />} />
-            <Route path="module-progress" element={<AdminModuleProgress />} />
-            <Route path="trainer-attendance" element={<SharedAttendancePage employeeId="EMP-0007" eyebrow="Admin Attendance" />} />
-            <Route path="trainer-live-feed" element={<AdminTrainerLiveFeed />} />
-            <Route path="placement-drive-approvals" element={<AdminPlacementDriveApprovals />} />
-            <Route path="placement-tracker" element={<AdminPlacementTracker />} />
-            <Route path="grievance-portal" element={<AdminGrievancePortal />} />
-          </Route>
+              {/* Legacy admin routes kept for compatibility */}
+              <Route path="user-management" element={<AdminUserManagement />} />
+              <Route path="user-management/new" element={<AdminAddUserStepper />} />
+              <Route path="project-management" element={<AdminProjectManagement />} />
+              <Route path="project-management/new" element={<AdminAddProjectStepper />} />
+              <Route path="center-management" element={<AdminCenterManagement />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="invoice-management" element={<AdminInvoiceManagement />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="profile" element={<AdminProfile />} />
+              <Route path="mobilizer-list" element={<AdminMobilizerList />} />
+              <Route path="mobilizer-dashboard/:id" element={<AdminMobilizerDashboard />} />
+              <Route path="candidate-approvals" element={<AdminCandidateApprovals />} />
+              <Route path="community-events" element={<AdminCommunityEvents />} />
+              <Route path="trainer-list" element={<AdminTrainerList />} />
+              <Route path="trainer-dashboard/:id" element={<AdminTrainerDashboard />} />
+              <Route path="exposure-visit-approvals" element={<AdminExposureVisitApprovals />} />
+              <Route path="module-progress" element={<AdminModuleProgress />} />
+              <Route path="trainer-attendance" element={<SharedAttendancePage employeeId="EMP-0007" eyebrow="Admin Attendance" />} />
+              <Route path="trainer-live-feed" element={<AdminTrainerLiveFeed />} />
+              <Route path="placement-drive-approvals" element={<AdminPlacementDriveApprovals />} />
+              <Route path="placement-tracker" element={<AdminPlacementTracker />} />
+              <Route path="grievance-portal" element={<AdminGrievancePortal />} />
+            </Route>
 
-          {/* Super Admin Layout Routes */}
-          <Route path="/super-admin" element={<SuperAdminLayout />}>
-            <Route index element={<SuperAdminDashboard />} />
-            <Route path="dashboard" element={<SuperAdminDashboard />} />
+            {/* Super Admin Layout Routes */}
+            <Route path="/super-admin" element={<SuperAdminLayout />}>
+              <Route index element={<SuperAdminDashboard />} />
+              <Route path="dashboard" element={<SuperAdminDashboard />} />
 
-            {/* Monitoring */}
-            <Route path="enrollment-monitor" element={<SuperAdminEnrollmentMonitor />} />
-            <Route path="training-monitor" element={<SuperAdminTrainingMonitor />} />
-            <Route path="placement-monitor" element={<SuperAdminPlacementMonitor />} />
-            <Route path="attendance-monitor" element={<SuperAdminAttendanceMonitor />} />
-            <Route path="invoice-tracking" element={<SuperAdminInvoiceTracking />} />
-            <Route path="salaries" element={<SuperAdminFinanceManagement />} />
-            <Route path="finance" element={<SuperAdminFinanceManagement />} />
-            <Route path="financial-management" element={<SuperAdminFinanceManagement />} />
-            <Route path="invoices" element={<SuperAdminInvoiceApprovals />} />
-            <Route path="financial-management/invoices" element={<SuperAdminInvoiceApprovals />} />
-            <Route path="reimbursements" element={<SuperAdminReimbursementApprovals />} />
-            <Route path="financial-management/reimbursements" element={<SuperAdminReimbursementApprovals />} />
+              {/* Monitoring */}
+              <Route path="enrollment-monitor" element={<SuperAdminEnrollmentMonitor />} />
+              <Route path="training-monitor" element={<SuperAdminTrainingMonitor />} />
+              <Route path="placement-monitor" element={<SuperAdminPlacementMonitor />} />
+              <Route path="attendance-monitor" element={<SuperAdminAttendanceMonitor />} />
+              <Route path="invoice-tracking" element={<SuperAdminInvoiceTracking />} />
+              <Route path="salaries" element={<SuperAdminFinanceManagement />} />
+              <Route path="finance" element={<SuperAdminFinanceManagement />} />
+              <Route path="financial-management" element={<SuperAdminFinanceManagement />} />
+              <Route path="invoices" element={<SuperAdminInvoiceApprovals />} />
+              <Route path="financial-management/invoices" element={<SuperAdminInvoiceApprovals />} />
+              <Route path="reimbursements" element={<SuperAdminReimbursementApprovals />} />
+              <Route path="financial-management/reimbursements" element={<SuperAdminReimbursementApprovals />} />
+              <Route path="financial-management/insurance" element={<AdminStudentInsuranceDetails />} />
 
-            {/* Individual Detail Dashboards */}
-            <Route path="mobilizer/:id" element={<SuperAdminMobilizerDetail />} />
-            <Route path="trainer/:id" element={<SuperAdminTrainerDetail />} />
-            <Route path="placement-officer/:id" element={<SuperAdminPlacementOfficerDetail />} />
+              {/* Individual Detail Dashboards */}
+              <Route path="mobilizer/:id" element={<SuperAdminMobilizerDetail />} />
+              <Route path="trainer/:id" element={<SuperAdminTrainerDetail />} />
+              <Route path="placement-officer/:id" element={<SuperAdminPlacementOfficerDetail />} />
 
-            {/* Access Control */}
-            <Route path="user-management" element={<SuperAdminUserManagement />} />
-            <Route path="create-projects" element={<SuperAdminCreateProjects />} />
-            <Route path="project-assignment" element={<SuperAdminProjectAssignment />} />
-            <Route path="trainer-assignment" element={<SuperAdminTrainerAssignment />} />
-            <Route path="placement-assignment" element={<SuperAdminPlacementAssignment />} />
+              {/* Access Control */}
+              <Route path="user-management" element={<SuperAdminUserManagement />} />
+              <Route path="create-projects" element={<SuperAdminCreateProjects />} />
+              <Route path="project-assignment" element={<SuperAdminProjectAssignment />} />
+              <Route path="trainer-assignment" element={<SuperAdminTrainerAssignment />} />
+              <Route path="placement-assignment" element={<SuperAdminPlacementAssignment />} />
 
-            {/* Operations */}
-            <Route path="candidate-details" element={<SuperAdminCandidateDetails />} />
-            <Route path="placement-drives" element={<SuperAdminPlacementDrivesPage />} />
-            <Route path="industry-database" element={<PlacementCompanyList />} />
-            <Route path="company-database" element={<PlacementCompanyList />} />
-            <Route path="openings-dashboard" element={<PlacementOpeningsDashboard />} />
-            <Route path="job-openings" element={<PlacementOpeningsDashboard />} />
-            <Route path="mobilization" element={<SuperAdminMobilizationPage />} />
-            <Route path="community-engagement-drives" element={<SuperAdminCommunityEngagementDrives />} />
-            <Route path="training-tracking" element={<SuperAdminTrainingTracking />} />
-            <Route path="exposure-visits" element={<SuperAdminExposureVisits />} />
-            <Route path="employee-management" element={<SuperAdminEmployeeManagement />} />
-            <Route path="leave-monitor" element={<SuperAdminLeaveMonitor />} />
-            <Route path="grievance-tracker" element={<SuperAdminGrievancePortal />} />
+              {/* Project Details */}
+              <Route path="project-details" element={<SuperAdminProjectDetails />} />
+              <Route path="project-details-reports" element={<SuperAdminProjectDetails />} />
+              <Route path="candidate-details" element={<SuperAdminCandidateDetails />} />
+              <Route path="placement-drives" element={<SuperAdminPlacementDrivesPage />} />
+              <Route path="industry-database" element={<PlacementCompanyList />} />
+              <Route path="company-database" element={<PlacementCompanyList />} />
+              <Route path="openings-dashboard" element={<PlacementOpeningsDashboard />} />
+              <Route path="job-openings" element={<PlacementOpeningsDashboard />} />
+              <Route path="mobilization" element={<SuperAdminMobilizationPage />} />
+              <Route path="community-engagement-drives" element={<SuperAdminCommunityEngagementDrives />} />
+              <Route path="training-tracking" element={<SuperAdminTrainingTracking />} />
+              <Route path="exposure-visits" element={<SuperAdminExposureVisits />} />
+              <Route path="student-insurance-details" element={<AdminStudentInsuranceDetails />} />
+              <Route path="batch-certification" element={<AdminBatchCertification uploadedBy="Super Admin" />} />
 
-            {/* Settings */}
-            <Route path="settings" element={<AdminSettings />} />
-            <Route path="profile" element={<AdminProfile />} />
-          </Route>
-        </Routes>
+              {/* Approvals */}
+              <Route path="approvals" element={<SuperAdminApprovalsHub />} />
+              <Route path="approvals/operations" element={<SuperAdminOperationsApprovals />} />
+              <Route path="approvals/tour" element={<SuperAdminTourApprovals />} />
+              <Route path="approvals/leave" element={<SuperAdminLeaveApprovals />} />
+              <Route path="approvals/salary" element={<SuperAdminSalaryApprovals />} />
+              <Route path="approvals/reimbursements" element={<SuperAdminReimbursementApprovals />} />
+
+              <Route path="access-target" element={<SuperAdminEmployeeManagement />} />
+              <Route path="employee-management" element={<SuperAdminEmployeeManagement />} />
+              <Route path="leave-monitor" element={<SuperAdminLeaveMonitor />} />
+              <Route path="grievance-tracker" element={<SuperAdminGrievancePortal />} />
+
+              {/* Settings */}
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="profile" element={<AdminProfile />} />
+            </Route>
+          </Routes>
         </div>
       </Suspense>
       <ToastContainer position="top-right" autoClose={2000} />

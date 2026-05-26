@@ -14,6 +14,7 @@ import {
   MessageSquareWarning,
   UserRoundPen,
   MapPinned,
+  Quote,
 } from "lucide-react";
 
 /* ─── Dock config ─── */
@@ -26,6 +27,7 @@ const DOCK_ITEMS = [
 const DRAWER_ITEMS = [
   { label: "Placement Drives", path: "/placement-officer/placement-drives", icon: CalendarCheck },
   { label: "Placement List", path: "/placement-officer/placements-list", icon: List },
+  { label: "Testimonials", path: "/placement-officer/testimonials", icon: Quote },
   {
     label: "HR Entitlement",
     icon: Briefcase,

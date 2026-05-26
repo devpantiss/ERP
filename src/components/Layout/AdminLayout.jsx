@@ -8,45 +8,22 @@ import {
   Users,
   FileCheck,
   HandCoins,
+  MapPinned,
   Wallet,
-  Receipt,
-  ShoppingCart,
   Radio,
   Briefcase,
-  Award,
-  GraduationCap,
-  MessageSquareWarning,
-  MapPinned,
-  PackageCheck,
   Quote,
-  ShieldCheck,
+  UserRoundPen,
 } from "lucide-react";
 
 /* ─── Dock config ─── */
 const DOCK_ITEMS = [
   { label: "Dashboard", shortLabel: "Home", path: "/admin/dashboard", icon: LayoutDashboard },
-  { label: "Employees", path: "/admin/employee-list", icon: Users },
+  { label: "Projects", path: "/admin/project-details-reports", icon: Briefcase },
+  { label: "Live Feed", shortLabel: "Live", path: "/admin/live-feed", icon: Radio },
 ];
 
 const DRAWER_ITEMS = [
-  {
-    label: "Financial Management",
-    icon: Wallet,
-    children: [
-      { label: "Invoices Raised", path: "/admin/financial-management/invoices-raised", icon: Receipt },
-      { label: "Procurement", path: "/admin/financial-management/procurement", icon: ShoppingCart },
-    ],
-  },
-  {
-    label: "HR Entitlement",
-    icon: CalendarCheck,
-    children: [
-      { label: "Attendance", path: "/admin/hr/attendance", icon: CalendarCheck },
-      { label: "Leave Management", path: "/admin/hr/leave", icon: CalendarDays },
-      { label: "Salary", path: "/admin/hr/salary", icon: Wallet },
-      { label: "Reimbursement", path: "/admin/hr/reimbursement", icon: HandCoins },
-    ],
-  },
   {
     label: "Approvals",
     icon: FileCheck,
@@ -58,19 +35,19 @@ const DRAWER_ITEMS = [
       { label: "Operations Approvals", path: "/admin/approvals/operations", icon: FileCheck },
     ],
   },
-  { label: "Live Feed", path: "/admin/live-feed", icon: Radio },
-  { label: "Project Details / Reports", path: "/admin/project-details-reports", icon: Briefcase },
+  { label: "Employee List", path: "/admin/employee-list", icon: Users },
   {
-    label: "Students",
-    icon: GraduationCap,
+    label: "HR Entitlement",
+    icon: CalendarCheck,
     children: [
-      { label: "Kit Distribution", path: "/admin/students-kit-distribution", icon: PackageCheck },
-      { label: "Insurance", path: "/admin/student-insurance-details", icon: ShieldCheck },
-      { label: "Batch Certification", path: "/admin/batch-certification", icon: Award },
-      { label: "Testimonials", path: "/admin/testimonials", icon: Quote },
+      { label: "Attendance", path: "/admin/hr/attendance", icon: CalendarCheck },
+      { label: "Leave Management", path: "/admin/hr/leave", icon: CalendarDays },
+      { label: "Salary", path: "/admin/hr/salary", icon: Wallet },
+      { label: "Reimbursement", path: "/admin/hr/reimbursement", icon: HandCoins },
     ],
   },
-  { label: "Grievance Portal", path: "/admin/grievance-portal", icon: MessageSquareWarning },
+  { label: "Testimonials", path: "/admin/testimonials", icon: Quote },
+  { label: "Profile", path: "/admin/profile", icon: UserRoundPen },
 ];
 
 const ACCENT = {

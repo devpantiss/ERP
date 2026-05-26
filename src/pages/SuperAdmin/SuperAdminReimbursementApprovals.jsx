@@ -247,11 +247,20 @@ export default function SuperAdminReimbursementApprovals() {
 
           <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-[#111827]/80 backdrop-blur-sm">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1120px] text-sm">
+              <table className="w-full min-w-[1360px] table-fixed text-sm">
+                <colgroup>
+                  <col className="w-[260px]" />
+                  <col className="w-[230px]" />
+                  <col className="w-[130px]" />
+                  <col className="w-[150px]" />
+                  <col className="w-[150px]" />
+                  <col className="w-[210px]" />
+                  <col className="w-[230px]" />
+                </colgroup>
                 <thead className="border-b border-slate-700/50 bg-[#0b1220] text-xs uppercase tracking-[0.14em] text-slate-500">
                   <tr>
                     {["Claim", "Employee", "Bills", "Submitted", "Amount", "Admin Status", "Super Admin Action"].map((header) => (
-                      <th key={header} className="px-5 py-4 text-left font-black">
+                      <th key={header} className="px-6 py-4 text-left font-black">
                         {header}
                       </th>
                     ))}
@@ -260,34 +269,34 @@ export default function SuperAdminReimbursementApprovals() {
                 <tbody className="divide-y divide-slate-700/50">
                   {visibleClaims.map((claim) => (
                     <tr key={claim.id} className="hover:bg-white/[0.03]">
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-5 align-top">
                         <p className="font-black text-white">{claim.id}</p>
-                        <p className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                          <ReceiptText size={13} className="text-red-300" />
+                        <p className="mt-2 flex items-start gap-2 text-xs leading-5 text-slate-500">
+                          <ReceiptText size={13} className="mt-0.5 shrink-0 text-red-300" />
                           {claim.claimTitle || claim.category || "Reimbursement"}
                         </p>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-5 align-top">
                         <p className="font-semibold text-white">{claim.employee}</p>
                         <p className="text-xs text-slate-500">{claim.role}</p>
                       </td>
-                      <td className="px-5 py-4 text-slate-400">
+                      <td className="px-6 py-5 align-top text-slate-400">
                         {claim.bills.length} bill{claim.bills.length === 1 ? "" : "s"}
                       </td>
-                      <td className="px-5 py-4 text-slate-400">{claim.submittedOn}</td>
-                      <td className="px-5 py-4 font-black text-emerald-300">{formatCurrency(claim.amount)}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-5 align-top text-slate-400">{claim.submittedOn}</td>
+                      <td className="px-6 py-5 align-top font-black text-emerald-300">{formatCurrency(claim.amount)}</td>
+                      <td className="px-6 py-5 align-top">
                         <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-black ${STATUS_CLASS[claim.statusLabel] || STATUS_CLASS["Waiting Admin"]}`}>
                           {claim.statusLabel}
                         </span>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-5 align-top">
                         {claim.status === "ADMIN_APPROVED" ? (
-                          <div className="flex flex-wrap gap-2">
+                          <div className="grid min-w-[155px] gap-2">
                             <button
                               type="button"
                               onClick={() => setSelectedClaim(claim)}
-                              className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.09] hover:text-white"
+                              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-white/[0.05] px-4 py-2.5 text-xs font-semibold text-white/70 transition hover:bg-white/[0.09] hover:text-white"
                             >
                               <Eye size={13} />
                               Details
@@ -295,14 +304,14 @@ export default function SuperAdminReimbursementApprovals() {
                             <button
                               type="button"
                               onClick={() => decide(claim.id, "APPROVED")}
-                              className="rounded-lg bg-emerald-500/15 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
+                              className="rounded-lg bg-emerald-500/15 px-4 py-2.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/25"
                             >
                               Approve
                             </button>
                             <button
                               type="button"
                               onClick={() => decide(claim.id, "REJECTED")}
-                              className="rounded-lg bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/25"
+                              className="rounded-lg bg-red-500/15 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/25"
                             >
                               Reject
                             </button>
@@ -311,7 +320,7 @@ export default function SuperAdminReimbursementApprovals() {
                           <button
                             type="button"
                             onClick={() => setSelectedClaim(claim)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.09] hover:text-white"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] px-4 py-2.5 text-xs font-semibold text-white/70 transition hover:bg-white/[0.09] hover:text-white"
                           >
                             <Eye size={13} />
                             Details

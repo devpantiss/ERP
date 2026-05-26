@@ -2,7 +2,6 @@ import { memo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   Briefcase,
-  Award,
   CalendarCheck,
   CalendarDays,
   ChevronDown,
@@ -13,14 +12,9 @@ import {
   LayoutDashboard,
   LogOut,
   MapPinned,
-  MessageSquareWarning,
-  PackageCheck,
   Quote,
   Radio,
-  Receipt,
-  ShieldCheck,
-  ShoppingCart,
-  GraduationCap,
+  UserRoundPen,
   Users,
   Wallet,
 } from "lucide-react";
@@ -32,90 +26,14 @@ const MENU_ITEMS = [
     icon: LayoutDashboard,
   },
   {
-    label: "Employee List",
-    path: "/admin/employee-list",
-    icon: Users,
-  },
-  {
-    label: "Financial Management",
-    icon: Wallet,
-    key: "financial-management",
-    children: [
-      {
-        label: "Invoices Raised",
-        path: "/admin/financial-management/invoices-raised",
-        icon: Receipt,
-      },
-      {
-        label: "Procurement",
-        path: "/admin/financial-management/procurement",
-        icon: ShoppingCart,
-      },
-    ],
-  },
-  {
-    label: "HR Entitlement",
-    icon: CalendarCheck,
-    key: "hr-entitlement",
-    children: [
-      {
-        label: "Attendance",
-        path: "/admin/hr/attendance",
-        icon: CalendarCheck,
-      },
-      {
-        label: "Leave Management",
-        path: "/admin/hr/leave",
-        icon: CalendarDays,
-      },
-      {
-        label: "Salary",
-        path: "/admin/hr/salary",
-        icon: Wallet,
-      },
-      {
-        label: "Reimbursement",
-        path: "/admin/hr/reimbursement",
-        icon: HandCoins,
-      },
-    ],
+    label: "Project Details",
+    path: "/admin/project-details-reports",
+    icon: Briefcase,
   },
   {
     label: "Live Feed",
     path: "/admin/live-feed",
     icon: Radio,
-  },
-  {
-    label: "Project Details / Reports",
-    path: "/admin/project-details-reports",
-    icon: Briefcase,
-  },
-  {
-    label: "Students",
-    icon: GraduationCap,
-    key: "students",
-    children: [
-      {
-        label: "Kit Distribution",
-        path: "/admin/students-kit-distribution",
-        icon: PackageCheck,
-      },
-      {
-        label: "Insurance",
-        path: "/admin/student-insurance-details",
-        icon: ShieldCheck,
-      },
-      {
-        label: "Batch Certification",
-        path: "/admin/batch-certification",
-        icon: Award,
-      },
-      {
-        label: "Testimonials",
-        path: "/admin/testimonials",
-        icon: Quote,
-      },
-    ],
   },
   {
     label: "Approvals",
@@ -150,9 +68,46 @@ const MENU_ITEMS = [
     ],
   },
   {
-    label: "Grievance Portal",
-    path: "/admin/grievance-portal",
-    icon: MessageSquareWarning,
+    label: "Employee List",
+    path: "/admin/employee-list",
+    icon: Users,
+  },
+  {
+    label: "HR Entitlement",
+    icon: CalendarCheck,
+    key: "hr-entitlement",
+    children: [
+      {
+        label: "Attendance",
+        path: "/admin/hr/attendance",
+        icon: CalendarCheck,
+      },
+      {
+        label: "Leave Management",
+        path: "/admin/hr/leave",
+        icon: CalendarDays,
+      },
+      {
+        label: "Salary",
+        path: "/admin/hr/salary",
+        icon: Wallet,
+      },
+      {
+        label: "Reimbursement",
+        path: "/admin/hr/reimbursement",
+        icon: HandCoins,
+      },
+    ],
+  },
+  {
+    label: "Testimonials",
+    path: "/admin/testimonials",
+    icon: Quote,
+  },
+  {
+    label: "Profile",
+    path: "/admin/profile",
+    icon: UserRoundPen,
   },
 ];
 

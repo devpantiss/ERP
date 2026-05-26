@@ -10,7 +10,9 @@ import {
   CalendarDays,
   Camera,
   Building2,
+  FileCheck,
   Megaphone,
+  MapPinned,
   Briefcase,
   MessageSquareWarning,
   Wallet,
@@ -19,40 +21,40 @@ import {
   UserPlus,
   Settings,
   UserRoundPen,
+  Award,
+  ShieldCheck,
+  Target,
 } from "lucide-react";
 
 /* ─── Dock config ─── */
 const DOCK_ITEMS = [
   { label: "Dashboard", shortLabel: "Home", path: "/super-admin/dashboard", icon: LayoutDashboard },
-  { label: "Candidates", path: "/super-admin/candidate-details", icon: Users },
-  { label: "Employees", path: "/super-admin/employee-management", icon: UserCog },
+  { label: "Projects", path: "/super-admin/project-details", icon: FolderKanban },
+  { label: "Access & Target", shortLabel: "Access", path: "/super-admin/access-target", icon: Target },
 ];
 
 const DRAWER_ITEMS = [
   {
-    label: "Operations",
+    label: "Projects",
     icon: FolderKanban,
     children: [
-      { heading: "Training" },
-      { label: "Training Tracking", path: "/super-admin/training-tracking", icon: Activity },
-      { label: "Exposure Visits", path: "/super-admin/exposure-visits", icon: Camera },
-      { heading: "Mobilization" },
-      { label: "Mobilization", path: "/super-admin/mobilization", icon: Building2 },
-      { label: "Community Drives", path: "/super-admin/community-engagement-drives", icon: Megaphone },
-      { heading: "Placements" },
-      { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
-      { label: "Industry Database", path: "/super-admin/industry-database", icon: Building2 },
-      { label: "Openings Dashboard", path: "/super-admin/openings-dashboard", icon: Briefcase },
+      { label: "Project Details", path: "/super-admin/project-details", icon: FolderKanban },
+      { label: "Candidate Details", path: "/super-admin/candidate-details", icon: Users },
+      { label: "Batch Certification", path: "/super-admin/batch-certification", icon: Award },
     ],
   },
   {
-    label: "HR Operations",
-    icon: UserCog,
+    label: "Approvals",
+    icon: FileCheck,
     children: [
-      { label: "Employee Management", path: "/super-admin/employee-management", icon: UserCog },
-      { label: "Leave Monitor", path: "/super-admin/leave-monitor", icon: CalendarDays },
+      { label: "Tour Approvals", path: "/super-admin/approvals/tour", icon: MapPinned },
+      { label: "Leave Approvals", path: "/super-admin/approvals/leave", icon: CalendarDays },
+      { label: "Salary Approvals", path: "/super-admin/approvals/salary", icon: Wallet },
+      { label: "Reimbursement Approvals", path: "/super-admin/approvals/reimbursements", icon: HandCoins },
+      { label: "Operations Approvals", path: "/super-admin/approvals/operations", icon: FileCheck },
     ],
   },
+  { label: "Industry Database", path: "/super-admin/industry-database", icon: Building2 },
   { label: "Grievance Tracker", path: "/super-admin/grievance-tracker", icon: MessageSquareWarning },
   {
     label: "Finances",
@@ -61,12 +63,14 @@ const DRAWER_ITEMS = [
       { label: "Salaries", path: "/super-admin/salaries", icon: Wallet },
       { label: "Invoices", path: "/super-admin/invoices", icon: ReceiptText },
       { label: "Reimbursements", path: "/super-admin/reimbursements", icon: HandCoins },
+      { label: "Insurance", path: "/super-admin/student-insurance-details", icon: ShieldCheck },
     ],
   },
   {
     label: "Access Control",
     icon: UserPlus,
     children: [
+      { label: "Access & Target", path: "/super-admin/access-target", icon: Target },
       { label: "User Management", path: "/super-admin/user-management", icon: UserPlus },
       { label: "Create Projects", path: "/super-admin/create-projects", icon: FolderKanban },
     ],

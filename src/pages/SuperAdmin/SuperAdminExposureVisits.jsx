@@ -4,6 +4,8 @@ import {
   CalendarDays,
   Camera,
   Eye,
+  ExternalLink,
+  FileText,
   FileImage,
   ImageIcon,
   MapPin,
@@ -12,6 +14,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import SlidePanel from "../../components/common/SlidePanel";
 import { BackButton, PageHeader, Pagination, usePagination } from "./SuperAdminSharedComponents";
 import { useProjectStore } from "../../stores/projectStore";
 import { selectExposureVisitReports } from "../../stores/selectors/superAdminSelectors";
@@ -21,6 +24,47 @@ const STATUS_BADGE = {
   Approved: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   Completed: "bg-violet-500/10 text-violet-400 border-violet-500/20",
   Submitted: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+};
+
+const SAMPLE_DOCUMENT_URL = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+
+const buildExposureVisitDocuments = (visit) => {
+  if (!visit) return [];
+
+  return [
+    {
+      key: "permission",
+      label: "Visit Permission Letter",
+      name: `${visit.industry}-permission-letter.pdf`,
+      kind: "pdf",
+      url: SAMPLE_DOCUMENT_URL,
+      uploadedOn: visit.date,
+    },
+    {
+      key: "attendance",
+      label: "Attendance Sheet",
+      name: `${visit.batch}-attendance-sheet.pdf`,
+      kind: "pdf",
+      url: SAMPLE_DOCUMENT_URL,
+      uploadedOn: visit.date,
+    },
+    ...visit.proofImages.map((image, index) => ({
+      key: `proof-${index + 1}`,
+      label: `Geo-tagged Proof ${index + 1}`,
+      name: `${visit.id}-proof-${index + 1}.jpg`,
+      kind: "image",
+      url: image,
+      uploadedOn: visit.date,
+    })),
+    {
+      key: "report",
+      label: "Trainer Visit Report",
+      name: `${visit.id}-trainer-visit-report.pdf`,
+      kind: "pdf",
+      url: SAMPLE_DOCUMENT_URL,
+      uploadedOn: visit.date,
+    },
+  ];
 };
 
 function SummaryCard({ label, value, color = "text-white", children }) {
@@ -121,6 +165,7 @@ export default function SuperAdminExposureVisits() {
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedVisit, setSelectedVisit] = useState(null);
   const [activeImage, setActiveImage] = useState(null);
+  const [activeDocumentKey, setActiveDocumentKey] = useState("");
 
   useEffect(() => {
     fetchAll();
@@ -155,6 +200,14 @@ export default function SuperAdminExposureVisits() {
     attendance: filteredVisits.reduce((sum, visit) => sum + visit.attended, 0),
   }), [filteredVisits]);
 
+  const selectedVisitDocuments = useMemo(
+    () => buildExposureVisitDocuments(selectedVisit),
+    [selectedVisit]
+  );
+  const activeDocument =
+    selectedVisitDocuments.find((document) => document.key === activeDocumentKey) ||
+    selectedVisitDocuments[0];
+
   const pg = usePagination(filteredVisits, 8);
 
   const chooseProject = (projectId) => {
@@ -178,6 +231,7 @@ export default function SuperAdminExposureVisits() {
   const openVisit = (visit) => {
     setSelectedVisit(visit);
     setActiveImage(visit.proofImages[0] || null);
+    setActiveDocumentKey("permission");
   };
 
   return (
@@ -336,21 +390,27 @@ export default function SuperAdminExposureVisits() {
         </>
       )}
 
-      {selectedVisit && (
-        <div className="fixed inset-0 z-[9999] flex justify-end" onClick={() => setSelectedVisit(null)}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <aside className="relative ml-auto flex h-full w-full max-w-3xl animate-in slide-in-from-right duration-200 flex-col border-l border-slate-700/70 bg-[#0f172a] shadow-2xl shadow-black/50" onClick={(e) => e.stopPropagation()}>
-            <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-6 py-5">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-red-400">Exposure Visit Proof</p>
-                <h3 className="mt-1 text-xl font-black tracking-tight text-white">{selectedVisit.industry}</h3>
-              </div>
-              <button onClick={() => setSelectedVisit(null)} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white" aria-label="Close visit details">
-                <X size={18} />
-              </button>
+      <SlidePanel
+        open={!!selectedVisit}
+        onClose={() => setSelectedVisit(null)}
+        title={selectedVisit?.industry || "Exposure Visit Documents"}
+        width="4xl"
+      >
+        {selectedVisit ? (
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-red-400/15 bg-red-500/[0.06] p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-red-400">
+                Zoho Projects Style Document Review
+              </p>
+              <p className="mt-2 text-sm font-black text-white">
+                {selectedVisit.project} • {selectedVisit.center}
+              </p>
+              <p className="mt-1 text-xs font-bold text-slate-500">
+                {selectedVisit.batch} • {selectedVisit.trade} • {selectedVisit.date}
+              </p>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
                   ["Trainer", selectedVisit.trainer],
@@ -373,6 +433,67 @@ export default function SuperAdminExposureVisits() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Trainer Notes</p>
                 <p className="mt-2 text-sm leading-6 text-white/70">{selectedVisit.notes}</p>
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-700/60 bg-[#111827]/80">
+              <div className="border-b border-white/[0.08] px-4 py-3">
+                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                  <FileText size={14} /> Uploaded Documents ({selectedVisitDocuments.length})
+                </p>
+              </div>
+
+              <div className="flex gap-2 overflow-x-auto border-b border-white/[0.08] px-4">
+                {selectedVisitDocuments.map((document) => (
+                  <button
+                    key={document.key}
+                    type="button"
+                    onClick={() => setActiveDocumentKey(document.key)}
+                    className={`flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-xs font-black transition ${
+                      activeDocument?.key === document.key
+                        ? "border-red-400 text-red-300"
+                        : "border-transparent text-slate-500 hover:text-white"
+                    }`}
+                  >
+                    {document.kind === "image" ? <ImageIcon size={13} /> : <FileText size={13} />}
+                    {document.label}
+                  </button>
+                ))}
+              </div>
+
+              {activeDocument ? (
+                <div className="space-y-4 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-black text-white">{activeDocument.label}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">
+                        {activeDocument.name} • Uploaded {activeDocument.uploadedOn}
+                      </p>
+                    </div>
+                    <a
+                      href={activeDocument.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-slate-200 transition hover:border-red-400/35 hover:bg-red-500/15 hover:text-white"
+                    >
+                      <ExternalLink size={13} />
+                      Open file
+                    </a>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-[#020617] p-3">
+                    {activeDocument.kind === "image" ? (
+                      <img src={activeDocument.url} alt={activeDocument.label} className="max-h-[clamp(240px,calc(100vh-36rem),460px)] w-full rounded-xl object-contain" />
+                    ) : (
+                      <iframe src={activeDocument.url} title={activeDocument.label} className="h-[clamp(240px,calc(100vh-36rem),460px)] w-full rounded-xl bg-white" />
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-10 text-center text-sm font-bold text-slate-500">
+                  No uploaded documents are linked yet.
+                </div>
+              )}
+            </div>
 
               <div className="mt-6">
                 <div className="mb-3 flex items-center justify-between">
@@ -407,10 +528,9 @@ export default function SuperAdminExposureVisits() {
                   </div>
                 )}
               </div>
-            </div>
-          </aside>
-        </div>
-      )}
+          </div>
+        ) : null}
+      </SlidePanel>
     </div>
   );
 }

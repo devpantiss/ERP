@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import {
   CheckCircle2,
   Clock,
+  Image,
   PackageCheck,
   Search,
   Shield,
@@ -29,6 +30,8 @@ const STUDENTS = Array.from({ length: 18 }, (_, i) => {
     issueDate: issuedCount ? `2026-05-${String((i % 18) + 1).padStart(2, "0")}` : "-",
     size: ["S", "M", "L", "XL"][i % 4],
     issued,
+    proofImage: "",
+    proofImageName: "",
   };
 });
 
@@ -61,19 +64,20 @@ function StatusPill({ status }) {
 }
 
 export default function AdminStudentsKitDistribution() {
+  const [students, setStudents] = useState(STUDENTS);
   const [search, setSearch] = useState("");
   const [projectFilter, setProjectFilter] = useState("All");
   const [centerFilter, setCenterFilter] = useState("All");
   const [batchFilter, setBatchFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  const projects = useMemo(() => ["All", ...new Set(STUDENTS.map((student) => student.project))], []);
-  const centers = useMemo(() => ["All", ...new Set(STUDENTS.map((student) => student.center))], []);
-  const batches = useMemo(() => ["All", ...new Set(STUDENTS.map((student) => student.batch))], []);
+  const projects = useMemo(() => ["All", ...new Set(students.map((student) => student.project))], [students]);
+  const centers = useMemo(() => ["All", ...new Set(students.map((student) => student.center))], [students]);
+  const batches = useMemo(() => ["All", ...new Set(students.map((student) => student.batch))], [students]);
 
   const filteredStudents = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return STUDENTS.filter((student) => {
+    return students.filter((student) => {
       const status = getStatus(student);
       const searchable = [
         student.name,
@@ -93,15 +97,46 @@ export default function AdminStudentsKitDistribution() {
         (statusFilter === "All" || status === statusFilter)
       );
     });
-  }, [batchFilter, centerFilter, projectFilter, search, statusFilter]);
+  }, [batchFilter, centerFilter, projectFilter, search, statusFilter, students]);
 
   const stats = useMemo(() => {
-    const completed = STUDENTS.filter((student) => getStatus(student) === "Completed").length;
-    const partial = STUDENTS.filter((student) => getStatus(student) === "Partial").length;
-    const pending = STUDENTS.filter((student) => getStatus(student) === "Pending").length;
+    const completed = students.filter((student) => getStatus(student) === "Completed").length;
+    const partial = students.filter((student) => getStatus(student) === "Partial").length;
+    const pending = students.filter((student) => getStatus(student) === "Pending").length;
 
-    return { total: STUDENTS.length, completed, partial, pending };
-  }, []);
+    return { total: students.length, completed, partial, pending };
+  }, [students]);
+
+  const toggleKitItem = (studentId, itemKey) => {
+    setStudents((current) =>
+      current.map((student) => {
+        if (student.id !== studentId) return student;
+        const issued = { ...student.issued, [itemKey]: !student.issued[itemKey] };
+        const issuedCount = Object.values(issued).filter(Boolean).length;
+
+        return {
+          ...student,
+          issued,
+          issueDate: issuedCount ? (student.issueDate === "-" ? new Date().toISOString().split("T")[0] : student.issueDate) : "-",
+        };
+      })
+    );
+  };
+
+  const uploadProofImage = (studentId, file) => {
+    if (!file) return;
+    setStudents((current) =>
+      current.map((student) =>
+        student.id === studentId
+          ? {
+              ...student,
+              proofImage: URL.createObjectURL(file),
+              proofImageName: file.name,
+            }
+          : student
+      )
+    );
+  };
 
   const exportColumns = useMemo(
     () => [
@@ -138,6 +173,7 @@ export default function AdminStudentsKitDistribution() {
           KIT_ITEMS.filter((item) => student.issued[item.key]).map((item) => item.label).join(", ") || "None",
       },
       { key: "issueDate", header: "Issue Date" },
+      { key: "proofImageName", header: "Proof Image", exportValue: (student) => student.proofImageName || "Not uploaded" },
       {
         key: "status",
         header: "Status",
@@ -153,7 +189,7 @@ export default function AdminStudentsKitDistribution() {
         <div>
           <h1 className="text-2xl font-semibold text-slate-100">Students Kit Distribution</h1>
           <p className="mt-1 text-sm text-white/60">
-            Track safety kit, shoes, uniform, and training kit distribution across centers.
+            Enter kit issue status and upload handover proof images project-wise.
           </p>
         </div>
         <TableExportActions
@@ -246,7 +282,7 @@ export default function AdminStudentsKitDistribution() {
 
       <div className="overflow-hidden rounded-xl border border-slate-700 bg-[#111827]">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1120px] text-sm">
+          <table className="w-full min-w-[1260px] text-sm">
             <thead className="bg-[#0b1220] text-white/60">
               <tr>
                 <th className="p-4 text-left">Student</th>
@@ -256,6 +292,7 @@ export default function AdminStudentsKitDistribution() {
                   <th key={item.key} className="p-4 text-left">{item.label}</th>
                 ))}
                 <th className="p-4 text-left">Issue Date</th>
+                <th className="p-4 text-left">Proof Image</th>
                 <th className="p-4 text-left">Status</th>
               </tr>
             </thead>
@@ -273,18 +310,23 @@ export default function AdminStudentsKitDistribution() {
                   <td className="p-4 text-white/70">{student.batch}</td>
                   {KIT_ITEMS.map((item) => (
                     <td key={item.key} className="p-4">
-                      {student.issued[item.key] ? (
-                        <span className="inline-flex items-center gap-1.5 text-emerald-300">
-                          <CheckCircle2 size={15} /> Issued
+                      <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-white/70">
+                        <input
+                          type="checkbox"
+                          checked={student.issued[item.key]}
+                          onChange={() => toggleKitItem(student.id, item.key)}
+                          className="h-4 w-4 rounded border-slate-600 bg-[#0b1220] accent-violet-500"
+                        />
+                        <span className={student.issued[item.key] ? "text-emerald-300" : "text-slate-500"}>
+                          {student.issued[item.key] ? "Issued" : "Pending"}
                         </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 text-slate-500">
-                          <Clock size={15} /> Pending
-                        </span>
-                      )}
+                      </label>
                     </td>
                   ))}
                   <td className="p-4 text-white/70">{student.issueDate}</td>
+                  <td className="p-4">
+                    <ProofUploadCell student={student} onUpload={uploadProofImage} />
+                  </td>
                   <td className="p-4"><StatusPill status={getStatus(student)} /></td>
                 </tr>
               ))}
@@ -292,6 +334,45 @@ export default function AdminStudentsKitDistribution() {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ProofUploadCell({ student, onUpload }) {
+  return (
+    <div className="min-w-44">
+      {student.proofImage ? (
+        <div className="flex items-center gap-3">
+          <img
+            src={student.proofImage}
+            alt=""
+            className="h-12 w-12 rounded-lg border border-slate-700 object-cover"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-xs font-medium text-white/80">{student.proofImageName}</p>
+            <label className="mt-1 inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-violet-200 hover:text-violet-100">
+              Replace
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => onUpload(student.id, event.target.files?.[0])}
+              />
+            </label>
+          </div>
+        </div>
+      ) : (
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-200 transition hover:bg-violet-500/15">
+          <Image size={14} />
+          Upload Image
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => onUpload(student.id, event.target.files?.[0])}
+          />
+        </label>
+      )}
     </div>
   );
 }

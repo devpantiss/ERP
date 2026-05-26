@@ -16,6 +16,7 @@ import {
   Receipt,
   MessageSquareWarning,
   GraduationCap,
+  Quote,
 } from "lucide-react";
 
 /* ================= MENU CONFIG ================= */
@@ -25,6 +26,7 @@ const TOP_MENU = [
   { label: "Teaching Management", path: "/trainer/teaching-management", icon: GraduationCap },
   { label: "Exposure Visits", path: "/trainer/exposure-visits", icon: MapPin },
   { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
+  { label: "Testimonials", path: "/trainer/testimonials", icon: Quote },
 ];
 
 /* HR Entitlement — NO Attendance for Trainer */

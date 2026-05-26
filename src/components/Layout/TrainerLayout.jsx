@@ -12,6 +12,7 @@ import {
   Receipt,
   MessageSquareWarning,
   UserRoundPen,
+  Quote,
 } from "lucide-react";
 
 /* ─── Dock config ─── */
@@ -23,6 +24,7 @@ const DOCK_ITEMS = [
 
 const DRAWER_ITEMS = [
   { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
+  { label: "Testimonials", path: "/trainer/testimonials", icon: Quote },
   {
     label: "HR Entitlement",
     icon: Briefcase,

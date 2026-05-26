@@ -769,6 +769,54 @@ div[class]:has(> table) table :where(th, td) {
   box-shadow: inset 3px 0 0 rgba(139, 92, 246, 0.8);
 }
 
+.super-admin-project-theme .enterprise-project-shell::before {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(239, 68, 68, 0.14), transparent 30%),
+    linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent) top / 100% 1px no-repeat;
+}
+
+.super-admin-project-theme table tbody tr:hover {
+  box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.8);
+}
+
+.super-admin-project-theme .text-violet-200,
+.super-admin-project-theme .text-violet-300,
+.super-admin-project-theme .text-violet-400,
+.super-admin-project-theme .text-fuchsia-400 {
+  color: rgb(252 165 165);
+}
+
+.super-admin-project-theme .bg-violet-500 {
+  background-color: rgb(239 68 68);
+}
+
+.super-admin-project-theme .bg-violet-500\/10,
+.super-admin-project-theme .bg-violet-500\/15,
+.super-admin-project-theme .bg-violet-500\/20 {
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+.super-admin-project-theme .border-violet-400\/20,
+.super-admin-project-theme .border-violet-400\/25,
+.super-admin-project-theme .border-violet-400\/30,
+.super-admin-project-theme .border-violet-400\/35,
+.super-admin-project-theme .border-violet-400\/40,
+.super-admin-project-theme .border-violet-500\/20,
+.super-admin-project-theme .border-violet-500\/25,
+.super-admin-project-theme .border-violet-500\/30 {
+  border-color: rgba(248, 113, 113, 0.34);
+}
+
+.super-admin-project-theme .hover\:bg-violet-400:hover {
+  background-color: rgb(248 113 113);
+}
+
+.super-admin-project-theme .hover\:border-violet-400\/30:hover,
+.super-admin-project-theme .hover\:border-violet-400\/35:hover,
+.super-admin-project-theme .hover\:border-violet-400\/40:hover {
+  border-color: rgba(248, 113, 113, 0.48);
+}
+
 /* Final admin purple theme pass for detail-heavy pages defined later in the file. */
 .admin-future .admin-project-details,
 .admin-future .enterprise-project-page {

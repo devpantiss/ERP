@@ -218,11 +218,11 @@ export default function SuperAdminDashboard() {
   const chartData = selectedProject
     ? getCenterChartData(selectedProject)
     : projectStats.map((project) => ({
-        name: project.name,
-        Enrolled: project.enrolled,
-        Trained: project.trainedCandidates,
-        Certified: project.certifiedCandidates,
-      }));
+      name: project.name,
+      Enrolled: project.enrolled,
+      Trained: project.trainedCandidates,
+      Certified: project.certifiedCandidates,
+    }));
   const scopeLabel = selectedProject ? selectedProject.name : "All Projects";
   const portfolioTimeline = getPortfolioTimeline(visibleProjects);
 
@@ -613,11 +613,10 @@ function ProjectHealthCard({ project }) {
           </p>
         </div>
         <span
-          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black ${
-            project.status === "Active"
+          className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black ${project.status === "Active"
               ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-300"
               : "border-amber-400/20 bg-amber-500/10 text-amber-300"
-          }`}
+            }`}
         >
           {project.status}
         </span>

@@ -142,7 +142,7 @@ export default function SuperAdminEmployeeManagement() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={UserCog} title="Employee Management" subtitle="Project → Employee list + Targets" />
+      <PageHeader icon={UserCog} title="Access & Target" subtitle="Project employee access, role mapping, and monthly targets." />
       <Breadcrumb items={breadcrumb} />
 
       {/* LEVEL 1: Projects */}

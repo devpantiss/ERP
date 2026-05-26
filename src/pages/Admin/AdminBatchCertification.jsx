@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { Award, Eye, FileText, Filter, Search, Upload, X } from "lucide-react";
+import { Award, Download, Eye, FileText, Filter, Search, Upload, X } from "lucide-react";
 import { SA_PROJECTS } from "../SuperAdmin/superAdminData";
+import { findCertificateRecord, saveCertificateRecord } from "../../utils/certificationDocuments";
 
 const certificationStatuses = ["Pending", "Certified", "Failed"];
 
@@ -26,14 +27,14 @@ function seedBatches() {
               ? "Certified"
               : "Pending",
           certifiedOn: candidate.moduleCompletion >= 85 && candidate.attendance >= 80 ? "2026-04-18" : "",
-          certificateFile: null,
+          certificateFile: findCertificateRecord(candidate),
         })),
       }))
     )
   );
 }
 
-export default function AdminBatchCertification() {
+export default function AdminBatchCertification({ readOnly = false, uploadedBy = "Admin" }) {
   const [batches, setBatches] = useState(seedBatches);
   const [selectedBatchId, setSelectedBatchId] = useState(seedBatches()[0]?.id || "");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -107,9 +108,12 @@ export default function AdminBatchCertification() {
       type: file.type || "application/octet-stream",
       url: URL.createObjectURL(file),
       uploadedOn: new Date().toISOString().split("T")[0],
+      uploadedBy,
     };
 
-    updateStudentCertification(studentId, "certificateFile", certificateFile);
+    const student = selectedBatch?.students.find((item) => item.id === studentId);
+    const savedCertificate = student ? saveCertificateRecord(student, certificateFile) : certificateFile;
+    updateStudentCertification(studentId, "certificateFile", savedCertificate);
   };
 
   if (!selectedBatch) {
@@ -131,7 +135,9 @@ export default function AdminBatchCertification() {
             <div>
               <h1 className="text-2xl font-semibold text-slate-100">Batch Certification</h1>
               <p className="mt-1 text-sm text-white/55">
-                Update student certification status batch-wise after assessment verification.
+                {readOnly
+                  ? "Track student certification status batch-wise after assessment verification."
+                  : "Update student certification status batch-wise after assessment verification."}
               </p>
             </div>
           </div>
@@ -233,6 +239,7 @@ export default function AdminBatchCertification() {
                     <select
                       value={student.certificationStatus}
                       onChange={(event) => updateStudentCertification(student.id, "certificationStatus", event.target.value)}
+                      disabled={readOnly}
                       className="w-full min-w-36 rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs font-black text-white outline-none transition focus:border-violet-400/60"
                     >
                       {certificationStatuses.map((status) => (
@@ -246,7 +253,7 @@ export default function AdminBatchCertification() {
                     <input
                       value={student.certificateId}
                       onChange={(event) => updateStudentCertification(student.id, "certificateId", event.target.value)}
-                      disabled={student.certificationStatus !== "Certified"}
+                      disabled={readOnly || student.certificationStatus !== "Certified"}
                       placeholder="Certificate no."
                       className="w-full min-w-40 rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60 disabled:cursor-not-allowed disabled:opacity-45"
                     />
@@ -256,7 +263,7 @@ export default function AdminBatchCertification() {
                       type="date"
                       value={student.certifiedOn}
                       onChange={(event) => updateStudentCertification(student.id, "certifiedOn", event.target.value)}
-                      disabled={student.certificationStatus !== "Certified"}
+                      disabled={readOnly || student.certificationStatus !== "Certified"}
                       className="w-full min-w-36 rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs font-bold text-white outline-none transition focus:border-violet-400/60 disabled:cursor-not-allowed disabled:opacity-45"
                     />
                   </td>
@@ -265,6 +272,7 @@ export default function AdminBatchCertification() {
                       student={student}
                       onUpload={uploadCertificate}
                       onPreview={(certificate) => setPreviewCertificate({ ...certificate, student })}
+                      readOnly={readOnly}
                     />
                   </td>
                 </tr>
@@ -288,7 +296,7 @@ export default function AdminBatchCertification() {
   );
 }
 
-function CertificateUploadCell({ student, onUpload, onPreview }) {
+function CertificateUploadCell({ student, onUpload, onPreview, readOnly = false }) {
   const disabled = student.certificationStatus !== "Certified";
 
   return (
@@ -300,7 +308,7 @@ function CertificateUploadCell({ student, onUpload, onPreview }) {
             <div className="min-w-0">
               <p className="truncate text-xs font-black text-white">{student.certificateFile.name}</p>
               <p className="mt-1 text-[11px] font-bold text-emerald-200/75">
-                Uploaded {student.certificateFile.uploadedOn}
+                Uploaded by {student.certificateFile.uploadedBy || "Super Admin"} on {student.certificateFile.uploadedOn}
               </p>
             </div>
           </div>
@@ -313,18 +321,34 @@ function CertificateUploadCell({ student, onUpload, onPreview }) {
               <Eye size={13} />
               Preview
             </button>
-            <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-black text-white/70 transition hover:border-white/20 hover:text-white">
-              <Upload size={13} />
-              Replace
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={(event) => onUpload(student.id, event.target.files?.[0])}
-              />
-            </label>
+            {readOnly && (
+              <a
+                href={student.certificateFile.url}
+                download={student.certificateFile.name}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-black text-white/70 transition hover:border-white/20 hover:text-white"
+              >
+                <Download size={13} />
+                Download
+              </a>
+            )}
+            {!readOnly && (
+              <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-xs font-black text-white/70 transition hover:border-white/20 hover:text-white">
+                <Upload size={13} />
+                Replace
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={(event) => onUpload(student.id, event.target.files?.[0])}
+                />
+              </label>
+            )}
           </div>
         </div>
+      ) : readOnly ? (
+        <span className="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs font-black text-white/35">
+          Not uploaded
+        </span>
       ) : (
         <label
           className={`inline-flex w-full items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-black transition ${

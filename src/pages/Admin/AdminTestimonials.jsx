@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Award,
   ChevronLeft,
@@ -64,7 +65,60 @@ const emptyVideoForm = {
   quote: "",
 };
 
+const ROLE_THEMES = {
+  admin: {
+    eyebrow: "Admin Hub Style",
+    accentText: "text-violet-300",
+    accentTextStrong: "text-violet-200",
+    accentBg: "bg-violet-500",
+    accentHoverBg: "hover:bg-violet-400",
+    accentSoftBg: "bg-violet-500/10",
+    accentBorder: "border-violet-400/25",
+    accentBorderSoft: "border-violet-400/20",
+    accentFocus: "focus:border-violet-400/60",
+    accentHoverBorder: "hover:border-violet-400/40",
+    accentPill: "bg-violet-300",
+    accentUploadHover: "hover:bg-violet-500/10",
+  },
+  placement: {
+    eyebrow: "PlaCom Hub Style",
+    accentText: "text-cyan-300",
+    accentTextStrong: "text-cyan-200",
+    accentBg: "bg-cyan-500",
+    accentHoverBg: "hover:bg-cyan-400",
+    accentSoftBg: "bg-cyan-500/10",
+    accentBorder: "border-cyan-400/25",
+    accentBorderSoft: "border-cyan-400/20",
+    accentFocus: "focus:border-cyan-400/60",
+    accentHoverBorder: "hover:border-cyan-400/40",
+    accentPill: "bg-cyan-300",
+    accentUploadHover: "hover:bg-cyan-500/10",
+  },
+  trainer: {
+    eyebrow: "Teach Hub Style",
+    accentText: "text-emerald-300",
+    accentTextStrong: "text-emerald-200",
+    accentBg: "bg-emerald-500",
+    accentHoverBg: "hover:bg-emerald-400",
+    accentSoftBg: "bg-emerald-500/10",
+    accentBorder: "border-emerald-400/25",
+    accentBorderSoft: "border-emerald-400/20",
+    accentFocus: "focus:border-emerald-400/60",
+    accentHoverBorder: "hover:border-emerald-400/40",
+    accentPill: "bg-emerald-300",
+    accentUploadHover: "hover:bg-emerald-500/10",
+  },
+};
+
+const getThemeForPath = (pathname) => {
+  if (pathname.startsWith("/placement-officer")) return ROLE_THEMES.placement;
+  if (pathname.startsWith("/trainer")) return ROLE_THEMES.trainer;
+  return ROLE_THEMES.admin;
+};
+
 export default function AdminTestimonials() {
+  const { pathname } = useLocation();
+  const theme = getThemeForPath(pathname);
   const [activeType, setActiveType] = useState("Text");
   const [textForm, setTextForm] = useState(emptyTextForm);
   const [videoForm, setVideoForm] = useState(emptyVideoForm);
@@ -157,7 +211,7 @@ export default function AdminTestimonials() {
     <section className="space-y-6 text-white">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/10 text-violet-300">
+          <div className={`flex h-11 w-11 items-center justify-center rounded-xl border ${theme.accentBorder} ${theme.accentSoftBg} ${theme.accentText}`}>
             <Award size={20} />
           </div>
           <div>
@@ -169,7 +223,7 @@ export default function AdminTestimonials() {
         </div>
         <div className="grid grid-cols-3 gap-2 sm:min-w-[420px]">
           <SummaryCard label="Text" value={textTestimonials.length} />
-          <SummaryCard label="Video" value={videoTestimonials.length} tone="text-violet-300" />
+          <SummaryCard label="Video" value={videoTestimonials.length} tone={theme.accentText} />
           <SummaryCard label="Total" value={allTestimonials.length} tone="text-emerald-300" />
         </div>
       </div>
@@ -185,13 +239,13 @@ export default function AdminTestimonials() {
               setVideoIndex(0);
             }}
             placeholder="Search testimonial"
-            className="w-full rounded-xl border border-slate-700 bg-[#0b1220] py-3 pl-10 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60"
+            className={`w-full rounded-xl border border-slate-700 bg-[#0b1220] py-3 pl-10 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 ${theme.accentFocus}`}
           />
         </label>
         <button
           type="button"
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-500 px-5 py-3 text-sm font-black text-white transition hover:bg-violet-400"
+          className={`inline-flex items-center justify-center gap-2 rounded-xl ${theme.accentBg} px-5 py-3 text-sm font-black text-white transition ${theme.accentHoverBg}`}
         >
           <Plus size={16} />
           Add Testimony
@@ -206,6 +260,7 @@ export default function AdminTestimonials() {
         activeIndex={textIndex}
         onIndexChange={setTextIndex}
         onRemove={removeTestimonial}
+        theme={theme}
       />
 
       <TestimonialCarousel
@@ -216,10 +271,11 @@ export default function AdminTestimonials() {
         activeIndex={videoIndex}
         onIndexChange={setVideoIndex}
         onRemove={removeTestimonial}
+        theme={theme}
       />
 
       {showForm && (
-        <SlideOver title="Add Testimony" subtitle="Use the same structure as the client success story page." onClose={() => setShowForm(false)}>
+        <SlideOver title="Add Testimony" subtitle="Use the same structure as the client success story page." onClose={() => setShowForm(false)} theme={theme}>
           <div className="flex rounded-xl border border-slate-700 bg-[#0b1220] p-1">
             {["Text", "Video"].map((type) => (
               <button
@@ -227,7 +283,7 @@ export default function AdminTestimonials() {
                 type="button"
                 onClick={() => setActiveType(type)}
                 className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-black transition ${
-                  activeType === type ? "bg-violet-500 text-white" : "text-white/55 hover:text-white"
+                  activeType === type ? `${theme.accentBg} text-white` : "text-white/55 hover:text-white"
                 }`}
               >
                 {type} Testimony
@@ -236,10 +292,10 @@ export default function AdminTestimonials() {
           </div>
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <Field label="Learner Name" value={form.name} onChange={(value) => updateForm("name", value)} placeholder="Sasmita Naik" />
-            <Field label="Role / Trade" value={form.role} onChange={(value) => updateForm("role", value)} placeholder="Solar O&M Technician" />
-            <Field label="Center" value={form.center} onChange={(value) => updateForm("center", value)} placeholder="Angul Solar Energy Skill Center" />
-            <Field label="Outcome" value={form.outcome} onChange={(value) => updateForm("outcome", value)} placeholder="Placed at Vedanta Resources" />
+            <Field label="Learner Name" value={form.name} onChange={(value) => updateForm("name", value)} placeholder="Sasmita Naik" theme={theme} />
+            <Field label="Role / Trade" value={form.role} onChange={(value) => updateForm("role", value)} placeholder="Solar O&M Technician" theme={theme} />
+            <Field label="Center" value={form.center} onChange={(value) => updateForm("center", value)} placeholder="Angul Solar Energy Skill Center" theme={theme} />
+            <Field label="Outcome" value={form.outcome} onChange={(value) => updateForm("outcome", value)} placeholder="Placed at Vedanta Resources" theme={theme} />
           </div>
 
           {activeType === "Text" ? (
@@ -251,12 +307,14 @@ export default function AdminTestimonials() {
                 fileName={textForm.imageName}
                 preview={textForm.image}
                 onChange={(file) => handleFile("image", file)}
+                theme={theme}
               />
               <TextArea
                 label="Testimonial Text"
                 value={textForm.text}
                 onChange={(value) => updateForm("text", value)}
                 placeholder="Write the learner's success story in their words..."
+                theme={theme}
               />
             </>
           ) : (
@@ -268,6 +326,7 @@ export default function AdminTestimonials() {
                 fileName={videoForm.posterName}
                 preview={videoForm.poster}
                 onChange={(file) => handleFile("poster", file)}
+                theme={theme}
               />
               <UploadField
                 label="Video Testimony"
@@ -276,12 +335,14 @@ export default function AdminTestimonials() {
                 fileName={videoForm.videoName}
                 preview={videoForm.video}
                 onChange={(file) => handleFile("video", file)}
+                theme={theme}
               />
               <TextArea
                 label="Video Quote"
                 value={videoForm.quote}
                 onChange={(value) => updateForm("quote", value)}
                 placeholder="Short quote shown below the video player..."
+                theme={theme}
               />
             </>
           )}
@@ -290,7 +351,7 @@ export default function AdminTestimonials() {
             type="button"
             onClick={addTestimonial}
             disabled={!canSubmit}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 px-5 py-3 text-sm font-black text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+            className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl ${theme.accentBg} px-5 py-3 text-sm font-black text-white transition ${theme.accentHoverBg} disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400`}
           >
             <Plus size={16} />
             Add {activeType} Testimony
@@ -301,7 +362,7 @@ export default function AdminTestimonials() {
   );
 }
 
-function TestimonialCarousel({ title, subtitle, icon: Icon, items, activeIndex, onIndexChange, onRemove }) {
+function TestimonialCarousel({ title, subtitle, icon: Icon, items, activeIndex, onIndexChange, onRemove, theme }) {
   const visibleItems = items.length
     ? [0, 1, 2].map((offset) => items[(activeIndex + offset) % items.length]).filter(Boolean)
     : [];
@@ -319,7 +380,7 @@ function TestimonialCarousel({ title, subtitle, icon: Icon, items, activeIndex, 
     <section className="rounded-2xl border border-slate-700 bg-[#111827] p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-400/25 bg-violet-500/10 text-violet-300">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${theme.accentBorder} ${theme.accentSoftBg} ${theme.accentText}`}>
             <Icon size={18} />
           </div>
           <div>
@@ -335,7 +396,7 @@ function TestimonialCarousel({ title, subtitle, icon: Icon, items, activeIndex, 
             type="button"
             onClick={() => move("previous")}
             disabled={!canMove}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 bg-[#0b1220] text-white/70 transition hover:border-violet-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+            className={`flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 bg-[#0b1220] text-white/70 transition ${theme.accentHoverBorder} hover:text-white disabled:cursor-not-allowed disabled:opacity-35`}
             aria-label={`Previous ${title}`}
           >
             <ChevronLeft size={17} />
@@ -344,7 +405,7 @@ function TestimonialCarousel({ title, subtitle, icon: Icon, items, activeIndex, 
             type="button"
             onClick={() => move("next")}
             disabled={!canMove}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 bg-[#0b1220] text-white/70 transition hover:border-violet-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-35"
+            className={`flex h-10 w-10 items-center justify-center rounded-full border border-slate-700 bg-[#0b1220] text-white/70 transition ${theme.accentHoverBorder} hover:text-white disabled:cursor-not-allowed disabled:opacity-35`}
             aria-label={`Next ${title}`}
           >
             <ChevronRight size={17} />
@@ -358,6 +419,7 @@ function TestimonialCarousel({ title, subtitle, icon: Icon, items, activeIndex, 
             key={testimonial.id}
             testimonial={testimonial}
             onRemove={() => onRemove(testimonial)}
+            theme={theme}
           />
         ))}
         {!visibleItems.length && (
@@ -375,7 +437,7 @@ function TestimonialCarousel({ title, subtitle, icon: Icon, items, activeIndex, 
               type="button"
               onClick={() => onIndexChange(index)}
               className={`h-2 rounded-full transition-all ${
-                activeIndex === index ? "w-8 bg-violet-300" : "w-2 bg-white/20 hover:bg-white/40"
+                activeIndex === index ? `w-8 ${theme.accentPill}` : "w-2 bg-white/20 hover:bg-white/40"
               }`}
               aria-label={`Show ${title} ${index + 1}`}
             />
@@ -386,7 +448,7 @@ function TestimonialCarousel({ title, subtitle, icon: Icon, items, activeIndex, 
   );
 }
 
-function SlideOver({ title, subtitle, children, onClose }) {
+function SlideOver({ title, subtitle, children, onClose, theme }) {
   return (
     <div className="fixed inset-0 z-[9999] flex justify-end bg-black/55" onMouseDown={onClose}>
       <aside
@@ -395,7 +457,7 @@ function SlideOver({ title, subtitle, children, onClose }) {
       >
         <div className="mb-6 flex items-start justify-between gap-4 border-b border-slate-700/50 pb-5">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-300">Zoho Projects Style</p>
+            <p className={`text-xs font-black uppercase tracking-[0.18em] ${theme.accentText}`}>{theme.eyebrow}</p>
             <h2 className="mt-1 text-2xl font-black text-white">{title}</h2>
             <p className="mt-1 text-sm font-bold text-slate-500">{subtitle}</p>
           </div>
@@ -423,7 +485,7 @@ function SummaryCard({ label, value, tone = "text-white" }) {
   );
 }
 
-function Field({ label, value, onChange, placeholder }) {
+function Field({ label, value, onChange, placeholder, theme }) {
   return (
     <label className="block">
       <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.16em] text-white/45">{label}</span>
@@ -431,13 +493,13 @@ function Field({ label, value, onChange, placeholder }) {
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-700 bg-[#0b1220] px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60"
+        className={`w-full rounded-xl border border-slate-700 bg-[#0b1220] px-4 py-3 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 ${theme.accentFocus}`}
       />
     </label>
   );
 }
 
-function TextArea({ label, value, onChange, placeholder }) {
+function TextArea({ label, value, onChange, placeholder, theme }) {
   return (
     <label className="mt-4 block">
       <span className="mb-2 block text-[10px] font-black uppercase tracking-[0.16em] text-white/45">{label}</span>
@@ -446,20 +508,20 @@ function TextArea({ label, value, onChange, placeholder }) {
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         rows={5}
-        className="w-full resize-none rounded-xl border border-slate-700 bg-[#0b1220] px-4 py-3 text-sm font-bold leading-6 text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60"
+        className={`w-full resize-none rounded-xl border border-slate-700 bg-[#0b1220] px-4 py-3 text-sm font-bold leading-6 text-white outline-none transition placeholder:text-slate-600 ${theme.accentFocus}`}
       />
     </label>
   );
 }
 
-function UploadField({ label, icon: Icon, accept, fileName, preview, onChange }) {
+function UploadField({ label, icon: Icon, accept, fileName, preview, onChange, theme }) {
   const isVideo = accept.includes("video");
 
   return (
     <div className="mt-4 rounded-xl border border-slate-700 bg-[#0b1220] p-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${theme.accentBorderSoft} ${theme.accentSoftBg} ${theme.accentText}`}>
             <Icon size={18} />
           </div>
           <div>
@@ -467,7 +529,7 @@ function UploadField({ label, icon: Icon, accept, fileName, preview, onChange })
             <p className="mt-1 max-w-[240px] truncate text-xs font-bold text-white/65">{fileName || "No file selected"}</p>
           </div>
         </div>
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-violet-400/25 px-3 py-2 text-xs font-black text-violet-200 transition hover:bg-violet-500/10">
+        <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border ${theme.accentBorder} px-3 py-2 text-xs font-black ${theme.accentTextStrong} transition ${theme.accentUploadHover}`}>
           Upload
           <input type="file" accept={accept} className="hidden" onChange={(event) => onChange(event.target.files?.[0])} />
         </label>
@@ -485,19 +547,19 @@ function UploadField({ label, icon: Icon, accept, fileName, preview, onChange })
   );
 }
 
-function TestimonialPreview({ testimonial, onRemove }) {
+function TestimonialPreview({ testimonial, onRemove, theme }) {
   const isVideo = testimonial.type === "Video";
 
   return (
     <article className="rounded-2xl border border-slate-700 bg-[#0b1220] p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-300">
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${theme.accentBorderSoft} ${theme.accentSoftBg} ${theme.accentText}`}>
             {isVideo ? <Video size={18} /> : <FileText size={18} />}
           </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-black text-white">{testimonial.name}</p>
-            <p className="mt-1 truncate text-xs font-bold text-violet-200">{testimonial.role}</p>
+            <p className={`mt-1 truncate text-xs font-bold ${theme.accentTextStrong}`}>{testimonial.role}</p>
             <p className="mt-1 truncate text-xs text-white/40">{testimonial.center}</p>
           </div>
         </div>

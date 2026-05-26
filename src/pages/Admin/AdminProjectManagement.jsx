@@ -14,6 +14,7 @@ import {
   FolderKanban,
   GraduationCap,
   MapPin,
+  PackageCheck,
   Search,
   ShieldCheck,
   Sparkles,
@@ -28,11 +29,13 @@ import {
   Eye,
   X,
   Download,
+  Upload,
 } from "lucide-react";
 import SlidePanel from "../../components/common/SlidePanel";
 import TableExportActions from "../../components/common/TableExportActions";
 import { useProjectStore } from "../../stores/projectStore";
 import { selectAdminProjectReports } from "../../stores/selectors/projectSelectors";
+import { findCertificateRecord } from "../../utils/certificationDocuments";
 
 const STAFF_LANES = [
   "Lead Trainer",
@@ -104,6 +107,17 @@ const PLACEMENT_STATUS_ORDER = [
   "Interview Scheduled",
   "Placed",
 ];
+
+const KIT_ITEM_CONFIG = [
+  { key: "safetyKit", label: "Safety Kit" },
+  { key: "shoes", label: "Shoes" },
+  { key: "uniform", label: "Uniform" },
+  { key: "trainingKit", label: "Training Kit" },
+];
+
+const INSURANCE_STATUSES = ["Active", "Expiring Soon", "Pending", "Expired"];
+
+const CERTIFICATION_STATUSES = ["Pending", "Certified", "Failed"];
 
 const COMPANY_NAMES = [
   "Tata Steel",
@@ -1022,7 +1036,7 @@ const buildProjectSnapshot = (project) => {
   };
 };
 
-export default function AdminProjectManagement() {
+export default function AdminProjectManagement({ readOnly = false, theme = "violet" }) {
   const projectRecords = useProjectStore((state) => state.records);
   const fetchProjects = useProjectStore((state) => state.fetchAll);
 
@@ -1170,6 +1184,8 @@ export default function AdminProjectManagement() {
       activeCenter={activeCenter}
       selectedBatch={selectedBatch}
       rankedCenters={rankedCenters}
+      readOnly={readOnly}
+      theme={theme}
       onProjectSelect={handleProjectSelect}
       onCenterSelect={handleCenterSelect}
       onBatchSelect={setSelectedBatchId}
@@ -1186,15 +1202,18 @@ function EnterpriseProjectDashboard({
   activeCenter,
   selectedBatch,
   rankedCenters,
+  readOnly,
+  theme,
   onProjectSelect,
   onCenterSelect,
   onBatchSelect,
   onBack,
 }) {
   const mode = !selectedProject ? "Portfolio" : !activeCenter ? "Project" : "Center";
+  const pageThemeClass = theme === "red" ? "super-admin-project-theme" : "";
 
   return (
-    <div className="enterprise-project-page space-y-6 text-white">
+    <div className={`enterprise-project-page space-y-6 text-white ${pageThemeClass}`}>
       <section className="enterprise-project-shell rounded-[28px] border border-white/10 p-6 lg:p-7">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl">
@@ -1237,6 +1256,7 @@ function EnterpriseProjectDashboard({
         <EnterpriseProjectView
           project={selectedProject}
           centers={rankedCenters}
+          readOnly={readOnly}
           onBack={onBack}
           onCenterSelect={onCenterSelect}
         />
@@ -1246,6 +1266,7 @@ function EnterpriseProjectDashboard({
           center={activeCenter}
           centers={rankedCenters}
           selectedBatch={selectedBatch}
+          readOnly={readOnly}
           onBack={onBack}
           onCenterSelect={onCenterSelect}
           onBatchSelect={onBatchSelect}
@@ -1312,7 +1333,7 @@ function EnterprisePortfolioView({ projects, onProjectSelect }) {
   );
 }
 
-function EnterpriseProjectView({ project, centers, onBack, onCenterSelect }) {
+function EnterpriseProjectView({ project, centers, readOnly, onBack, onCenterSelect }) {
   return (
     <div className="space-y-6">
       <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
@@ -1341,6 +1362,8 @@ function EnterpriseProjectView({ project, centers, onBack, onCenterSelect }) {
         </div>
       </section>
 
+      {readOnly ? <SuperAdminProjectStaffSection project={project} /> : null}
+
       <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
         <h3 className="text-2xl font-semibold text-white">Centers</h3>
         <p className="mt-1 text-sm text-slate-400">
@@ -1352,17 +1375,149 @@ function EnterpriseProjectView({ project, centers, onBack, onCenterSelect }) {
   );
 }
 
+function SuperAdminProjectStaffSection({ project }) {
+  const incharge = project.projectIncharge;
+  const employees = project.associatedEmployees || [];
+  const supportEmployees = employees.filter((employee) => employee.id !== incharge?.id);
+  const activeCount = employees.filter((employee) => employee.status === "ACTIVE").length;
+
+  return (
+    <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+      <div className="flex flex-col gap-4 border-b border-white/10 pb-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-red-300">
+            Project Governance
+          </p>
+          <h3 className="mt-2 text-2xl font-semibold text-white">Admin / Project Incharge</h3>
+          <p className="mt-1 text-sm text-slate-400">
+            Project incharge and employees associated with this project.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-right sm:grid-cols-3">
+          <EnterpriseMiniStat label="Employees" value={employees.length} />
+          <EnterpriseMiniStat label="Active" value={activeCount} />
+          <EnterpriseMiniStat label="Centers" value={project.centerCount} />
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.5fr)]">
+        <div className="rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-4">
+          <div className="flex items-start gap-3">
+            <EmployeeAvatar name={incharge?.name || "Unassigned"} highlight />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white">{incharge?.name || "Unassigned"}</p>
+              <p className="mt-1 text-xs font-semibold text-red-200">
+                {incharge?.designation || "Project Admin"}
+              </p>
+              <p className="mt-3 text-xs text-slate-400">{incharge?.employeeCode || "No employee mapped"}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs">
+            <ProjectStaffMeta label="Email" value={incharge?.email || "—"} />
+            <ProjectStaffMeta label="Phone" value={incharge?.phone || "—"} />
+            <ProjectStaffMeta label="Status" value={formatEmployeeStatus(incharge?.status)} tone="text-emerald-300" />
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-2xl border border-white/10">
+          <div className="grid grid-cols-[1.2fr_1fr_0.8fr] gap-3 border-b border-white/10 bg-[#0f172a] px-4 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+            <span>Employee</span>
+            <span>Role</span>
+            <span>Status</span>
+          </div>
+          <div className="max-h-[360px] divide-y divide-white/10 overflow-auto">
+            {supportEmployees.map((employee) => (
+              <div
+                key={employee.id}
+                className="grid grid-cols-[1.2fr_1fr_0.8fr] items-center gap-3 px-4 py-3 text-sm transition hover:bg-red-500/[0.05]"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <EmployeeAvatar name={employee.name} />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-white">{employee.name}</p>
+                    <p className="mt-0.5 truncate text-xs text-slate-500">{employee.employeeCode}</p>
+                  </div>
+                </div>
+                <span className="truncate text-xs font-semibold text-slate-300">{employee.designation}</span>
+                <span className={`w-fit rounded-full border px-2.5 py-1 text-xs font-semibold ${getEmployeeStatusClass(employee.status)}`}>
+                  {formatEmployeeStatus(employee.status)}
+                </span>
+              </div>
+            ))}
+            {!supportEmployees.length ? (
+              <div className="px-4 py-8 text-center text-sm font-semibold text-slate-500">
+                No supporting employees are mapped to this project yet.
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function EmployeeAvatar({ name, highlight = false }) {
+  const initials = String(name || "NA")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+
+  return (
+    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border text-sm font-black ${
+      highlight
+        ? "border-red-400/30 bg-red-500/15 text-red-100"
+        : "border-white/10 bg-white/[0.05] text-slate-200"
+    }`}>
+      {initials || "NA"}
+    </div>
+  );
+}
+
+function ProjectStaffMeta({ label, value, tone = "text-slate-300" }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="font-semibold text-slate-500">{label}</span>
+      <span className={`truncate text-right font-semibold ${tone}`}>{value}</span>
+    </div>
+  );
+}
+
+function formatEmployeeStatus(status) {
+  if (status === "ACTIVE") return "Active";
+  if (status === "ON_LEAVE") return "On Leave";
+  return status || "Unassigned";
+}
+
+function getEmployeeStatusClass(status) {
+  if (status === "ACTIVE") return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
+  if (status === "ON_LEAVE") return "border-amber-500/20 bg-amber-500/10 text-amber-300";
+  return "border-slate-500/20 bg-slate-500/10 text-slate-300";
+}
+
 function EnterpriseCenterView({
   project,
   center,
   centers,
   selectedBatch,
+  readOnly,
   onBack,
   onCenterSelect,
   onBatchSelect,
 }) {
   const galleryItems = useMemo(
     () => buildProjectGalleryItems(project, center, selectedBatch),
+    [project, center, selectedBatch]
+  );
+  const placementDrives = useMemo(
+    () => buildCenterPlacementDriveRows(project, center, selectedBatch),
+    [project, center, selectedBatch]
+  );
+  const exposureVisits = useMemo(
+    () => buildCenterExposureVisitRows(project, center, selectedBatch),
     [project, center, selectedBatch]
   );
 
@@ -1402,10 +1557,16 @@ function EnterpriseCenterView({
           center={center}
           centers={centers}
           batches={center.batchSnapshots}
+          readOnly={readOnly}
           onCenterSelect={onCenterSelect}
           onBatchSelect={onBatchSelect}
         />
       ) : null}
+
+      <CenterOperationsEvidenceSections
+        placementDrives={placementDrives}
+        exposureVisits={exposureVisits}
+      />
 
       <ProjectGallerySection
         items={galleryItems}
@@ -1415,6 +1576,366 @@ function EnterpriseCenterView({
       />
 
     </div>
+  );
+}
+
+function buildCenterPlacementDriveRows(project, center, selectedBatch) {
+  const batches = selectedBatch ? [selectedBatch] : center.batchSnapshots.slice(0, 4);
+
+  return batches.map((batch, index) => {
+    const batchCandidates = Array.isArray(batch.candidateRecords) ? batch.candidateRecords : [];
+    const batchLabel = batch.label || batch.name || `Batch ${index + 1}`;
+    const trade = batch.jobRole || batch.trade || project.sector || "Training";
+    const candidateCount = Number(batch.size) || batchCandidates.length || 0;
+    const eligibleCandidates = batchCandidates.filter(
+      (candidate) => candidate.placementStatus !== "Not Yet Eligible"
+    );
+    const placedCandidates = batchCandidates.filter(
+      (candidate) => candidate.placementStatus === "Placed"
+    );
+    const seed = project.name.length + center.name.length + index * 11;
+    const company = COMPANY_NAMES[seed % COMPANY_NAMES.length];
+
+    return {
+      id: `${project.id}-${center.id}-${batch.id}-drive`,
+      company,
+      driveName: `${company} Hiring Drive`,
+      batch: batchLabel,
+      trade,
+      date: formatDate(new Date(Date.now() - (index * 8 + 6) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+      officer: ["Meera Das", "Pooja Patel", "Bikash Naik", "Sonal Behera"][seed % 4],
+      participated: Math.max(eligibleCandidates.length, Math.round(candidateCount * 0.34)),
+      selected: placedCandidates.length,
+      salary: placedCandidates.length
+        ? Math.round(placedCandidates.reduce((sum, candidate) => sum + (Number(candidate.salary) || 0), 0) / placedCandidates.length)
+        : 0,
+      status: placedCandidates.length ? "Completed" : "Scheduled",
+      documents: [
+        {
+          key: "invitation",
+          label: "Employer Invitation",
+          name: `${company.toLowerCase().replace(/\s+/g, "-")}-drive-invitation.pdf`,
+          type: "application/pdf",
+          url: ENROLLMENT_SAMPLE_PDF,
+          uploadedOn: formatDate(new Date(Date.now() - (index * 8 + 9) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        },
+        {
+          key: "attendance",
+          label: "Candidate Attendance Sheet",
+          name: `${batchLabel.toLowerCase().replace(/\s+/g, "-")}-drive-attendance.jpg`,
+          type: "image/jpeg",
+          url: PROJECT_GALLERY_ASSETS[(seed + 4) % PROJECT_GALLERY_ASSETS.length].src,
+          uploadedOn: formatDate(new Date(Date.now() - (index * 8 + 6) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        },
+        {
+          key: "selection",
+          label: "Selection List",
+          name: `${company.toLowerCase().replace(/\s+/g, "-")}-selection-list.pdf`,
+          type: "application/pdf",
+          url: ENROLLMENT_SAMPLE_PDF,
+          uploadedOn: formatDate(new Date(Date.now() - (index * 8 + 5) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        },
+      ],
+    };
+  });
+}
+
+function buildCenterExposureVisitRows(project, center, selectedBatch) {
+  const batches = selectedBatch ? [selectedBatch] : center.batchSnapshots.slice(0, 4);
+
+  return batches.map((batch, index) => {
+    const batchLabel = batch.label || batch.name || `Batch ${index + 1}`;
+    const trade = batch.jobRole || batch.trade || project.sector || "training";
+    const seed = center.name.length * 5 + batchLabel.length + index * 17;
+    const industry = COMPANY_NAMES[(seed + 3) % COMPANY_NAMES.length];
+    const proofCount = 2 + (seed % 4);
+    const candidateCount = Number(batch.size) || batch.candidateRecords?.length || 0;
+    const attended = Math.min(candidateCount, Math.round(candidateCount * (0.72 + (seed % 12) / 100)));
+
+    return {
+      id: `${project.id}-${center.id}-${batch.id}-exposure`,
+      industry,
+      trainer: batch.trainer || ["Sneha Mohanty", "Rahul Nayak", "Anita Patel", "Rakesh Sahu"][seed % 4],
+      batch: batchLabel,
+      trade,
+      date: formatDate(new Date(Date.now() - (index * 10 + 12) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+      location: `${industry} unit, ${center.location}`,
+      attended,
+      candidates: candidateCount,
+      proofs: proofCount,
+      status: index % 3 === 2 ? "Review Pending" : "Submitted",
+      notes: `Students observed ${trade.toLowerCase()} workflows, safety practices, and site readiness expectations.`,
+      documents: [
+        {
+          key: "permission",
+          label: "Visit Permission Letter",
+          name: `${industry.toLowerCase().replace(/\s+/g, "-")}-permission.pdf`,
+          type: "application/pdf",
+          url: ENROLLMENT_SAMPLE_PDF,
+          uploadedOn: formatDate(new Date(Date.now() - (index * 10 + 16) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        },
+        {
+          key: "attendance",
+          label: "Visit Attendance Sheet",
+          name: `${batchLabel.toLowerCase().replace(/\s+/g, "-")}-visit-attendance.jpg`,
+          type: "image/jpeg",
+          url: PROJECT_GALLERY_ASSETS[(seed + 2) % PROJECT_GALLERY_ASSETS.length].src,
+          uploadedOn: formatDate(new Date(Date.now() - (index * 10 + 12) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        },
+        {
+          key: "photos",
+          label: "Geo-tagged Proof Image",
+          name: `${industry.toLowerCase().replace(/\s+/g, "-")}-visit-proof.jpg`,
+          type: "image/jpeg",
+          url: PROJECT_GALLERY_ASSETS[(seed + 5) % PROJECT_GALLERY_ASSETS.length].src,
+          uploadedOn: formatDate(new Date(Date.now() - (index * 10 + 11) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        },
+        {
+          key: "report",
+          label: "Trainer Visit Report",
+          name: `${batchLabel.toLowerCase().replace(/\s+/g, "-")}-trainer-report.pdf`,
+          type: "application/pdf",
+          url: ENROLLMENT_SAMPLE_PDF,
+          uploadedOn: formatDate(new Date(Date.now() - (index * 10 + 10) * 24 * 60 * 60 * 1000).toISOString().split("T")[0]),
+        },
+      ],
+    };
+  });
+}
+
+function CenterOperationsEvidenceSections({ placementDrives, exposureVisits }) {
+  const [documentContext, setDocumentContext] = useState(null);
+
+  return (
+    <>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <ProjectDetailMiniSection
+          eyebrow="Placement Operations"
+          title="Placement Drives"
+          subtitle="Drive-wise employer, batch, participation, and selection details."
+          icon={Briefcase}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[820px] text-left text-sm">
+            <thead className="text-xs uppercase tracking-[0.16em] text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-medium">Drive</th>
+                <th className="px-4 py-3 font-medium">Batch / Trade</th>
+                <th className="px-4 py-3 font-medium">Date</th>
+                <th className="px-4 py-3 font-medium">Participation</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium text-right">Documents</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {placementDrives.map((drive) => (
+                <tr key={drive.id} className="transition hover:bg-violet-500/[0.06]">
+                  <td className="px-4 py-4">
+                    <p className="font-semibold text-white">{drive.driveName}</p>
+                    <p className="mt-1 text-xs text-slate-500">Officer: {drive.officer}</p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="text-slate-300">{drive.batch}</p>
+                    <p className="mt-1 text-xs text-slate-500">{drive.trade}</p>
+                  </td>
+                  <td className="px-4 py-4 text-slate-300">{drive.date}</td>
+                  <td className="px-4 py-4">
+                    <p className="font-semibold text-cyan-300">{drive.participated} attended</p>
+                    <p className="mt-1 text-xs text-emerald-300">{drive.selected} selected{drive.salary ? ` • ₹${formatNumber(drive.salary)}` : ""}</p>
+                  </td>
+                  <td className="px-4 py-4">
+                    <StatusChip status={drive.status} />
+                  </td>
+                  <td className="px-4 py-4 text-right">
+                    <button
+                      type="button"
+                      onClick={() => setDocumentContext({ type: "Placement Drive", title: drive.driveName, subtitle: `${drive.batch} • ${drive.company}`, documents: drive.documents })}
+                      className="inline-flex items-center gap-2 rounded-lg border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:border-violet-300/50 hover:bg-violet-500/20"
+                    >
+                      <FileText size={13} />
+                      View {drive.documents.length}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            </table>
+          </div>
+        </ProjectDetailMiniSection>
+
+        <ProjectDetailMiniSection
+          eyebrow="Training Exposure"
+          title="Exposure Visits"
+          subtitle="Industry visit, trainer, attendance, proof, and notes summary."
+          icon={MapPin}
+        >
+          <div className="space-y-3">
+            {exposureVisits.map((visit) => (
+              <article key={visit.id} className="rounded-2xl border border-white/10 bg-[#0b1220]/70 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-white">{visit.industry}</p>
+                  <p className="mt-1 text-xs text-slate-500">{visit.location}</p>
+                </div>
+                <StatusChip status={visit.status} />
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                <MiniDetail label="Trainer" value={visit.trainer} />
+                <MiniDetail label="Batch / Trade" value={`${visit.batch} / ${visit.trade}`} />
+                <MiniDetail label="Visit Date" value={visit.date} />
+                <MiniDetail label="Attendance" value={`${visit.attended}/${visit.candidates}`} tone="text-cyan-300" />
+              </div>
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs leading-5 text-slate-400">{visit.notes}</p>
+                <button
+                  type="button"
+                  onClick={() => setDocumentContext({ type: "Exposure Visit", title: visit.industry, subtitle: `${visit.batch} • ${visit.trainer}`, documents: visit.documents })}
+                  className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 transition hover:border-violet-300/50 hover:bg-violet-500/20"
+                >
+                  <FileText size={13} />
+                  View {visit.documents.length} uploads
+                </button>
+              </div>
+              </article>
+            ))}
+          </div>
+        </ProjectDetailMiniSection>
+      </div>
+
+      <OperationsDocumentPanel
+        context={documentContext}
+        onClose={() => setDocumentContext(null)}
+      />
+    </>
+  );
+}
+
+function OperationsDocumentPanel({ context, onClose }) {
+  const documents = context?.documents || [];
+  const [activeKey, setActiveKey] = useState("");
+
+  useEffect(() => {
+    setActiveKey(documents[0]?.key || "");
+  }, [context, documents]);
+
+  const activeDocument = documents.find((document) => document.key === activeKey) || documents[0];
+
+  return (
+    <SlidePanel open={!!context} onClose={onClose} title={context?.title || "Uploaded Documents"} width="3xl">
+      {context ? (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-violet-400/15 bg-violet-500/[0.06] p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-violet-200">
+              Zoho Projects Style Document Review
+            </p>
+            <p className="mt-2 text-sm font-semibold text-white">{context.type}</p>
+            <p className="mt-1 text-xs text-slate-400">{context.subtitle}</p>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto border-b border-white/10">
+            {documents.map((document) => (
+              <button
+                key={document.key}
+                type="button"
+                onClick={() => setActiveKey(document.key)}
+                className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-xs font-semibold transition ${
+                  activeDocument?.key === document.key
+                    ? "border-violet-400 text-violet-200"
+                    : "border-transparent text-slate-500 hover:text-white"
+                }`}
+              >
+                <FileText size={14} />
+                {document.label}
+              </button>
+            ))}
+          </div>
+
+          {activeDocument ? (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white">{activeDocument.label}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {activeDocument.name} • Uploaded {activeDocument.uploadedOn}
+                  </p>
+                </div>
+                <a
+                  href={activeDocument.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-violet-400/35 hover:bg-violet-500/15 hover:text-white"
+                >
+                  <ExternalLink size={13} />
+                  Open file
+                </a>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-[#020617] p-3">
+                {isEnrollmentPdf(activeDocument) ? (
+                  <iframe
+                    src={activeDocument.url}
+                    title={activeDocument.label}
+                    className="h-[clamp(260px,calc(100vh-31rem),520px)] w-full rounded-xl bg-white"
+                  />
+                ) : (
+                  <img
+                    src={activeDocument.url}
+                    alt={activeDocument.label}
+                    className="max-h-[clamp(260px,calc(100vh-31rem),520px)] w-full rounded-xl object-contain"
+                  />
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-sm text-slate-500">
+              No uploaded documents are linked yet.
+            </div>
+          )}
+        </div>
+      ) : null}
+    </SlidePanel>
+  );
+}
+
+function ProjectDetailMiniSection({ eyebrow, title, subtitle, icon: Icon, children }) {
+  return (
+    <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
+      <div className="mb-4 flex items-start gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-violet-500/10 text-violet-200">
+          <Icon size={18} />
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200">{eyebrow}</p>
+          <h3 className="mt-1 text-xl font-semibold text-white">{title}</h3>
+          <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function MiniDetail({ label, value, tone = "text-white/80" }) {
+  return (
+    <div>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</p>
+      <p className={`mt-1 text-xs font-semibold ${tone}`}>{value}</p>
+    </div>
+  );
+}
+
+function StatusChip({ status }) {
+  const className =
+    status === "Completed" || status === "Submitted"
+      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+      : status === "Scheduled"
+      ? "border-cyan-500/20 bg-cyan-500/10 text-cyan-300"
+      : "border-amber-500/20 bg-amber-500/10 text-amber-300";
+
+  return (
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${className}`}>
+      {status}
+    </span>
   );
 }
 
@@ -1466,15 +1987,13 @@ function ProjectGallerySection({ items, project, center, selectedBatch }) {
         </div>
       </div>
 
-      <div className="mt-5 grid auto-rows-[190px] gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {visibleItems.map((item, index) => (
+      <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {visibleItems.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setPreviewItem(item)}
-            className={`group relative overflow-hidden rounded-[20px] border border-white/10 bg-slate-950 text-left shadow-[0_18px_50px_rgba(2,6,23,0.28)] transition hover:-translate-y-0.5 hover:border-violet-400/40 ${
-              index === 0 ? "md:col-span-2 md:row-span-2" : ""
-            }`}
+            className="group relative aspect-[4/3] overflow-hidden rounded-[20px] border border-white/10 bg-slate-950 text-left shadow-[0_18px_50px_rgba(2,6,23,0.28)] transition hover:-translate-y-0.5 hover:border-violet-400/40"
           >
             <img
               src={item.src}
@@ -1769,12 +2288,73 @@ function isEnrollmentPdf(file) {
   return type.includes("pdf") || url.includes("application/pdf") || url.toLowerCase().includes(".pdf");
 }
 
+function getCandidateSeed(candidate, index = 0) {
+  const digits = String(candidate.id || candidate.candidateCode || "").replace(/\D/g, "");
+  return Number(digits.slice(-3)) || index + 1;
+}
+
+function buildKitIssuedState(candidate, index) {
+  const seed = getCandidateSeed(candidate, index);
+  return {
+    safetyKit: seed % 5 !== 1,
+    shoes: seed % 4 !== 2,
+    uniform: seed % 6 !== 3,
+    trainingKit: seed % 3 !== 1,
+  };
+}
+
+function getKitStatus(issued) {
+  const count = KIT_ITEM_CONFIG.filter((item) => issued[item.key]).length;
+  if (count === KIT_ITEM_CONFIG.length) return "Completed";
+  if (count === 0) return "Pending";
+  return "Partial";
+}
+
+function getKitStatusClass(status) {
+  if (status === "Completed") return "border-emerald-500/25 bg-emerald-500/10 text-emerald-300";
+  if (status === "Partial") return "border-amber-500/25 bg-amber-500/10 text-amber-300";
+  return "border-slate-500/25 bg-slate-500/10 text-slate-300";
+}
+
+function buildInsuranceRecord(candidate, index) {
+  const seed = getCandidateSeed(candidate, index);
+  const status = INSURANCE_STATUSES[seed % INSURANCE_STATUSES.length];
+  return {
+    provider: ["LIC Group Cover", "ICICI Lombard", "New India Assurance", "HDFC ERGO"][seed % 4],
+    policyNo: status === "Pending" ? "" : `POL-OD-${88300 + seed}`,
+    coverage: status === "Pending" ? "" : 200000 + (seed % 4) * 50000,
+    startDate: status === "Pending" ? "" : `2026-04-${String((seed % 20) + 1).padStart(2, "0")}`,
+    endDate: status === "Expired" ? "2026-05-10" : status === "Expiring Soon" ? "2026-05-29" : "2027-04-30",
+    nominee: ["Mother", "Father", "Spouse", "Guardian"][seed % 4],
+    status,
+  };
+}
+
+function getInsuranceStatusClass(status) {
+  if (status === "Active") return "border-emerald-500/25 bg-emerald-500/10 text-emerald-300";
+  if (status === "Expiring Soon") return "border-amber-500/25 bg-amber-500/10 text-amber-300";
+  if (status === "Expired") return "border-red-500/25 bg-red-500/10 text-red-300";
+  return "border-slate-500/25 bg-slate-500/10 text-slate-300";
+}
+
+function buildCertificationRecord(candidate, index) {
+  const certified = candidate.trainingProgress >= 85 && candidate.attendanceRate >= 80;
+  const superAdminCertificate = findCertificateRecord(candidate);
+  return {
+    status: certified ? "Certified" : "Pending",
+    certificateId: certified ? `CERT-${candidate.candidateCode || getCandidateSeed(candidate, index)}` : "",
+    certifiedOn: certified ? "2026-04-18" : "",
+    certificateFile: superAdminCertificate,
+  };
+}
+
 function CandidateRosterTabs({
   selectedBatch,
   project,
   center,
   centers,
   batches,
+  readOnly = false,
   onCenterSelect,
   onBatchSelect,
 }) {
@@ -1828,6 +2408,9 @@ function CandidateRosterTabs({
     { key: "enrollment", label: "Enrollment", icon: FileText },
     { key: "training", label: "Training Detail", icon: BookOpen },
     { key: "placements", label: "Placements", icon: Briefcase },
+    { key: "kit", label: "Kit Distribution", icon: PackageCheck },
+    { key: "insurance", label: "Insurance", icon: ShieldCheck },
+    ...(!readOnly ? [{ key: "certification", label: "Certification", icon: Award }] : []),
   ];
   const pendingEnrollments = enrollmentCandidates.filter(
     (candidate) => enrollmentState[candidate.id] === "Pending"
@@ -1922,7 +2505,7 @@ function CandidateRosterTabs({
         <div className="hidden h-7 w-px bg-white/10 md:block" />
 
         {/* Right: tab pills */}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {tabs.map((tab) => {
             const TabIcon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -1953,6 +2536,7 @@ function CandidateRosterTabs({
           center={center}
           batchLabel={selectedBatch.label}
           enrollmentState={enrollmentState}
+          readOnly={readOnly}
           onUpdateEnrollmentStatus={updateEnrollmentStatus}
         />
       ) : activeTab === "training" ? (
@@ -1961,13 +2545,37 @@ function CandidateRosterTabs({
           project={project}
           batchLabel={selectedBatch.label}
         />
-      ) : (
+      ) : activeTab === "placements" ? (
         <PlacementsTable
           candidates={selectedBatch.candidateRecords}
           project={project}
           batchLabel={selectedBatch.label}
           verificationState={verificationState}
+          readOnly={readOnly}
           onToggleVerification={toggleVerification}
+        />
+      ) : activeTab === "kit" ? (
+        <KitDistributionTable
+          candidates={selectedBatch.candidateRecords}
+          project={project}
+          center={center}
+          batchLabel={selectedBatch.label}
+          readOnly={readOnly}
+        />
+      ) : activeTab === "insurance" ? (
+        <InsuranceDetailsTable
+          candidates={selectedBatch.candidateRecords}
+          project={project}
+          center={center}
+          batchLabel={selectedBatch.label}
+          readOnly={readOnly}
+        />
+      ) : (
+        <CertificationTable
+          candidates={selectedBatch.candidateRecords}
+          project={project}
+          batchLabel={selectedBatch.label}
+          readOnly={readOnly}
         />
       )}
     </section>
@@ -2179,12 +2787,662 @@ function TrainingDetailTable({ candidates, project, batchLabel }) {
   );
 }
 
+function KitDistributionTable({ candidates, project, center, batchLabel, readOnly = false }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [issuedState, setIssuedState] = useState(() =>
+    Object.fromEntries(candidates.map((candidate, index) => [candidate.id, buildKitIssuedState(candidate, index)]))
+  );
+  const [proofState, setProofState] = useState({});
+
+  useEffect(() => {
+    setIssuedState(Object.fromEntries(candidates.map((candidate, index) => [candidate.id, buildKitIssuedState(candidate, index)])));
+    setProofState({});
+  }, [candidates]);
+
+  const rows = useMemo(
+    () =>
+      candidates.map((candidate) => ({
+        ...candidate,
+        issued: issuedState[candidate.id] || {},
+        proofImage: proofState[candidate.id]?.url || "",
+        proofImageName: proofState[candidate.id]?.name || "",
+        status: getKitStatus(issuedState[candidate.id] || {}),
+      })),
+    [candidates, issuedState, proofState]
+  );
+  const filteredRows = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return rows.filter((candidate) => {
+      const matchesSearch =
+        !query ||
+        candidate.name.toLowerCase().includes(query) ||
+        candidate.candidateCode.toLowerCase().includes(query) ||
+        candidate.jobRole.toLowerCase().includes(query);
+      const matchesStatus = !statusFilter || candidate.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [rows, searchTerm, statusFilter]);
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Student" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "centerName", header: "Center", exportValue: () => center.location },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      ...KIT_ITEM_CONFIG.map((item) => ({
+        key: item.key,
+        header: item.label,
+        exportValue: (candidate) => (candidate.issued[item.key] ? "Issued" : "Pending"),
+      })),
+      {
+        key: "proofImage",
+        header: "Proof Image",
+        exportValue: (candidate) => candidate.proofImageName || "Not uploaded",
+      },
+      { key: "status", header: "Status" },
+    ],
+    [batchLabel, center.location, project.name]
+  );
+
+  const toggleItem = (candidateId, itemKey) => {
+    setIssuedState((current) => ({
+      ...current,
+      [candidateId]: {
+        ...(current[candidateId] || {}),
+        [itemKey]: !current[candidateId]?.[itemKey],
+      },
+    }));
+  };
+
+  const uploadProofImage = (candidateId, file) => {
+    if (!file) return;
+    setProofState((current) => ({
+      ...current,
+      [candidateId]: {
+        name: file.name,
+        url: URL.createObjectURL(file),
+      },
+    }));
+  };
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <TableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search kit distribution..."
+        resultCount={filteredRows.length}
+        onClear={() => {
+          setSearchTerm("");
+          setStatusFilter("");
+        }}
+      >
+        <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={["Completed", "Partial", "Pending"]} />
+        <TableExportActions
+          moduleName="Kit Distribution"
+          fileName="kit_distribution"
+          columns={exportColumns}
+          rows={filteredRows}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </TableToolbar>
+      <div className="max-h-[560px] overflow-auto">
+        <table className="w-full min-w-[1340px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Student</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Center</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              {KIT_ITEM_CONFIG.map((item) => (
+                <th key={item.key} className="px-4 py-3 font-medium">{item.label}</th>
+              ))}
+              <th className="px-4 py-3 font-medium">Proof Image</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredRows.map((candidate) => (
+              <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                <td className="px-4 py-4 text-slate-300">{center.location}</td>
+                <td className="px-4 py-4">
+                  <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                    {batchLabel}
+                  </span>
+                </td>
+                {KIT_ITEM_CONFIG.map((item) => (
+                  <td key={item.key} className="px-4 py-4">
+                    <label className={`inline-flex items-center gap-2 text-xs font-semibold text-slate-300 ${readOnly ? "" : "cursor-pointer"}`}>
+                      {readOnly ? (
+                        <span className={`h-2.5 w-2.5 rounded-full ${candidate.issued[item.key] ? "bg-emerald-400" : "bg-slate-500"}`} />
+                      ) : (
+                        <input
+                          type="checkbox"
+                          checked={Boolean(candidate.issued[item.key])}
+                          onChange={() => toggleItem(candidate.id, item.key)}
+                          className="h-4 w-4 rounded border-slate-600 bg-[#0b1220] accent-violet-500"
+                        />
+                      )}
+                      {candidate.issued[item.key] ? "Issued" : "Pending"}
+                    </label>
+                  </td>
+                ))}
+                <td className="px-4 py-4">
+                  <KitProofUploadCell candidate={candidate} readOnly={readOnly} onUpload={uploadProofImage} />
+                </td>
+                <td className="px-4 py-4">
+                  <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${getKitStatusClass(candidate.status)}`}>
+                    {candidate.status}
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {!filteredRows.length && (
+              <tr>
+                <td colSpan={10} className="px-4 py-12 text-center text-sm font-bold text-slate-500">
+                  No kit records match the current filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function KitProofUploadCell({ candidate, readOnly = false, onUpload }) {
+  if (readOnly) {
+    return candidate.proofImage ? (
+      <div className="flex items-center gap-3">
+        <img
+          src={candidate.proofImage}
+          alt=""
+          className="h-12 w-12 rounded-lg border border-white/10 object-cover"
+        />
+        <p className="max-w-36 truncate text-xs font-semibold text-white/80">{candidate.proofImageName}</p>
+      </div>
+    ) : (
+      <span className="text-xs font-semibold text-slate-500">Not uploaded</span>
+    );
+  }
+
+  return (
+    <div className="min-w-48">
+      {candidate.proofImage ? (
+        <div className="flex items-center gap-3">
+          <img
+            src={candidate.proofImage}
+            alt=""
+            className="h-12 w-12 rounded-lg border border-white/10 object-cover"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-white/80">{candidate.proofImageName}</p>
+            <label className="mt-1 inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-violet-200 transition hover:text-violet-100">
+              <Upload size={12} />
+              Replace
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => onUpload(candidate.id, event.target.files?.[0])}
+              />
+            </label>
+          </div>
+        </div>
+      ) : (
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-xs font-black text-violet-200 transition hover:bg-violet-500/15">
+          <Upload size={14} />
+          Upload Image
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(event) => onUpload(candidate.id, event.target.files?.[0])}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
+function InsuranceDetailsTable({ candidates, project, center, batchLabel, readOnly = false }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [insuranceState, setInsuranceState] = useState(() =>
+    Object.fromEntries(candidates.map((candidate, index) => [candidate.id, buildInsuranceRecord(candidate, index)]))
+  );
+
+  useEffect(() => {
+    setInsuranceState(Object.fromEntries(candidates.map((candidate, index) => [candidate.id, buildInsuranceRecord(candidate, index)])));
+  }, [candidates]);
+
+  const rows = useMemo(
+    () => candidates.map((candidate) => ({ ...candidate, insurance: insuranceState[candidate.id] || {} })),
+    [candidates, insuranceState]
+  );
+  const filteredRows = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return rows.filter((candidate) => {
+      const record = candidate.insurance;
+      const matchesSearch =
+        !query ||
+        candidate.name.toLowerCase().includes(query) ||
+        candidate.candidateCode.toLowerCase().includes(query) ||
+        String(record.policyNo || "").toLowerCase().includes(query) ||
+        String(record.provider || "").toLowerCase().includes(query);
+      const matchesStatus = !statusFilter || record.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [rows, searchTerm, statusFilter]);
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Student" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "centerName", header: "Center", exportValue: () => center.location },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "provider", header: "Provider", exportValue: (candidate) => candidate.insurance.provider },
+      { key: "policyNo", header: "Policy No.", exportValue: (candidate) => candidate.insurance.policyNo || "Pending" },
+      { key: "coverage", header: "Coverage", type: "number", exportValue: (candidate) => Number(candidate.insurance.coverage || 0) },
+      { key: "startDate", header: "Start Date", exportValue: (candidate) => candidate.insurance.startDate || "-" },
+      { key: "endDate", header: "End Date", exportValue: (candidate) => candidate.insurance.endDate || "-" },
+      { key: "nominee", header: "Nominee", exportValue: (candidate) => candidate.insurance.nominee },
+      { key: "status", header: "Status", exportValue: (candidate) => candidate.insurance.status },
+    ],
+    [batchLabel, center.location, project.name]
+  );
+
+  const updateInsurance = (candidateId, field, value) => {
+    setInsuranceState((current) => ({
+      ...current,
+      [candidateId]: {
+        ...(current[candidateId] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <TableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search insurance records..."
+        resultCount={filteredRows.length}
+        onClear={() => {
+          setSearchTerm("");
+          setStatusFilter("");
+        }}
+      >
+        <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={INSURANCE_STATUSES} />
+        <TableExportActions
+          moduleName="Insurance Details"
+          fileName="insurance_details"
+          columns={exportColumns}
+          rows={filteredRows}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </TableToolbar>
+      <div className="max-h-[560px] overflow-auto">
+        <table className="w-full min-w-[1540px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Student</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">Provider</th>
+              <th className="px-4 py-3 font-medium">Policy No.</th>
+              <th className="px-4 py-3 font-medium">Coverage</th>
+              <th className="px-4 py-3 font-medium">Start</th>
+              <th className="px-4 py-3 font-medium">End</th>
+              <th className="px-4 py-3 font-medium">Nominee</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredRows.map((candidate) => (
+              <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">
+                  <p>{project.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{center.location}</p>
+                </td>
+                <td className="px-4 py-4">
+                  <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                    {batchLabel}
+                  </span>
+                </td>
+                <td className="px-4 py-4">
+                  {readOnly ? (
+                    <span className="text-xs font-bold text-slate-300">{candidate.insurance.provider || "—"}</span>
+                  ) : (
+                    <input
+                      value={candidate.insurance.provider || ""}
+                      onChange={(event) => updateInsurance(candidate.id, "provider", event.target.value)}
+                      className="w-44 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-bold text-white outline-none focus:border-violet-400/50"
+                    />
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  {readOnly ? (
+                    <span className="text-xs font-bold text-slate-300">{candidate.insurance.policyNo || "Pending"}</span>
+                  ) : (
+                    <input
+                      value={candidate.insurance.policyNo || ""}
+                      onChange={(event) => updateInsurance(candidate.id, "policyNo", event.target.value)}
+                      placeholder="Policy no."
+                      className="w-36 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-bold text-white outline-none placeholder:text-slate-600 focus:border-violet-400/50"
+                    />
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  {readOnly ? (
+                    <span className="text-xs font-bold text-slate-300">
+                      {candidate.insurance.coverage ? `₹${formatNumber(candidate.insurance.coverage)}` : "—"}
+                    </span>
+                  ) : (
+                    <input
+                      type="number"
+                      value={candidate.insurance.coverage || ""}
+                      onChange={(event) => updateInsurance(candidate.id, "coverage", event.target.value)}
+                      className="w-32 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-bold text-white outline-none focus:border-violet-400/50"
+                    />
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  {readOnly ? (
+                    <span className="text-xs font-bold text-slate-300">{candidate.insurance.startDate ? formatDate(candidate.insurance.startDate) : "—"}</span>
+                  ) : (
+                    <input
+                      type="date"
+                      value={candidate.insurance.startDate || ""}
+                      onChange={(event) => updateInsurance(candidate.id, "startDate", event.target.value)}
+                      className="w-36 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-bold text-white outline-none focus:border-violet-400/50"
+                    />
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  {readOnly ? (
+                    <span className="text-xs font-bold text-slate-300">{candidate.insurance.endDate ? formatDate(candidate.insurance.endDate) : "—"}</span>
+                  ) : (
+                    <input
+                      type="date"
+                      value={candidate.insurance.endDate || ""}
+                      onChange={(event) => updateInsurance(candidate.id, "endDate", event.target.value)}
+                      className="w-36 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-bold text-white outline-none focus:border-violet-400/50"
+                    />
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  {readOnly ? (
+                    <span className="text-xs font-bold text-slate-300">{candidate.insurance.nominee || "—"}</span>
+                  ) : (
+                    <input
+                      value={candidate.insurance.nominee || ""}
+                      onChange={(event) => updateInsurance(candidate.id, "nominee", event.target.value)}
+                      className="w-28 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-bold text-white outline-none focus:border-violet-400/50"
+                    />
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  {readOnly ? (
+                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-black ${getInsuranceStatusClass(candidate.insurance.status || "Pending")}`}>
+                      {candidate.insurance.status || "Pending"}
+                    </span>
+                  ) : (
+                    <select
+                      value={candidate.insurance.status || "Pending"}
+                      onChange={(event) => updateInsurance(candidate.id, "status", event.target.value)}
+                      className={`w-36 rounded-xl border px-3 py-2 text-xs font-black outline-none ${getInsuranceStatusClass(candidate.insurance.status || "Pending")}`}
+                    >
+                      {INSURANCE_STATUSES.map((status) => (
+                        <option key={status} value={status} className="bg-[#0f172a] text-white">
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!filteredRows.length && (
+              <tr>
+                <td colSpan={10} className="px-4 py-12 text-center text-sm font-bold text-slate-500">
+                  No insurance records match the current filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CertificationTable({ candidates, project, batchLabel, readOnly = false }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [certState, setCertState] = useState(() =>
+    Object.fromEntries(candidates.map((candidate, index) => [candidate.id, buildCertificationRecord(candidate, index)]))
+  );
+
+  useEffect(() => {
+    setCertState(Object.fromEntries(candidates.map((candidate, index) => [candidate.id, buildCertificationRecord(candidate, index)])));
+  }, [candidates]);
+
+  const rows = useMemo(
+    () => candidates.map((candidate) => ({ ...candidate, certification: certState[candidate.id] || {} })),
+    [candidates, certState]
+  );
+  const filteredRows = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return rows.filter((candidate) => {
+      const matchesSearch =
+        !query ||
+        candidate.name.toLowerCase().includes(query) ||
+        candidate.candidateCode.toLowerCase().includes(query) ||
+        candidate.jobRole.toLowerCase().includes(query) ||
+        String(candidate.certification.certificateId || "").toLowerCase().includes(query);
+      const matchesStatus = !statusFilter || candidate.certification.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [rows, searchTerm, statusFilter]);
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Student" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "jobRole", header: "Job Role" },
+      { key: "attendanceRate", header: "Attendance %", type: "number" },
+      { key: "trainingProgress", header: "Module %", type: "number" },
+      { key: "status", header: "Certification Status", exportValue: (candidate) => candidate.certification.status },
+      { key: "certificateId", header: "Certificate ID", exportValue: (candidate) => candidate.certification.certificateId || "-" },
+      { key: "certifiedOn", header: "Certified On", exportValue: (candidate) => candidate.certification.certifiedOn || "-" },
+      { key: "certificateFile", header: "Certificate File", exportValue: (candidate) => candidate.certification.certificateFile?.name || "Not uploaded" },
+    ],
+    [batchLabel, project.name]
+  );
+
+  const updateCertification = (candidateId, field, value) => {
+    setCertState((current) => {
+      const next = { ...(current[candidateId] || {}), [field]: value };
+      if (field === "status" && value === "Certified" && !next.certifiedOn) {
+        next.certifiedOn = new Date().toISOString().split("T")[0];
+      }
+      if (field === "status" && value !== "Certified") {
+        next.certificateId = "";
+        next.certifiedOn = "";
+        next.certificateFile = null;
+      }
+      return { ...current, [candidateId]: next };
+    });
+  };
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <TableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search certifications..."
+        resultCount={filteredRows.length}
+        onClear={() => {
+          setSearchTerm("");
+          setStatusFilter("");
+        }}
+      >
+        <FilterSelect label="Status" value={statusFilter} onChange={setStatusFilter} options={CERTIFICATION_STATUSES} />
+        <TableExportActions
+          moduleName="Certification"
+          fileName="certification"
+          columns={exportColumns}
+          rows={filteredRows}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </TableToolbar>
+      <div className="max-h-[560px] overflow-auto">
+        <table className="w-full min-w-[1420px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Student</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">Attendance</th>
+              <th className="px-4 py-3 font-medium">Module</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium">Certificate ID</th>
+              <th className="px-4 py-3 font-medium">Certified On</th>
+              <th className="px-4 py-3 font-medium">Super Admin Certificate</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredRows.map((candidate) => {
+              const disabled = candidate.certification.status !== "Certified";
+              return (
+                <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-white">{candidate.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
+                  </td>
+                  <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                  <td className="px-4 py-4">
+                    <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                      {batchLabel}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4"><ProgressValue value={candidate.attendanceRate} /></td>
+                  <td className="px-4 py-4"><ProgressValue value={candidate.trainingProgress} /></td>
+                  <td className="px-4 py-4">
+                    {readOnly ? (
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-black ${getTrainingStatusMeta(candidate.certification.status || "Pending").badgeClass}`}>
+                        {candidate.certification.status || "Pending"}
+                      </span>
+                    ) : (
+                      <select
+                        value={candidate.certification.status || "Pending"}
+                        onChange={(event) => updateCertification(candidate.id, "status", event.target.value)}
+                        className="w-36 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-black text-white outline-none focus:border-violet-400/50"
+                      >
+                        {CERTIFICATION_STATUSES.map((status) => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    {readOnly ? (
+                      <span className="text-xs font-bold text-slate-300">{candidate.certification.certificateId || "—"}</span>
+                    ) : (
+                      <input
+                        value={candidate.certification.certificateId || ""}
+                        onChange={(event) => updateCertification(candidate.id, "certificateId", event.target.value)}
+                        disabled={disabled}
+                        placeholder="Certificate no."
+                        className="w-44 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-bold text-white outline-none placeholder:text-slate-600 focus:border-violet-400/50 disabled:cursor-not-allowed disabled:opacity-45"
+                      />
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    {readOnly ? (
+                      <span className="text-xs font-bold text-slate-300">
+                        {candidate.certification.certifiedOn ? formatDate(candidate.certification.certifiedOn) : "—"}
+                      </span>
+                    ) : (
+                      <input
+                        type="date"
+                        value={candidate.certification.certifiedOn || ""}
+                        onChange={(event) => updateCertification(candidate.id, "certifiedOn", event.target.value)}
+                        disabled={disabled}
+                        className="w-36 rounded-xl border border-white/10 bg-[#0b1220] px-3 py-2 text-xs font-bold text-white outline-none focus:border-violet-400/50 disabled:cursor-not-allowed disabled:opacity-45"
+                      />
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    {candidate.certification.certificateFile ? (
+                      <div className="min-w-52 rounded-xl border border-emerald-400/20 bg-emerald-500/10 p-3">
+                        <div className="flex items-start gap-2">
+                          <FileText size={14} className="mt-0.5 shrink-0 text-emerald-300" />
+                          <div className="min-w-0">
+                            <p className="truncate text-xs font-black text-white">
+                              {candidate.certification.certificateFile.name}
+                            </p>
+                            <p className="mt-1 text-[11px] font-bold text-emerald-200/75">
+                              Uploaded by {candidate.certification.certificateFile.uploadedBy || "Super Admin"} on {candidate.certification.certificateFile.uploadedOn}
+                            </p>
+                          </div>
+                        </div>
+                        <a
+                          href={candidate.certification.certificateFile.url}
+                          download={candidate.certification.certificateFile.name}
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-400/20 px-3 py-2 text-xs font-black text-emerald-200 transition hover:bg-emerald-500/15"
+                        >
+                          <Download size={13} />
+                          Download
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="inline-flex min-w-52 items-center justify-center rounded-xl border border-slate-700 bg-[#0b1220] px-3 py-2.5 text-xs font-black text-white/35">
+                        Awaiting Super Admin upload
+                      </span>
+                    )}
+                    {candidate.certification.certificateFile?.uploadedOn && (
+                      <p className="mt-1 text-[11px] font-bold text-emerald-300">Ready to download</p>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {!filteredRows.length && (
+              <tr>
+                <td colSpan={9} className="px-4 py-12 text-center text-sm font-bold text-slate-500">
+                  No certification records match the current filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function EnrollmentApprovalTable({
   candidates,
   project,
   center,
   batchLabel,
   enrollmentState,
+  readOnly = false,
   onUpdateEnrollmentStatus,
 }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -2265,21 +3523,34 @@ function EnrollmentApprovalTable({
           company={{ name: "Pantiss ERP", logo: "/activity.png" }}
         />
       </TableToolbar>
-      <div className="max-h-[560px] overflow-auto">
-        <table className="w-full min-w-[1680px] text-left text-sm">
+      <div className="max-h-[620px] overflow-auto">
+        <table className="w-full min-w-[1960px] table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[260px]" />
+            <col className="w-[250px]" />
+            <col className="w-[190px]" />
+            <col className="w-[150px]" />
+            <col className="w-[160px]" />
+            <col className="w-[270px]" />
+            <col className="w-[160px]" />
+            <col className="w-[250px]" />
+            <col className="w-[140px]" />
+            <col className="w-[140px]" />
+            <col className="w-[190px]" />
+          </colgroup>
           <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
             <tr>
-              <th className="px-4 py-3 font-medium">Candidate</th>
-              <th className="px-4 py-3 font-medium">School / Center</th>
-              <th className="px-4 py-3 font-medium">Job Role</th>
-              <th className="px-4 py-3 font-medium">Aadhaar</th>
-              <th className="px-4 py-3 font-medium">DOB / Gender</th>
-              <th className="px-4 py-3 font-medium">Qualification</th>
-              <th className="px-4 py-3 font-medium">Experience</th>
-              <th className="px-4 py-3 font-medium">Documents</th>
-              <th className="px-4 py-3 font-medium">Submitted</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Action</th>
+              <th className="px-5 py-3.5 font-medium">Candidate</th>
+              <th className="px-5 py-3.5 font-medium">Project / Center</th>
+              <th className="px-5 py-3.5 font-medium">Job Role</th>
+              <th className="px-5 py-3.5 font-medium">Aadhaar</th>
+              <th className="px-5 py-3.5 font-medium">DOB / Gender</th>
+              <th className="px-5 py-3.5 font-medium">Qualification</th>
+              <th className="px-5 py-3.5 font-medium">Experience</th>
+              <th className="px-5 py-3.5 font-medium">Documents</th>
+              <th className="px-5 py-3.5 font-medium">Submitted</th>
+              <th className="px-5 py-3.5 font-medium">Status</th>
+              <th className="px-5 py-3.5 text-right font-medium">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/10">
@@ -2287,50 +3558,56 @@ function EnrollmentApprovalTable({
               const status = enrollmentState[candidate.id] || candidate.enrollmentStatus;
               return (
                 <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
+                  <td className="px-5 py-5">
+                    <div className="flex items-start gap-3">
                       {candidate.livePhoto ? (
                         <img
                           src={candidate.livePhoto}
                           alt=""
-                          className="h-10 w-10 rounded-lg border border-white/10 object-cover"
+                          className="h-12 w-12 shrink-0 rounded-xl border border-white/10 object-cover"
                         />
                       ) : null}
-                      <div>
-                        <p className="font-medium text-white">{candidate.name}</p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {candidate.candidateCode} • {candidate.phone}
-                        </p>
-                        <p className="mt-1 text-xs text-slate-500">{candidate.mobilizer}</p>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-white">{candidate.name}</p>
+                        <p className="mt-1 text-xs font-semibold text-slate-400">{candidate.candidateCode}</p>
+                        <p className="mt-2 truncate text-xs text-slate-500">{candidate.phone}</p>
+                        <p className="mt-1 truncate text-xs text-slate-500">Mobilizer: {candidate.mobilizer}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-4">
-                    <p className="text-slate-300">{project.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">{center.name} • {batchLabel}</p>
+                  <td className="px-5 py-5">
+                    <p className="line-clamp-2 font-medium leading-5 text-slate-200">{project.name}</p>
+                    <p className="mt-2 text-xs text-slate-500">{center.name}</p>
+                    <span className="mt-2 inline-flex rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+                      {batchLabel}
+                    </span>
                   </td>
-                  <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
-                  <td className="px-4 py-4 text-slate-300">{candidate.aadharNumber || "—"}</td>
-                  <td className="px-4 py-4">
+                  <td className="px-5 py-5">
+                    <span className="inline-flex rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold leading-5 text-slate-200">
+                      {candidate.jobRole}
+                    </span>
+                  </td>
+                  <td className="px-5 py-5 text-slate-300">{candidate.aadharNumber || "—"}</td>
+                  <td className="px-5 py-5">
                     <p className="text-slate-300">{candidate.dateOfBirth || "—"}</p>
                     <p className="mt-1 text-xs text-slate-500">{candidate.gender || "—"}</p>
                   </td>
-                  <td className="px-4 py-4">
-                    <p className="text-slate-300">{candidate.qualificationLevel || "—"}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {[candidate.qualificationTrade, candidate.qualificationInstitute, candidate.qualificationYear]
-                        .filter(Boolean)
-                        .join(" • ") || "—"}
-                    </p>
+                  <td className="px-5 py-5">
+                    <p className="font-medium text-slate-200">{candidate.qualificationLevel || "—"}</p>
+                    <div className="mt-2 space-y-1 text-xs text-slate-500">
+                      <p className="truncate">{candidate.qualificationTrade || "—"}</p>
+                      <p className="truncate">{candidate.qualificationInstitute || "—"}</p>
+                      <p>{candidate.qualificationYear || "—"}</p>
+                    </div>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-5 py-5">
                     <p className="text-slate-300">{formatEnrollmentExperience(candidate.experienceYears)}</p>
                     <p className="mt-1 text-xs text-slate-500">
                       Employed: {candidate.currentlyEmployed || "—"}
                     </p>
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex flex-wrap gap-2">
+                  <td className="px-5 py-5">
+                    <div className="grid grid-cols-2 gap-2">
                       {ENROLLMENT_DOCUMENT_FIELDS.map((field) => {
                         const file = candidate.enrollmentDocuments?.[field.key];
                         const available = Boolean(getEnrollmentDocumentUrl(file));
@@ -2346,39 +3623,39 @@ function EnrollmentApprovalTable({
                                 candidate,
                               })
                             }
-                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs ${
+                            className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold ${
                               available
                                 ? "border-violet-400/20 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20"
                                 : "cursor-not-allowed border-white/10 text-slate-600"
                             }`}
                           >
                             <FileText size={12} />
-                            {field.label.split(" ")[0]}
+                            <span className="truncate">{field.label.split(" ")[0]}</span>
                           </button>
                         );
                       })}
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-slate-300">{candidate.enrollmentDate}</td>
-                  <td className="px-4 py-4">
+                  <td className="px-5 py-5 text-slate-300">{candidate.enrollmentDate}</td>
+                  <td className="px-5 py-5">
                     <EnrollmentStatusBadge status={status} />
                   </td>
-                  <td className="px-4 py-4 text-right">
-                    <div className="inline-flex items-center gap-2">
+                  <td className="px-5 py-5 text-right">
+                    <div className="inline-flex flex-col items-end gap-2">
                       <button
                         type="button"
                         onClick={() => setViewEnrollmentCandidate(candidate)}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.08]"
+                        className="inline-flex w-full min-w-24 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.08]"
                       >
                         <Eye size={13} />
                         View
                       </button>
-                      {status === "Pending" ? (
+                      {!readOnly && status === "Pending" ? (
                         <>
                         <button
                           type="button"
                           onClick={() => onUpdateEnrollmentStatus(candidate.id, "Approved")}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+                          className="inline-flex w-full min-w-24 items-center justify-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
                         >
                           <CheckCircle size={13} />
                           Approve
@@ -2386,7 +3663,7 @@ function EnrollmentApprovalTable({
                         <button
                           type="button"
                           onClick={() => onUpdateEnrollmentStatus(candidate.id, "Rejected")}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
+                          className="inline-flex w-full min-w-24 items-center justify-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
                         >
                           <XCircle size={13} />
                           Reject
@@ -2880,6 +4157,7 @@ function PlacementsTable({
   project,
   batchLabel,
   verificationState,
+  readOnly = false,
   onToggleVerification,
 }) {
   const [previewDoc, setPreviewDoc] = useState(null);
@@ -3101,10 +4379,14 @@ function PlacementsTable({
                   </td>
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
-                      <VerificationToggle
-                        isVerified={verificationState[candidate.id]}
-                        onToggle={() => onToggleVerification(candidate.id)}
-                      />
+                      {readOnly ? (
+                        <span className={`h-2.5 w-2.5 rounded-full ${verificationState[candidate.id] ? "bg-emerald-400" : "bg-slate-500"}`} />
+                      ) : (
+                        <VerificationToggle
+                          isVerified={verificationState[candidate.id]}
+                          onToggle={() => onToggleVerification(candidate.id)}
+                        />
+                      )}
                       <span
                         className={`text-xs font-semibold ${
                           verificationState[candidate.id]

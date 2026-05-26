@@ -976,15 +976,13 @@ function CenterGallery({ project, center }) {
         </div>
       </div>
 
-      <div className="grid auto-rows-[190px] gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {visibleItems.map((item, index) => (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {visibleItems.map((item) => (
           <button
             type="button"
             key={item.id}
             onClick={() => setSelectedItem(item)}
-            className={`group relative overflow-hidden rounded-[20px] border border-white/10 bg-black/20 text-left shadow-[0_18px_50px_rgba(2,6,23,0.28)] transition hover:-translate-y-0.5 hover:border-violet-400/40 focus:outline-none focus:ring-2 focus:ring-violet-300/50 ${
-              index === 0 ? "md:col-span-2 md:row-span-2" : ""
-            }`}
+            className="group relative aspect-[4/3] overflow-hidden rounded-[20px] border border-white/10 bg-black/20 text-left shadow-[0_18px_50px_rgba(2,6,23,0.28)] transition hover:-translate-y-0.5 hover:border-violet-400/40 focus:outline-none focus:ring-2 focus:ring-violet-300/50"
           >
             <img
               src={item.src}

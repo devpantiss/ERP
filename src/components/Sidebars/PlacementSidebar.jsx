@@ -18,6 +18,7 @@ import {
   Receipt,
   MessageSquareWarning,
   MapPinned,
+  Quote,
 } from "lucide-react";
 
 /* ================= MENU CONFIG ================= */
@@ -28,6 +29,7 @@ const TOP_MENU = [
   { label: "Opening Dashboard", path: "/placement-officer/job-openings", icon: LayoutDashboard },
   { label: "Placement Drives", path: "/placement-officer/placement-drives", icon: CalendarCheck },
   { label: "Placement List", path: "/placement-officer/placements-list", icon: List },
+  { label: "Testimonials", path: "/placement-officer/testimonials", icon: Quote },
 ];
 
 const HR_MENU = [

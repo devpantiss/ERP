@@ -77,6 +77,8 @@ export function selectEnrollmentCatalog(records = denormalize(mockDb.projects)) 
 export function selectAdminProjectReports(records = denormalize(mockDb.projects)) {
   return records.map((project) => {
     const fundingAgency = mockDb.fundingAgencies.byId[project.fundingAgencyId]
+    const projectEmployees = denormalize(mockDb.employees).filter((employee) => employee.projectIds?.includes(project.id))
+    const projectIncharge = projectEmployees.find((employee) => employee.designation === "Project Admin")
     const centers = denormalize(mockDb.centers)
       .filter((center) => center.projectId === project.id)
       .map((center) => {
@@ -153,6 +155,27 @@ export function selectAdminProjectReports(records = denormalize(mockDb.projects)
       name: project.name,
       fundingAgency: fundingAgency?.shortName || fundingAgency?.name || "-",
       fundingAgencyName: fundingAgency?.name || fundingAgency?.shortName || "-",
+      projectIncharge: projectIncharge
+        ? {
+            id: projectIncharge.id,
+            name: getEmployeeName(projectIncharge),
+            designation: projectIncharge.designation,
+            email: projectIncharge.email,
+            phone: projectIncharge.phone,
+            employeeCode: projectIncharge.employeeCode,
+            status: projectIncharge.status,
+          }
+        : null,
+      associatedEmployees: projectEmployees.map((employee) => ({
+        id: employee.id,
+        name: getEmployeeName(employee),
+        designation: employee.designation,
+        email: employee.email,
+        phone: employee.phone,
+        employeeCode: employee.employeeCode,
+        status: employee.status,
+        centerIds: employee.centerIds || [],
+      })),
       status: project.status === "ACTIVE" ? "Active" : project.status === "MONITORING" ? "Monitoring" : project.status,
       startDate: project.startDate,
       endDate: project.endDate,

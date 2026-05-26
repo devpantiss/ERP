@@ -19,41 +19,49 @@ import {
   Activity,
   CalendarDays,
   Camera,
+  FileCheck,
   Megaphone,
+  MapPinned,
   MessageSquareWarning,
   ReceiptText,
   Wallet,
   HandCoins,
+  Award,
+  ShieldCheck,
+  Target,
 } from "lucide-react";
 
 /* ================= MENU CONFIG ================= */
 
 const SECTIONS = [
   {
-    key: "operations",
-    title: "Operations",
+    key: "project-details",
+    title: "Projects",
     icon: FolderKanban,
     items: [
+      { label: "Project Details", path: "/super-admin/project-details", icon: FolderKanban },
       { label: "Candidate Details", path: "/super-admin/candidate-details", icon: Users },
-      { heading: "Training" },
-      { label: "Training Tracking", path: "/super-admin/training-tracking", icon: Activity },
-      { label: "Exposure Visits", path: "/super-admin/exposure-visits", icon: Camera },
-      { heading: "Mobilization" },
-      { label: "Mobilization", path: "/super-admin/mobilization", icon: Building2 },
-      { label: "Community Engagement Drives", path: "/super-admin/community-engagement-drives", icon: Megaphone },
-      { heading: "Placements" },
-      { label: "Placement Drives", path: "/super-admin/placement-drives", icon: Briefcase },
-      { label: "Industry Database", path: "/super-admin/industry-database", icon: Building2 },
-      { label: "Openings Dashboard", path: "/super-admin/openings-dashboard", icon: Briefcase },
+      { label: "Batch Certification", path: "/super-admin/batch-certification", icon: Award },
     ],
   },
   {
-    key: "hr",
-    title: "HR Operations",
-    icon: UserCog,
+    key: "approvals",
+    title: "Approvals",
+    icon: FileCheck,
     items: [
-      { label: "Employee Management", path: "/super-admin/employee-management", icon: UserCog },
-      { label: "Leave Monitor", path: "/super-admin/leave-monitor", icon: CalendarDays },
+      { label: "Tour Approvals", path: "/super-admin/approvals/tour", icon: MapPinned },
+      { label: "Leave Approvals", path: "/super-admin/approvals/leave", icon: CalendarDays },
+      { label: "Salary Approvals", path: "/super-admin/approvals/salary", icon: Wallet },
+      { label: "Reimbursement Approvals", path: "/super-admin/approvals/reimbursements", icon: HandCoins },
+      { label: "Operations Approvals", path: "/super-admin/approvals/operations", icon: FileCheck },
+    ],
+  },
+  {
+    key: "industry-database",
+    title: "Industry Database",
+    icon: Building2,
+    items: [
+      { label: "Industry Database", path: "/super-admin/industry-database", icon: Building2 },
     ],
   },
   {
@@ -72,6 +80,7 @@ const SECTIONS = [
       { label: "Salaries", path: "/super-admin/salaries", icon: Wallet },
       { label: "Invoices", path: "/super-admin/invoices", icon: ReceiptText },
       { label: "Reimbursements", path: "/super-admin/reimbursements", icon: HandCoins },
+      { label: "Insurance", path: "/super-admin/student-insurance-details", icon: ShieldCheck },
     ],
   },
   {
@@ -79,6 +88,7 @@ const SECTIONS = [
     title: "Access Control",
     icon: Lock,
     items: [
+      { label: "Access & Target", path: "/super-admin/access-target", icon: Target },
       { label: "User Management", path: "/super-admin/user-management", icon: UserPlus },
       { label: "Create Projects", path: "/super-admin/create-projects", icon: FolderKanban },
     ],
@@ -98,7 +108,7 @@ const SECTIONS = [
 
 const SuperAdminSidebar = () => {
   const [collapsed, setCollapsed] = useState(true);
-  const [openSections, setOpenSections] = useState(["operations"]);
+  const [openSections, setOpenSections] = useState(["project-details"]);
   const location = useLocation();
 
   const toggleSection = (key) => {
@@ -118,10 +128,10 @@ const SuperAdminSidebar = () => {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-16 border-b border-slate-700/50">
-          <span className="perf-sidebar-label text-lg font-bold tracking-tight text-red-500 flex items-center gap-2">
-            <ShieldAlert size={20} className="text-red-500" />
-            Super Admin
-          </span>
+        <span className="perf-sidebar-label text-lg font-bold tracking-tight text-red-500 flex items-center gap-2">
+          <ShieldAlert size={20} className="text-red-500" />
+          Super Admin
+        </span>
         <button
           onClick={() => {
             setCollapsed(!collapsed);
@@ -138,8 +148,7 @@ const SuperAdminSidebar = () => {
           to="/super-admin/dashboard"
           onClick={() => setCollapsed(true)}
           className={({ isActive }) =>
-            `relative mb-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
-              isActive ? "bg-red-500/10 text-red-500" : "text-white/60 hover:bg-transparent hover:text-white"
+            `relative mb-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${isActive ? "bg-red-500/10 text-red-500" : "text-white/60 hover:bg-transparent hover:text-white"
             }`
           }
         >
@@ -165,29 +174,26 @@ const SuperAdminSidebar = () => {
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
                 text-sm font-semibold transition-all duration-200 cursor-pointer
-                ${
-                  isOpen
+                ${isOpen
                     ? "bg-red-500/10 text-red-500"
                     : "text-white/60 hover:bg-transparent hover:text-white"
-                }`}
+                  }`}
               >
                 <SectionIcon size={16} className="shrink-0" />
-                  <>
-                    <span className="perf-sidebar-label flex-1 text-left">{section.title}</span>
-                    <ChevronDown
-                      size={14}
-                      className={`perf-sidebar-label shrink-0 transition-transform duration-200 ${
-                        isOpen ? "rotate-180" : ""
+                <>
+                  <span className="perf-sidebar-label flex-1 text-left">{section.title}</span>
+                  <ChevronDown
+                    size={14}
+                    className={`perf-sidebar-label shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
                       }`}
-                    />
-                  </>
+                  />
+                </>
               </button>
 
               <div className="perf-sidebar-panel">
                 <div
-                  className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                    isOpen ? "max-h-[500px] opacity-100 mt-1" : "max-h-0 opacity-0"
-                  }`}
+                  className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-[500px] opacity-100 mt-1" : "max-h-0 opacity-0"
+                    }`}
                 >
                   <div className="ml-3 pl-3 border-l border-slate-700/50 space-y-1">
                     {section.items.map((item, idx) =>
@@ -207,10 +213,9 @@ const SuperAdminSidebar = () => {
                           className={({ isActive }) =>
                             `relative w-full flex items-center gap-3 px-3 py-2 rounded-lg
                             text-sm font-medium transition-all duration-200
-                            ${
-                              isActive
-                                ? "bg-red-500/10 text-red-500 font-bold"
-                                : "text-white/60 hover:bg-transparent hover:text-white"
+                            ${isActive
+                              ? "bg-red-500/10 text-red-500 font-bold"
+                              : "text-white/60 hover:bg-transparent hover:text-white"
                             }`
                           }
                         >
@@ -246,10 +251,10 @@ const SuperAdminSidebar = () => {
           <LogOut size={18} />
           <span className="perf-sidebar-label">Exit to Portal</span>
         </Link>
-          <div className="perf-sidebar-label px-3 text-[10px] text-slate-500">
-            <p className="font-bold text-red-600/80 uppercase">Super Admin</p>
-            <p>Master Console v3.0</p>
-          </div>
+        <div className="perf-sidebar-label px-3 text-[10px] text-slate-500">
+          <p className="font-bold text-red-600/80 uppercase">Super Admin</p>
+          <p>Master Console v3.0</p>
+        </div>
       </div>
     </aside>
   );

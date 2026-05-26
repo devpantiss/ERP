@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { Briefcase, Search, CalendarDays, Users, ChevronRight, Trophy, Building2 } from "lucide-react";
+import { Briefcase, Search, CalendarDays, Users, ChevronRight, Trophy, Building2, FileText, ExternalLink } from "lucide-react";
+import SlidePanel from "../../components/common/SlidePanel";
 import { ProjectCard, BackButton, PageHeader, Breadcrumb, usePagination, Pagination } from "./SuperAdminSharedComponents";
 import { usePlacementStore } from "../../stores/placementStore";
 import { useProjectStore } from "../../stores/projectStore";
@@ -14,12 +15,46 @@ const STATUS_BADGE = {
   Pending: "bg-amber-500/10 text-amber-400",
 };
 
+const SAMPLE_DOCUMENT_URL = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+
+const buildPlacementDriveDocuments = (drive) => [
+  {
+    key: "invitation",
+    label: "Employer Invitation",
+    name: `${drive.company || "company"}-drive-invitation.pdf`,
+    url: SAMPLE_DOCUMENT_URL,
+    uploadedOn: drive.date,
+  },
+  {
+    key: "attendance",
+    label: "Candidate Attendance Sheet",
+    name: `${drive.driveName || "placement-drive"}-attendance.pdf`,
+    url: SAMPLE_DOCUMENT_URL,
+    uploadedOn: drive.date,
+  },
+  {
+    key: "selection",
+    label: "Selection List",
+    name: `${drive.company || "company"}-selection-list.pdf`,
+    url: SAMPLE_DOCUMENT_URL,
+    uploadedOn: drive.date,
+  },
+  {
+    key: "offer",
+    label: "Offer Letter Bundle",
+    name: `${drive.company || "company"}-offer-letters.pdf`,
+    url: SAMPLE_DOCUMENT_URL,
+    uploadedOn: drive.date,
+  },
+];
+
 export default function SuperAdminPlacementDrives() {
   const { records: projectRecords, fetchAll: fetchProjects } = useProjectStore();
   const { drives: driveRecords, fetchDrives } = usePlacementStore();
   const [projectId, setProjectId] = useState(null);
   const [driveId, setDriveId] = useState(null);
   const [search, setSearch] = useState("");
+  const [documentDrive, setDocumentDrive] = useState(null);
 
   useEffect(() => {
     fetchProjects();
@@ -145,6 +180,7 @@ export default function SuperAdminPlacementDrives() {
               { label: "Date", value: drive.date, color: "text-white" },
               { label: "Participated", value: drive.participated, color: "text-cyan-300" },
               { label: "Selected", value: drive.selected, color: "text-emerald-300" },
+              { label: "Documents", value: buildPlacementDriveDocuments(drive).length, color: "text-violet-300" },
             ].map((s) => (
               <div key={s.label} className="rounded-2xl border border-slate-700/50 bg-[#111827]/80 p-4 text-center backdrop-blur-sm">
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">{s.label}</p>
@@ -152,6 +188,25 @@ export default function SuperAdminPlacementDrives() {
               </div>
             ))}
           </div>
+
+          <section className="rounded-2xl border border-violet-400/20 bg-violet-500/[0.04] p-5 backdrop-blur-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.16em] text-violet-200">Uploaded Documents</p>
+                <p className="mt-1 text-xs text-violet-100/45">
+                  Review invitation, attendance, selection, and offer documents in the project-style overlay.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDocumentDrive(drive)}
+                className="inline-flex w-fit items-center gap-2 rounded-xl border border-violet-400/25 bg-violet-500/10 px-4 py-2.5 text-xs font-black uppercase text-violet-100 transition hover:border-violet-300/50 hover:bg-violet-500/20"
+              >
+                <FileText size={14} />
+                View Documents
+              </button>
+            </div>
+          </section>
 
           <section className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.04] backdrop-blur-sm">
             <div className="flex flex-col gap-2 border-b border-emerald-400/10 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -261,7 +316,69 @@ export default function SuperAdminPlacementDrives() {
           </div>
         </>
       )}
+
+      <PlacementDriveDocumentPanel
+        drive={documentDrive}
+        onClose={() => setDocumentDrive(null)}
+      />
     </div>
+  );
+}
+
+function PlacementDriveDocumentPanel({ drive, onClose }) {
+  const documents = useMemo(() => (drive ? buildPlacementDriveDocuments(drive) : []), [drive]);
+  const [activeKey, setActiveKey] = useState("");
+
+  useEffect(() => {
+    setActiveKey(documents[0]?.key || "");
+  }, [documents]);
+
+  const activeDocument = documents.find((document) => document.key === activeKey) || documents[0];
+
+  return (
+    <SlidePanel open={!!drive} onClose={onClose} title={drive?.driveName || "Placement Drive Documents"} width="3xl">
+      {drive ? (
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-violet-400/15 bg-violet-500/[0.06] p-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-200">Zoho Projects Style Document Review</p>
+            <p className="mt-2 text-sm font-black text-white">{drive.company}</p>
+            <p className="mt-1 text-xs text-slate-400">{drive.date} • {drive.participated} participated • {drive.selected} selected</p>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto border-b border-white/10">
+            {documents.map((document) => (
+              <button
+                key={document.key}
+                type="button"
+                onClick={() => setActiveKey(document.key)}
+                className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-xs font-black transition ${
+                  activeDocument?.key === document.key ? "border-violet-400 text-violet-200" : "border-transparent text-slate-500 hover:text-white"
+                }`}
+              >
+                <FileText size={14} />
+                {document.label}
+              </button>
+            ))}
+          </div>
+
+          {activeDocument && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-black text-white">{activeDocument.label}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{activeDocument.name} • Uploaded {activeDocument.uploadedOn}</p>
+                </div>
+                <a href={activeDocument.url} target="_blank" rel="noreferrer" className="inline-flex w-fit items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-black text-slate-200 transition hover:border-violet-400/35 hover:bg-violet-500/15 hover:text-white">
+                  <ExternalLink size={13} />
+                  Open file
+                </a>
+              </div>
+              <iframe src={activeDocument.url} title={activeDocument.label} className="h-[clamp(260px,calc(100vh-31rem),520px)] w-full rounded-2xl border border-white/10 bg-white" />
+            </div>
+          )}
+        </div>
+      ) : null}
+    </SlidePanel>
   );
 }
 
