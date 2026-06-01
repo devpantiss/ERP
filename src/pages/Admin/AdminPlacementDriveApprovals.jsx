@@ -1,7 +1,9 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildPlacementDriveAuditTrail } from "../../utils/auditTrailHelpers";
 import { useState, useMemo } from "react";
-import { CheckCircle, XCircle, Eye, MapPin, Calendar } from "lucide-react";
+import { CheckCircle, XCircle, Eye, MapPin, Calendar, History } from "lucide-react";
 
 const DRIVES = Array.from({ length: 15 }, (_, i) => ({
   id: i + 1,
@@ -22,6 +24,7 @@ export default function AdminPlacementDriveApprovals() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [officerFilter, setOfficerFilter] = useState("All");
   const [previewImage, setPreviewImage] = useState(null);
+  const [auditDrive, setAuditDrive] = useState(null);
 
   const officers = ["All", ...new Set(DRIVES.map((d) => d.officer))];
 
@@ -125,16 +128,17 @@ export default function AdminPlacementDriveApprovals() {
                   <td className="p-4 text-center">
                     {d.image ? <img src={d.image} onClick={() => setPreviewImage(d.image)} className="w-12 h-8 rounded cursor-pointer border border-slate-700 mx-auto object-cover hover:scale-110 transition" /> : <span className="text-xs text-slate-600">—</span>}
                   </td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-center gap-2">
-                      {d.status === "Pending" && (
-                        <>
-                          <button onClick={() => approve(d.id)} className="p-1.5 rounded-lg hover:bg-emerald-500/10"><CheckCircle size={15} className="text-emerald-400" /></button>
-                          <button onClick={() => reject(d.id)} className="p-1.5 rounded-lg hover:bg-red-500/10"><XCircle size={15} className="text-red-400" /></button>
-                        </>
-                      )}
-                    </div>
-                  </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-center gap-2">
+                        {d.status === "Pending" && (
+                          <>
+                            <button onClick={() => approve(d.id)} className="p-1.5 rounded-lg hover:bg-emerald-500/10"><CheckCircle size={15} className="text-emerald-400" /></button>
+                            <button onClick={() => reject(d.id)} className="p-1.5 rounded-lg hover:bg-red-500/10"><XCircle size={15} className="text-red-400" /></button>
+                          </>
+                        )}
+                        <button onClick={() => setAuditDrive(d)} className="p-1.5 rounded-lg hover:bg-violet-500/10" title="Audit Trail"><History size={15} className="text-violet-400" /></button>
+                      </div>
+                    </td>
                 </tr>
               ))}
             </tbody>
@@ -145,6 +149,23 @@ export default function AdminPlacementDriveApprovals() {
 
       <SlidePanel open={!!previewImage} onClose={() => setPreviewImage(null)} title="Details" width="lg">
           <img src={previewImage} className="max-w-xl rounded-lg" />
+      </SlidePanel>
+
+      <SlidePanel
+        open={Boolean(auditDrive)}
+        onClose={() => setAuditDrive(null)}
+        title="Placement Drive — Audit Trail"
+        width="md"
+      >
+        {auditDrive && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-sm font-semibold text-white">{auditDrive.name}</p>
+              <p className="mt-1 text-xs text-white/45">{auditDrive.officer} • {auditDrive.company} • {auditDrive.trade}</p>
+            </div>
+            <AuditTrail entries={buildPlacementDriveAuditTrail(auditDrive)} tone="violet" />
+          </div>
+        )}
       </SlidePanel>
     </div>
   );

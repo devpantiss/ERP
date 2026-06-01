@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, Clock, Users, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, Users, XCircle } from "lucide-react";
 import { readLeaveRequests, ROLE_LABEL, writeLeaveRequests } from "../shared/leaveWorkflow";
 
 const formatDate = (date) =>
@@ -12,16 +12,23 @@ const formatDate = (date) =>
 export default function SuperAdminLeaveMonitor() {
   const [requests, setRequests] = useState(() => readLeaveRequests());
   const [rejectDraft, setRejectDraft] = useState(null);
+  const adminClearedRequests = useMemo(
+    () => requests.filter((request) => (
+      request.status === "Pending Super Admin Review" ||
+      request.status === "Approved" ||
+      (request.status === "Rejected" && Boolean(request.superAdminDecision || request.superAdminRejectionReason))
+    )),
+    [requests]
+  );
 
   const summary = useMemo(
     () => ({
-      total: requests.length,
-      pending: requests.filter((request) => request.status === "Pending Admin Review").length,
-      finalPending: requests.filter((request) => request.status === "Pending Super Admin Review").length,
-      approved: requests.filter((request) => request.status === "Approved").length,
-      rejected: requests.filter((request) => request.status === "Rejected").length,
+      total: adminClearedRequests.length,
+      finalPending: adminClearedRequests.filter((request) => request.status === "Pending Super Admin Review").length,
+      approved: adminClearedRequests.filter((request) => request.status === "Approved").length,
+      rejected: adminClearedRequests.filter((request) => request.status === "Rejected").length,
     }),
-    [requests]
+    [adminClearedRequests]
   );
 
   const decide = (id, status, rejectionReason = "") => {
@@ -69,10 +76,10 @@ export default function SuperAdminLeaveMonitor() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat icon={Users} label="Total Requests" value={summary.total} />
-        <Stat icon={Clock} label="Pending Admin" value={summary.pending} />
+        <Stat icon={Users} label="Admin Cleared" value={summary.total} />
         <Stat icon={CalendarDays} label="Pending Final" value={summary.finalPending} />
         <Stat icon={CheckCircle2} label="Approved" value={summary.approved} />
+        <Stat icon={XCircle} label="Rejected" value={summary.rejected} />
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0b1220]/80 shadow-xl shadow-black/20">
@@ -84,7 +91,7 @@ export default function SuperAdminLeaveMonitor() {
             </p>
           </div>
           <span className="inline-flex w-fit rounded-full border border-red-400/20 bg-red-500/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-red-300">
-            {requests.length} records
+            {adminClearedRequests.length} records
           </span>
         </div>
         <div className="overflow-x-auto">
@@ -99,7 +106,7 @@ export default function SuperAdminLeaveMonitor() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.07]">
-              {requests.map((request) => (
+              {adminClearedRequests.map((request) => (
                 <tr key={request.id} className="align-top transition hover:bg-white/[0.025]">
                   <td className="px-6 py-5">
                     <div className="min-w-[190px]">

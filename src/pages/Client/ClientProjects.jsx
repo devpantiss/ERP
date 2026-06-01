@@ -13,6 +13,7 @@ import {
   CircleAlert,
   Download,
   Eye,
+  FileSpreadsheet,
   FileText,
   GraduationCap,
   MapPin,
@@ -23,7 +24,9 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { toast } from "react-toastify";
 import TableExportActions from "../../components/common/TableExportActions";
+import { exportWorkbookToExcel } from "../../utils/export/tableExportUtils";
 import { Header, Stat } from "./ClientDashboard";
 import {
   buildClientProjectSnapshot,
@@ -59,6 +62,7 @@ export function ClientProjectDetail() {
   const project = getClientProjects(client.name).find((item) => item.id === projectId);
   const [selectedCenterId, setSelectedCenterId] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState("");
+  const [centralExporting, setCentralExporting] = useState(false);
   const batchRefs = useRef({});
   const snapshot = useMemo(() => (project ? buildClientProjectSnapshot(project) : null), [project]);
 
@@ -102,6 +106,25 @@ export function ClientProjectDetail() {
   const handleCenterChange = (centerId) => {
     setSelectedCenterId(centerId);
     setSelectedBatchId("");
+  };
+
+  const handleCentralListDownload = async () => {
+    if (!snapshot) return;
+
+    try {
+      setCentralExporting(true);
+      await exportWorkbookToExcel({
+        sheets: buildClientCentralWorkbookSheets(snapshot, project),
+        fileName: `${project.name}_central_list`,
+        company: { name: "Pantiss ERP", logo: "/activity.png" },
+      });
+      toast.success("Central list workbook downloaded.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Unable to download central list workbook.");
+    } finally {
+      setCentralExporting(false);
+    }
   };
 
   return (
@@ -184,7 +207,18 @@ export function ClientProjectDetail() {
                   Batch-wise learners, certification, placement, attendance, and assessment status.
                 </p>
               </div>
-              <Health value={selectedCenter.health} />
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleCentralListDownload}
+                  disabled={centralExporting}
+                  className="inline-flex h-10 items-center gap-2 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <FileSpreadsheet size={16} />
+                  {centralExporting ? "Preparing..." : "Central List"}
+                </button>
+                <Health value={selectedCenter.health} />
+              </div>
             </div>
 
             <div className="mt-5 space-y-3">
@@ -236,6 +270,7 @@ export function ClientProjectDetail() {
             </div>
           </section>
 
+          <ClientOperationsEvidenceSections project={project} center={selectedCenter} />
           <CenterGallery project={project} center={selectedCenter} />
         </div>
       )}
@@ -257,6 +292,8 @@ function ClientBatchStudentDetails({
   const tabs = [
     { key: "enrollment", label: "Enrollment" },
     { key: "training", label: "Training Detail" },
+    { key: "certified", label: "Certified List" },
+    { key: "kit", label: "Kit Distribution" },
     { key: "placements", label: "Placements" },
   ];
 
@@ -290,6 +327,10 @@ function ClientBatchStudentDetails({
 
       {activeView === "enrollment" ? (
         <ClientEnrollmentRoster candidates={candidates} center={center} project={project} batchLabel={batch.label} />
+      ) : activeView === "certified" ? (
+        <ClientCertifiedRoster candidates={candidates} project={project} batchLabel={batch.label} />
+      ) : activeView === "kit" ? (
+        <ClientKitDistributionRoster candidates={candidates} center={center} project={project} batchLabel={batch.label} />
       ) : activeView === "placements" ? (
         <ClientPlacementRoster candidates={candidates} project={project} batchLabel={batch.label} />
       ) : (
@@ -300,6 +341,13 @@ function ClientBatchStudentDetails({
 }
 
 const TRAINING_STATUS_ORDER = ["In Progress", "Assessment Due", "Certified"];
+
+const KIT_ITEM_CONFIG = [
+  { key: "safetyKit", label: "Safety Kit" },
+  { key: "shoes", label: "Shoes" },
+  { key: "uniform", label: "Uniform" },
+  { key: "trainingKit", label: "Training Kit" },
+];
 
 function normalizeClientCandidate(candidate, index, batch) {
   const seed = index + batch.label.length;
@@ -327,6 +375,10 @@ function normalizeClientCandidate(candidate, index, batch) {
     hasM3: isPlaced && seed % 3 !== 0,
     hasOfferLetter: isPlaced,
     isVerified: isPlaced && seed % 4 !== 0,
+    kitIssued: seed % 5 !== 1,
+    kitIssuedOn: `2026-${String((seed % 6) + 2).padStart(2, "0")}-${String((seed % 22) + 1).padStart(2, "0")}`,
+    kitItems: ["Uniform", "Shoes", "Bag", "Study Material", "Safety Gear"],
+    kitProofFile: seed % 5 !== 1 ? `${candidate.code || candidate.id}-kit-proof.jpg` : "",
     joiningDate: isPlaced ? `2026-${String((seed % 6) + 4).padStart(2, "0")}-${String((seed % 22) + 1).padStart(2, "0")}` : "",
     mobilizer: ["Field Mobilizer", "Community Mobilizer", "Enrollment Desk"][seed % 3],
     phone: `9${String(800000000 + seed * 1379).slice(0, 9)}`,
@@ -339,6 +391,165 @@ function normalizeClientCandidate(candidate, index, batch) {
     totalTheoryHours: completedTrainingDays * 3 + (seed % 4) * 6,
     totalTrainingDays,
   };
+}
+
+function getAllClientProjectCandidates(snapshot, project) {
+  return snapshot.centers.flatMap((center) =>
+    center.batches.flatMap((batch) =>
+      (batch.candidateRecords || []).map((candidate, index) => ({
+        ...normalizeClientCandidate(candidate, index, batch),
+        batchLabel: batch.label,
+        batchTrack: batch.track,
+        centerLocation: center.location,
+        centerName: center.name,
+        projectName: project.name,
+      }))
+    )
+  );
+}
+
+function buildClientCentralWorkbookSheets(snapshot, project) {
+  const candidates = getAllClientProjectCandidates(snapshot, project);
+  const certifiedRows = candidates
+    .filter((candidate) => candidate.trainingStatus === "Certified")
+    .map((candidate, index) => ({
+      ...candidate,
+      certificateId: `CERT-${candidate.candidateCode || index + 1}`,
+      certifiedOn: `2026-${String((index % 5) + 4).padStart(2, "0")}-${String((index % 23) + 1).padStart(2, "0")}`,
+    }));
+  const kitRows = candidates.map((candidate, index) => {
+    const issued = {
+      safetyKit: candidate.kitIssued,
+      shoes: candidate.kitIssued && index % 4 !== 1,
+      uniform: candidate.kitIssued && index % 5 !== 2,
+      trainingKit: candidate.kitIssued && index % 6 !== 3,
+    };
+    const issuedCount = KIT_ITEM_CONFIG.filter((item) => issued[item.key]).length;
+
+    return {
+      ...candidate,
+      safetyKit: issued.safetyKit ? "Issued" : "Pending",
+      shoes: issued.shoes ? "Issued" : "Pending",
+      uniform: issued.uniform ? "Issued" : "Pending",
+      trainingKit: issued.trainingKit ? "Issued" : "Pending",
+      proofImageName: candidate.kitProofFile || "Not uploaded",
+      status: issuedCount === KIT_ITEM_CONFIG.length ? "Completed" : issuedCount > 0 ? "Partial" : "Pending",
+    };
+  });
+  const placementRows = candidates
+    .filter((candidate) => candidate.placementStatus === "Placed")
+    .map((candidate) => ({
+      ...candidate,
+      bankStatement: candidate.hasBankStatement ? "Available" : "Missing",
+      m1: candidate.hasM1 ? "Available" : "Missing",
+      m2: candidate.hasM2 ? "Available" : "Missing",
+      m3: candidate.hasM3 ? "Available" : "Missing",
+      offerLetter: candidate.hasOfferLetter ? "Available" : "Missing",
+      verificationStatus: candidate.isVerified ? "Verified" : "Pending",
+    }));
+
+  return [
+    {
+      name: "Enrollment",
+      rows: candidates,
+      columns: [
+        { key: "name", header: "Candidate" },
+        { key: "candidateCode", header: "Candidate Code" },
+        { key: "phone", header: "Phone" },
+        { key: "mobilizer", header: "Mobilizer" },
+        { key: "projectName", header: "Project" },
+        { key: "centerName", header: "Center" },
+        { key: "centerLocation", header: "Location" },
+        { key: "batchLabel", header: "Batch" },
+        { key: "jobRole", header: "Job Role" },
+        { key: "aadharNumber", header: "Aadhaar" },
+        { key: "dateOfBirth", header: "DOB", type: "date" },
+        { key: "gender", header: "Gender" },
+        { key: "qualificationLevel", header: "Qualification" },
+        { key: "qualificationTrade", header: "Trade" },
+        { key: "qualificationInstitute", header: "Institute" },
+        { key: "qualificationYear", header: "Passing Year" },
+        { key: "experienceYears", header: "Experience" },
+        { key: "currentlyEmployed", header: "Currently Employed" },
+        { key: "enrollmentDate", header: "Enrolled On", type: "date" },
+        { key: "enrollmentStatus", header: "Status" },
+      ],
+    },
+    {
+      name: "Training Details",
+      rows: candidates,
+      columns: [
+        { key: "name", header: "Name" },
+        { key: "candidateCode", header: "Candidate Code" },
+        { key: "projectName", header: "Project" },
+        { key: "centerName", header: "Center" },
+        { key: "batchLabel", header: "Batch" },
+        { key: "jobRole", header: "Job Role" },
+        { key: "trainingStatus", header: "Training Status" },
+        { key: "completedTrainingDays", header: "Completed Days", type: "number" },
+        { key: "totalTrainingDays", header: "Total Days", type: "number" },
+        { key: "totalTheoryHours", header: "Theory Hours", type: "number" },
+        { key: "totalPracticalHours", header: "Practical Hours", type: "number" },
+        { key: "attendance", header: "Attendance %", type: "number" },
+      ],
+    },
+    {
+      name: "Certified",
+      rows: certifiedRows,
+      columns: [
+        { key: "name", header: "Student" },
+        { key: "candidateCode", header: "Candidate Code" },
+        { key: "projectName", header: "Project" },
+        { key: "centerName", header: "Center" },
+        { key: "batchLabel", header: "Batch" },
+        { key: "jobRole", header: "Job Role" },
+        { key: "attendance", header: "Attendance %", type: "number" },
+        { key: "trainingStatus", header: "Certification Status" },
+        { key: "certificateId", header: "Certificate ID" },
+        { key: "certifiedOn", header: "Certified On", type: "date" },
+      ],
+    },
+    {
+      name: "Kit Distribution",
+      rows: kitRows,
+      columns: [
+        { key: "name", header: "Student" },
+        { key: "candidateCode", header: "Candidate Code" },
+        { key: "projectName", header: "Project" },
+        { key: "centerName", header: "Center" },
+        { key: "batchLabel", header: "Batch" },
+        { key: "jobRole", header: "Job Role" },
+        { key: "safetyKit", header: "Safety Kit" },
+        { key: "shoes", header: "Shoes" },
+        { key: "uniform", header: "Uniform" },
+        { key: "trainingKit", header: "Training Kit" },
+        { key: "kitIssuedOn", header: "Issued On", type: "date" },
+        { key: "proofImageName", header: "Proof Image" },
+        { key: "status", header: "Status" },
+      ],
+    },
+    {
+      name: "Placements",
+      rows: placementRows,
+      columns: [
+        { key: "name", header: "Student Name" },
+        { key: "candidateCode", header: "Candidate Code" },
+        { key: "projectName", header: "Project" },
+        { key: "centerName", header: "Center" },
+        { key: "batchLabel", header: "Batch" },
+        { key: "company", header: "Company" },
+        { key: "designation", header: "Designation" },
+        { key: "salary", header: "Salary", type: "currency" },
+        { key: "joiningDate", header: "Joining Date", type: "date" },
+        { key: "offerLetter", header: "Offer Letter" },
+        { key: "m1", header: "M1" },
+        { key: "m2", header: "M2" },
+        { key: "m3", header: "M3" },
+        { key: "bankStatement", header: "Bank Statement" },
+        { key: "verificationStatus", header: "Status" },
+      ],
+    },
+  ];
 }
 
 function ClientTableToolbar({
@@ -669,6 +880,258 @@ function ClientEnrollmentRoster({ candidates, center, project, batchLabel }) {
   );
 }
 
+function ClientCertifiedRoster({ candidates, project, batchLabel }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const certifiedCandidates = candidates.filter((candidate) => candidate.trainingStatus === "Certified");
+  const filteredCandidates = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return certifiedCandidates.filter(
+      (candidate) =>
+        !query ||
+        candidate.name.toLowerCase().includes(query) ||
+        candidate.candidateCode.toLowerCase().includes(query) ||
+        candidate.jobRole.toLowerCase().includes(query)
+    );
+  }, [certifiedCandidates, searchTerm]);
+
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Student" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "jobRole", header: "Job Role" },
+      { key: "attendance", header: "Attendance %", type: "number" },
+      { key: "trainingStatus", header: "Certification Status" },
+      { key: "certificateId", header: "Certificate ID" },
+      { key: "certifiedOn", header: "Certified On", type: "date" },
+    ],
+    [batchLabel, project.name]
+  );
+
+  const rows = filteredCandidates.map((candidate, index) => ({
+    ...candidate,
+    certificateId: `CERT-${candidate.candidateCode || index + 1}`,
+    certifiedOn: `2026-${String((index % 5) + 4).padStart(2, "0")}-${String((index % 23) + 1).padStart(2, "0")}`,
+  }));
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <ClientTableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search certified candidates..."
+        resultCount={rows.length}
+        onClear={() => setSearchTerm("")}
+      >
+        <TableExportActions
+          moduleName="Certified List"
+          fileName="certified_candidates"
+          columns={exportColumns}
+          rows={rows}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </ClientTableToolbar>
+      <div className="overflow-auto" style={{ maxHeight: "clamp(240px, calc(100vh - 420px), 420px)" }}>
+        <table className="w-full min-w-[1080px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Student</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">Job Role</th>
+              <th className="px-4 py-3 font-medium">Attendance</th>
+              <th className="px-4 py-3 font-medium">Certificate ID</th>
+              <th className="px-4 py-3 font-medium">Certified On</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {rows.map((candidate) => (
+              <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                <td className="px-4 py-4"><BatchPill label={batchLabel} /></td>
+                <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
+                <td className="px-4 py-4"><Progress label="Attendance" value={candidate.attendance} /></td>
+                <td className="px-4 py-4 font-mono text-xs text-slate-300">{candidate.certificateId}</td>
+                <td className="px-4 py-4 text-slate-300">{formatDate(candidate.certifiedOn)}</td>
+                <td className="px-4 py-4"><StatusPill status="Certified" /></td>
+              </tr>
+            ))}
+            {!rows.length && (
+              <tr>
+                <td colSpan={8} className="px-4 py-12 text-center text-sm font-semibold text-slate-500">
+                  No certified candidates in this batch yet.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ClientKitDistributionRoster({ candidates, center, project, batchLabel }) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const rows = useMemo(
+    () =>
+      candidates.map((candidate, index) => {
+        const issued = {
+          safetyKit: candidate.kitIssued,
+          shoes: candidate.kitIssued && index % 4 !== 1,
+          uniform: candidate.kitIssued && index % 5 !== 2,
+          trainingKit: candidate.kitIssued && index % 6 !== 3,
+        };
+        const issuedCount = KIT_ITEM_CONFIG.filter((item) => issued[item.key]).length;
+        const status =
+          issuedCount === KIT_ITEM_CONFIG.length
+            ? "Completed"
+            : issuedCount > 0
+              ? "Partial"
+              : "Pending";
+
+        return {
+          ...candidate,
+          issued,
+          proofImage: candidate.kitProofFile ? `/images/client-gallery/${(index % 7) + 1}.png` : "",
+          proofImageName: candidate.kitProofFile,
+          status,
+        };
+      }),
+    [candidates]
+  );
+  const filteredCandidates = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return rows.filter((candidate) => {
+      const matchesStatus = !statusFilter || candidate.status === statusFilter;
+      const matchesSearch =
+        !query ||
+        candidate.name.toLowerCase().includes(query) ||
+        candidate.candidateCode.toLowerCase().includes(query) ||
+        candidate.jobRole.toLowerCase().includes(query);
+      return matchesStatus && matchesSearch;
+    });
+  }, [rows, searchTerm, statusFilter]);
+
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Student" },
+      { key: "candidateCode", header: "Candidate Code" },
+      { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "centerName", header: "Center", exportValue: () => center.name },
+      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "jobRole", header: "Job Role" },
+      ...KIT_ITEM_CONFIG.map((item) => ({
+        key: item.key,
+        header: item.label,
+        exportValue: (candidate) => (candidate.issued[item.key] ? "Issued" : "Pending"),
+      })),
+      { key: "kitIssuedOn", header: "Issued On", type: "date" },
+      { key: "proofImageName", header: "Proof Image", exportValue: (candidate) => candidate.proofImageName || "Not uploaded" },
+      { key: "status", header: "Status" },
+    ],
+    [batchLabel, center.name, project.name]
+  );
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-white/10">
+      <ClientTableToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search kit distribution..."
+        resultCount={filteredCandidates.length}
+        onClear={() => {
+          setSearchTerm("");
+          setStatusFilter("");
+        }}
+      >
+        <FilterControl label="Status" value={statusFilter} onChange={setStatusFilter} options={["Completed", "Partial", "Pending"]} />
+        <TableExportActions
+          moduleName="Kit Distribution"
+          fileName="kit_distribution"
+          columns={exportColumns}
+          rows={filteredCandidates}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+      </ClientTableToolbar>
+      <div className="overflow-auto" style={{ maxHeight: "clamp(240px, calc(100vh - 420px), 420px)" }}>
+        <table className="w-full min-w-[1340px] text-left text-sm">
+          <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              <th className="px-4 py-3 font-medium">Student</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Center</th>
+              <th className="px-4 py-3 font-medium">Batch</th>
+              <th className="px-4 py-3 font-medium">Job Role</th>
+              {KIT_ITEM_CONFIG.map((item) => (
+                <th key={item.key} className="px-4 py-3 font-medium">{item.label}</th>
+              ))}
+              <th className="px-4 py-3 font-medium">Issued On</th>
+              <th className="px-4 py-3 font-medium">Proof Image</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {filteredCandidates.map((candidate) => (
+              <tr key={candidate.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="px-4 py-4">
+                  <p className="font-medium text-white">{candidate.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                <td className="px-4 py-4 text-slate-300">{center.name}</td>
+                <td className="px-4 py-4"><BatchPill label={batchLabel} /></td>
+                <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
+                {KIT_ITEM_CONFIG.map((item) => (
+                  <td key={item.key} className="px-4 py-4">
+                    <span className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300">
+                      <span className={`h-2.5 w-2.5 rounded-full ${candidate.issued[item.key] ? "bg-emerald-400" : "bg-slate-500"}`} />
+                      <span className={candidate.issued[item.key] ? "text-emerald-300" : "text-slate-500"}>
+                        {candidate.issued[item.key] ? "Issued" : "Pending"}
+                      </span>
+                    </span>
+                  </td>
+                ))}
+                <td className="px-4 py-4 text-slate-300">{candidate.kitIssued ? formatDate(candidate.kitIssuedOn) : "—"}</td>
+                <td className="px-4 py-4">
+                  {candidate.proofImage ? (
+                    <div className="flex min-w-48 items-center gap-3">
+                      <img
+                        src={candidate.proofImage}
+                        alt=""
+                        className="h-12 w-12 rounded-lg border border-white/10 object-cover"
+                      />
+                      <p className="max-w-36 truncate text-xs font-semibold text-white/80">{candidate.proofImageName}</p>
+                    </div>
+                  ) : (
+                    <span className="text-xs font-semibold text-slate-500">Not uploaded</span>
+                  )}
+                </td>
+                <td className="px-4 py-4">
+                  <StatusPill status={candidate.status === "Completed" ? "Approved" : candidate.status} />
+                </td>
+              </tr>
+            ))}
+            {!filteredCandidates.length && (
+              <tr>
+                <td colSpan={11} className="px-4 py-12 text-center text-sm font-semibold text-slate-500">
+                  No kit records match the current filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function ClientPlacementRoster({ candidates, project, batchLabel }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [companyFilter, setCompanyFilter] = useState("");
@@ -833,6 +1296,445 @@ function DocBadge({ available, label }) {
   );
 }
 
+function BatchPill({ label }) {
+  return (
+    <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
+      {label}
+    </span>
+  );
+}
+
+function ClientOperationsEvidenceSections({ project, center }) {
+  const placementDrives = useMemo(() => buildClientPlacementDrives(project, center), [project, center]);
+  const exposureVisits = useMemo(() => buildClientExposureVisits(project, center), [project, center]);
+  const [selectedEvidence, setSelectedEvidence] = useState(null);
+
+  return (
+    <>
+      <section className="grid gap-5 xl:grid-cols-2">
+        <ClientPlacementDrivesTable drives={placementDrives} project={project} center={center} onView={setSelectedEvidence} />
+        <ClientExposureVisitsTable visits={exposureVisits} project={project} center={center} onView={setSelectedEvidence} />
+      </section>
+      <ClientEvidenceOverlay evidence={selectedEvidence} onClose={() => setSelectedEvidence(null)} />
+    </>
+  );
+}
+
+const CLIENT_EVIDENCE_IMAGE_POOL = [1, 2, 3, 4, 5, 6, 7, 9, 11];
+
+function buildClientEvidenceMedia(prefix, index, month, dayStart) {
+  const firstImage = CLIENT_EVIDENCE_IMAGE_POOL[(index * 2) % CLIENT_EVIDENCE_IMAGE_POOL.length];
+  const secondImage = CLIENT_EVIDENCE_IMAGE_POOL[(index * 2 + 1) % CLIENT_EVIDENCE_IMAGE_POOL.length];
+  const thirdImage = CLIENT_EVIDENCE_IMAGE_POOL[(index * 2 + 2) % CLIENT_EVIDENCE_IMAGE_POOL.length];
+  const videoPreview = CLIENT_EVIDENCE_IMAGE_POOL[(index * 2 + 4) % CLIENT_EVIDENCE_IMAGE_POOL.length];
+
+  return [
+    {
+      id: `${prefix}-photo-1`,
+      label: "Geo-tagged Photo 1",
+      type: "image",
+      src: `/images/client-gallery/${firstImage}.png`,
+      uploadedOn: `2026-${String(month).padStart(2, "0")}-${String(dayStart).padStart(2, "0")}`,
+    },
+    {
+      id: `${prefix}-photo-2`,
+      label: "Geo-tagged Photo 2",
+      type: "image",
+      src: `/images/client-gallery/${secondImage}.png`,
+      uploadedOn: `2026-${String(month).padStart(2, "0")}-${String(dayStart + 1).padStart(2, "0")}`,
+    },
+    {
+      id: `${prefix}-photo-3`,
+      label: "Geo-tagged Photo 3",
+      type: "image",
+      src: `/images/client-gallery/${thirdImage}.png`,
+      uploadedOn: `2026-${String(month).padStart(2, "0")}-${String(dayStart + 1).padStart(2, "0")}`,
+    },
+    {
+      id: `${prefix}-video`,
+      label: "Video Walkthrough",
+      type: "video",
+      src: `/images/client-gallery/${videoPreview}.png`,
+      uploadedOn: `2026-${String(month).padStart(2, "0")}-${String(dayStart + 2).padStart(2, "0")}`,
+    },
+  ];
+}
+
+function buildClientPlacementDrives(project, center) {
+  const companies = ["Tata Steel", "Jindal Steel", "L&T Construction"];
+  const driveTitles = ["Hiring Drive", "Apprenticeship Selection Drive", "Walk-in Interview Drive"];
+  return Array.from({ length: 3 }, (_, index) => {
+    const batch = center.batches[index % Math.max(center.batches.length, 1)] || {
+      label: `Batch ${index + 1}`,
+      track: center.jobRoles?.[index % Math.max(center.jobRoles?.length || 1, 1)] || "General Duty Assistant",
+      size: 30,
+      candidateRecords: [],
+      placed: 0,
+    };
+    const candidates = batch.candidateRecords || [];
+    const placed = Math.max(
+      candidates.filter((candidate) => candidate.placementStatus === "Placed").length,
+      6 + index * 3
+    );
+    const participated = Math.max(placed + 8, Math.round((batch.size || 30) * (0.62 + index * 0.07)));
+    const month = 4 + index;
+    const day = 10 + index * 4;
+    return {
+      id: `${center.id}-DRV-${index + 1}`,
+      type: "Placement Drive",
+      name: `${companies[index]} ${driveTitles[index]}`,
+      company: companies[index % companies.length],
+      batch: batch.label,
+      jobRole: batch.track,
+      date: `2026-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      participated,
+      selected: placed,
+      status: "Completed",
+      documents: ["Employer invitation", "Attendance sheet", "Selection list"],
+      mediaUploads: buildClientEvidenceMedia(`drive-${index + 1}`, index, month, day + 1),
+    };
+  }).filter((drive) => drive.status === "Completed" && drive.mediaUploads?.length);
+}
+
+function buildClientExposureVisits(project, center) {
+  const locations = ["Industrial safety lab", "Manufacturing unit", "Employer workshop"];
+  const visitNames = ["Safety Practice Exposure Visit", "Production Line Exposure Visit", "Employer Readiness Visit"];
+  return Array.from({ length: 3 }, (_, index) => {
+    const batch = center.batches[index % Math.max(center.batches.length, 1)] || {
+      label: `Batch ${index + 1}`,
+      track: center.jobRoles?.[index % Math.max(center.jobRoles?.length || 1, 1)] || "General Duty Assistant",
+      size: 30,
+      candidateRecords: [],
+    };
+    const month = 3 + index;
+    const day = 8 + index * 5;
+
+    return {
+      id: `${center.id}-EXV-${index + 1}`,
+      type: "Exposure Visit",
+      title: visitNames[index],
+      name: visitNames[index],
+      location: locations[index],
+      batch: batch.label,
+      jobRole: batch.track,
+      date: `2026-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      participants: Math.round((batch.size || 30) * (0.78 + (index % 2) * 0.06)),
+      trainer: batch.candidateRecords?.[0]?.mobilizer || center.manager,
+      status: "Completed",
+      documents: ["Visit plan", "Attendance sheet", "Photo evidence"],
+      mediaUploads: buildClientEvidenceMedia(`visit-${index + 1}`, index + 3, month, day + 1),
+    };
+  }).filter((visit) => visit.status === "Completed" && visit.mediaUploads?.length);
+}
+
+function ClientPlacementDrivesTable({ drives, project, center, onView }) {
+  const exportColumns = useMemo(
+    () => [
+      { key: "name", header: "Drive" },
+      { key: "company", header: "Company" },
+      { key: "batch", header: "Batch" },
+      { key: "jobRole", header: "Job Role" },
+      { key: "date", header: "Date", type: "date" },
+      { key: "participated", header: "Participated", type: "number" },
+      { key: "selected", header: "Selected", type: "number" },
+      { key: "status", header: "Status" },
+    ],
+    []
+  );
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-violet-200/10 bg-[#12071f]/80 shadow-xl shadow-black/20">
+      <div className="grid gap-4 border-b border-white/10 p-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">Placement Drives</p>
+          <h2 className="mt-2 text-xl font-semibold text-white">{center.name}</h2>
+        </div>
+        <div className="flex justify-start xl:justify-end">
+          <TableExportActions moduleName="Placement Drives" fileName={`${project.name}_placement_drives`} columns={exportColumns} rows={drives} company={{ name: "Pantiss ERP", logo: "/activity.png" }} />
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[940px] text-left text-sm">
+          <thead className="bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              {["Drive", "Job Role", "Company", "Batch", "Date", "Participated", "Selected", "Uploads", "Status", "Action"].map((header) => (
+                <th key={header} className={`px-4 py-3 font-medium ${header === "Drive" ? "w-[280px]" : ""}`}>{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {drives.map((drive) => (
+              <tr key={drive.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="w-[280px] px-4 py-4">
+                  <p className="font-medium text-white">{drive.name}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{drive.jobRole}</td>
+                <td className="px-4 py-4 text-slate-300">{drive.company}</td>
+                <td className="px-4 py-4"><BatchPill label={drive.batch} /></td>
+                <td className="px-4 py-4 text-slate-300">{formatDate(drive.date)}</td>
+                <td className="px-4 py-4 text-white">{drive.participated}</td>
+                <td className="px-4 py-4 text-emerald-300">{drive.selected}</td>
+                <td className="px-4 py-4">
+                  <MediaChips media={drive.mediaUploads} />
+                </td>
+                <td className="px-4 py-4"><StatusPill status={drive.status === "Completed" ? "Approved" : "Pending"} /></td>
+                <td className="px-4 py-4">
+                  <button
+                    type="button"
+                    onClick={() => onView({ ...drive, projectName: project.name, centerName: center.name })}
+                    className="inline-flex items-center gap-2 rounded-lg border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:border-violet-300/50 hover:bg-violet-500/20"
+                  >
+                    <Eye size={14} />
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function ClientExposureVisitsTable({ visits, project, center, onView }) {
+  const exportColumns = useMemo(
+    () => [
+      { key: "title", header: "Visit" },
+      { key: "batch", header: "Batch" },
+      { key: "jobRole", header: "Job Role" },
+      { key: "date", header: "Date", type: "date" },
+      { key: "participants", header: "Participants", type: "number" },
+      { key: "trainer", header: "Coordinator" },
+      { key: "status", header: "Status" },
+    ],
+    []
+  );
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-violet-200/10 bg-[#12071f]/80 shadow-xl shadow-black/20">
+      <div className="grid gap-4 border-b border-white/10 p-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">Exposure Visits</p>
+          <h2 className="mt-2 text-xl font-semibold text-white">{center.name}</h2>
+        </div>
+        <div className="flex justify-start xl:justify-end">
+          <TableExportActions moduleName="Exposure Visits" fileName={`${project.name}_exposure_visits`} columns={exportColumns} rows={visits} company={{ name: "Pantiss ERP", logo: "/activity.png" }} />
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[920px] text-left text-sm">
+          <thead className="bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
+            <tr>
+              {["Visit", "Job Role", "Batch", "Date", "Participants", "Coordinator", "Uploads", "Status", "Action"].map((header) => (
+                <th key={header} className={`px-4 py-3 font-medium ${header === "Visit" ? "w-[280px]" : ""}`}>{header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/10">
+            {visits.map((visit) => (
+              <tr key={visit.id} className="align-top transition hover:bg-violet-500/[0.06]">
+                <td className="w-[280px] px-4 py-4">
+                  <p className="font-medium text-white">{visit.title}</p>
+                </td>
+                <td className="px-4 py-4 text-slate-300">{visit.jobRole}</td>
+                <td className="px-4 py-4"><BatchPill label={visit.batch} /></td>
+                <td className="px-4 py-4 text-slate-300">{formatDate(visit.date)}</td>
+                <td className="px-4 py-4 text-white">{visit.participants}</td>
+                <td className="px-4 py-4 text-slate-300">{visit.trainer}</td>
+                <td className="px-4 py-4"><MediaChips media={visit.mediaUploads} /></td>
+                <td className="px-4 py-4"><StatusPill status={visit.status === "Completed" ? "Approved" : "Pending"} /></td>
+                <td className="px-4 py-4">
+                  <button
+                    type="button"
+                    onClick={() => onView({ ...visit, projectName: project.name, centerName: center.name })}
+                    className="inline-flex items-center gap-2 rounded-lg border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:border-violet-300/50 hover:bg-violet-500/20"
+                  >
+                    <Eye size={14} />
+                    View
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function MediaChips({ media }) {
+  return (
+    <div className="flex min-w-[132px] items-center pl-1">
+      {media.map((item, index) => (
+        <span
+          key={item.id}
+          title={item.label}
+          className="relative inline-flex h-8 w-12 items-center justify-center rounded-lg border border-violet-400/25 bg-[#24113d] text-[10px] font-black text-violet-100 shadow-[0_8px_18px_rgba(0,0,0,0.22)] ring-2 ring-[#12071f]"
+          style={{ marginLeft: index ? "-10px" : 0, zIndex: media.length - index }}
+        >
+          <FileText size={12} />
+          <span className="ml-1">{item.type === "video" ? "V" : "I"}</span>
+        </span>
+      ))}
+      <span className="ml-2 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[11px] font-semibold text-slate-400">
+        {media.length} files
+      </span>
+    </div>
+  );
+}
+
+function ClientEvidenceOverlay({ evidence, onClose }) {
+  const [visible, setVisible] = useState(false);
+  const [activeMediaId, setActiveMediaId] = useState("");
+
+  useEffect(() => {
+    if (!evidence) {
+      setVisible(false);
+      setActiveMediaId("");
+      return undefined;
+    }
+
+    setActiveMediaId(evidence.mediaUploads?.[0]?.id || "");
+    const frame = requestAnimationFrame(() => setVisible(true));
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [evidence, onClose]);
+
+  if (!evidence || typeof document === "undefined") return null;
+
+  const media = evidence.mediaUploads || [];
+  const activeMedia = media.find((item) => item.id === activeMediaId) || media[0];
+  const title = evidence.name || evidence.title;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex justify-end" onClick={onClose}>
+      <div
+        className={`absolute inset-0 bg-black/50 backdrop-blur-[3px] transition-opacity duration-200 ${
+          visible ? "opacity-100" : "opacity-0"
+        }`}
+      />
+      <aside
+        className={`relative flex h-full w-full max-w-[620px] flex-col border-l border-violet-500/25 bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
+          visible ? "translate-x-0" : "translate-x-full"
+        }`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-[#0b1220] px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Zoho Projects Style Evidence Review</p>
+            <h3 className="mt-1 truncate text-xl font-semibold text-white">{title}</h3>
+            <p className="mt-1 truncate text-sm text-slate-400">
+              {evidence.projectName} • {evidence.centerName}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.05] text-slate-400 transition hover:bg-white/[0.1] hover:text-white"
+            aria-label="Close evidence review"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="border-b border-white/10 bg-[#0b1220] px-5 py-3">
+          <div className="flex flex-wrap gap-2">
+            {media.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveMediaId(item.id)}
+                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
+                  activeMedia?.id === item.id
+                    ? "border-violet-300/50 bg-violet-500/20 text-white"
+                    : "border-white/10 bg-white/[0.04] text-slate-400 hover:text-white"
+                }`}
+              >
+                <FileText size={14} />
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#070b16]">
+          <div className="p-5">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+              <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-xl bg-slate-950">
+                <img
+                  src={activeMedia?.src}
+                  alt={`${activeMedia?.label || title} preview`}
+                  className="max-h-[54vh] w-auto max-w-full object-contain"
+                />
+                {activeMedia?.type === "video" ? (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                    <span className="inline-flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-black/45 text-lg font-black text-white backdrop-blur">
+                      ▶
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <ClientGalleryMetaRow label="Evidence type" value={evidence.type} />
+              <ClientGalleryMetaRow label="Batch" value={evidence.batch} />
+              <ClientGalleryMetaRow label="Job role" value={evidence.jobRole} />
+              <ClientGalleryMetaRow label="Completed on" value={formatDate(evidence.date)} />
+              <ClientGalleryMetaRow label="Uploaded on" value={formatDate(activeMedia?.uploadedOn)} />
+              <ClientGalleryMetaRow label="Status" value="Completed with media upload" />
+            </div>
+
+            <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Documents</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(evidence.documents || []).map((document) => (
+                  <span key={document} className="inline-flex items-center gap-1 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 py-1.5 text-xs font-semibold text-violet-200">
+                    <FileText size={13} />
+                    {document}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-white/10 bg-[#0b1220] px-5 py-3">
+          {activeMedia?.src ? (
+            <a
+              href={activeMedia.src}
+              download
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.1] hover:text-white"
+            >
+              <Download size={15} />
+              Download
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.1] hover:text-white"
+          >
+            Close
+          </button>
+        </div>
+      </aside>
+    </div>,
+    document.body
+  );
+}
+
 function StatusPill({ status }) {
   const tone =
     status === "Placed" || status === "Certified" || status === "Approved"
@@ -982,7 +1884,7 @@ function CenterGallery({ project, center }) {
             type="button"
             key={item.id}
             onClick={() => setSelectedItem(item)}
-            className="group relative aspect-[4/3] overflow-hidden rounded-[20px] border border-white/10 bg-black/20 text-left shadow-[0_18px_50px_rgba(2,6,23,0.28)] transition hover:-translate-y-0.5 hover:border-violet-400/40 focus:outline-none focus:ring-2 focus:ring-violet-300/50"
+            className="group relative h-64 overflow-hidden rounded-[20px] border border-white/10 bg-black/20 text-left shadow-[0_18px_50px_rgba(2,6,23,0.28)] transition hover:-translate-y-0.5 hover:border-violet-400/40 focus:outline-none focus:ring-2 focus:ring-violet-300/50 sm:h-60 xl:h-56"
           >
             <img
               src={item.src}

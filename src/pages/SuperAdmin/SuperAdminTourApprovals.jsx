@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock, FolderKanban, MapPinned, Route, XCircle } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCircle2, Clock, FolderKanban, History, MapPinned, Route, XCircle } from "lucide-react";
 import { Breadcrumb, PageHeader } from "./SuperAdminSharedComponents";
+import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildTourAuditTrail } from "../../utils/auditTrailHelpers";
 
 const INITIAL_REQUESTS = [
   {
@@ -53,6 +56,7 @@ const STATUS_CLASS = {
 export default function SuperAdminTourApprovals() {
   const [requests, setRequests] = useState(INITIAL_REQUESTS);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [auditRequest, setAuditRequest] = useState(null);
 
   const projects = useMemo(() => summarizeProjects(requests), [requests]);
   const rows = selectedProject ? requests.filter((request) => request.project === selectedProject) : [];
@@ -99,9 +103,26 @@ export default function SuperAdminTourApprovals() {
             <ArrowLeft size={14} />
             Back to Projects
           </button>
-          <ApprovalTable rows={rows} onDecide={decide} />
+          <ApprovalTable rows={rows} onDecide={decide} onAudit={setAuditRequest} />
         </section>
       )}
+
+      <SlidePanel
+        open={Boolean(auditRequest)}
+        onClose={() => setAuditRequest(null)}
+        title="Tour Request — Audit Trail"
+        width="md"
+      >
+        {auditRequest && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-sm font-semibold text-white">{auditRequest.employee}</p>
+              <p className="mt-1 text-xs text-white/45">{auditRequest.id} • {auditRequest.destination}</p>
+            </div>
+            <AuditTrail entries={buildTourAuditTrail(auditRequest)} tone="red" />
+          </div>
+        )}
+      </SlidePanel>
     </div>
   );
 }
@@ -159,7 +180,7 @@ function ProjectGrid({ projects, onSelect }) {
   );
 }
 
-function ApprovalTable({ rows, onDecide }) {
+function ApprovalTable({ rows, onDecide, onAudit }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-700/50 bg-[#111827]/80">
       <div className="overflow-x-auto">
@@ -208,9 +229,17 @@ function ApprovalTable({ rows, onDecide }) {
                     <div className="inline-flex min-w-[150px] flex-col gap-2">
                       <Action tone="approve" onClick={() => onDecide(request.id, "Approved")}>Approve</Action>
                       <Action tone="reject" onClick={() => onDecide(request.id, "Rejected")}>Reject</Action>
+                      <button type="button" onClick={() => onAudit(request)} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20">
+                        <History size={13} /> Audit Trail
+                      </button>
                     </div>
                   ) : (
-                    <span className="text-xs text-slate-500">Closed</span>
+                    <div className="flex flex-col gap-2">
+                      <span className="text-xs text-slate-500">Closed</span>
+                      <button type="button" onClick={() => onAudit(request)} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20">
+                        <History size={13} /> Audit Trail
+                      </button>
+                    </div>
                   )}
                 </td>
               </tr>

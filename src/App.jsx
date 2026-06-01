@@ -366,6 +366,7 @@ function App() {
               <Route path="approvals/tour" element={<SuperAdminTourApprovals />} />
               <Route path="approvals/leave" element={<SuperAdminLeaveApprovals />} />
               <Route path="approvals/salary" element={<SuperAdminSalaryApprovals />} />
+              <Route path="approvals/invoices" element={<SuperAdminInvoiceApprovals />} />
               <Route path="approvals/reimbursements" element={<SuperAdminReimbursementApprovals />} />
 
               <Route path="access-target" element={<SuperAdminEmployeeManagement />} />

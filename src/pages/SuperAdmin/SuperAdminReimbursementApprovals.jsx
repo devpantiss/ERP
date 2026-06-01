@@ -6,6 +6,7 @@ import {
   Eye,
   FolderKanban,
   HandCoins,
+  History,
   ReceiptText,
   Search,
   ShieldCheck,
@@ -15,6 +16,9 @@ import { mockDb } from "../../mock-db/index.js";
 import { useHrStore } from "../../stores/hrStore.js";
 import { Breadcrumb, PageHeader } from "./SuperAdminSharedComponents";
 import ReimbursementClaimOverlay from "../shared/ReimbursementClaimOverlay.jsx";
+import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildReimbursementAuditTrail } from "../../utils/auditTrailHelpers";
 
 const STATUS_LABELS = {
   SUBMITTED: "Waiting Admin",
@@ -69,6 +73,14 @@ function normalizeClaim(claim) {
   };
 }
 
+function isAdminClearedClaim(claim) {
+  return (
+    claim.status === "ADMIN_APPROVED" ||
+    claim.status === "APPROVED" ||
+    (claim.status === "REJECTED" && Boolean(claim.adminApprovedBy))
+  );
+}
+
 function summarizeProjects(claims) {
   return Array.from(
     claims
@@ -79,7 +91,6 @@ function summarizeProjects(claims) {
           fundingAgency: claim.fundingAgency,
           total: 0,
           amount: 0,
-          waitingAdmin: 0,
           pendingReview: 0,
           approved: 0,
           rejected: 0,
@@ -89,7 +100,6 @@ function summarizeProjects(claims) {
           ...current,
           total: current.total + 1,
           amount: current.amount + claim.amount,
-          waitingAdmin: current.waitingAdmin + (claim.statusLabel === "Waiting Admin" ? 1 : 0),
           pendingReview: current.pendingReview + (claim.statusLabel === "Pending Review" ? 1 : 0),
           approved: current.approved + (claim.statusLabel === "Approved" ? 1 : 0),
           rejected: current.rejected + (claim.statusLabel === "Rejected" ? 1 : 0),
@@ -106,13 +116,15 @@ export default function SuperAdminReimbursementApprovals() {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedClaim, setSelectedClaim] = useState(null);
   const [search, setSearch] = useState("");
+  const [auditClaim, setAuditClaim] = useState(null);
 
   useEffect(() => {
     fetchReimbursements();
   }, [fetchReimbursements]);
 
   const claims = useMemo(() => reimbursements.map(normalizeClaim), [reimbursements]);
-  const projectSummaries = useMemo(() => summarizeProjects(claims), [claims]);
+  const adminClearedClaims = useMemo(() => claims.filter(isAdminClearedClaim), [claims]);
+  const projectSummaries = useMemo(() => summarizeProjects(adminClearedClaims), [adminClearedClaims]);
   const selectedProject = useMemo(
     () => projectSummaries.find((project) => project.id === selectedProjectId),
     [projectSummaries, selectedProjectId]
@@ -121,25 +133,24 @@ export default function SuperAdminReimbursementApprovals() {
   const visibleClaims = useMemo(() => {
     if (!selectedProjectId) return [];
     const query = search.trim().toLowerCase();
-    return claims.filter((claim) => {
+    return adminClearedClaims.filter((claim) => {
       if (claim.projectId !== selectedProjectId) return false;
       if (!query) return true;
       return `${claim.id} ${claim.employee} ${claim.role} ${claim.category} ${claim.statusLabel}`.toLowerCase().includes(query);
     });
-  }, [claims, search, selectedProjectId]);
+  }, [adminClearedClaims, search, selectedProjectId]);
 
   const totals = useMemo(
     () =>
-      claims.reduce(
+      adminClearedClaims.reduce(
         (summary, claim) => ({
           amount: summary.amount + claim.amount,
-          waitingAdmin: summary.waitingAdmin + (claim.statusLabel === "Waiting Admin" ? 1 : 0),
           pendingReview: summary.pendingReview + (claim.statusLabel === "Pending Review" ? 1 : 0),
           approved: summary.approved + (claim.statusLabel === "Approved" ? 1 : 0),
         }),
-        { amount: 0, waitingAdmin: 0, pendingReview: 0, approved: 0 }
+        { amount: 0, pendingReview: 0, approved: 0 }
       ),
-    [claims]
+    [adminClearedClaims]
   );
 
   const decide = (id, status) => {
@@ -163,7 +174,7 @@ export default function SuperAdminReimbursementApprovals() {
         subtitle={
           selectedProject
             ? "Review Admin-approved reimbursement claims for this project."
-            : "Project-wise reimbursement approval queue across all programs."
+            : "Project-wise reimbursement claims appear here after Admin approval."
         }
       />
       <Breadcrumb
@@ -176,7 +187,7 @@ export default function SuperAdminReimbursementApprovals() {
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard icon={HandCoins} label="Claim Value" value={formatCurrency(totals.amount)} tone="red" />
-        <MetricCard icon={Clock} label="Waiting Admin" value={totals.waitingAdmin} tone="slate" />
+        <MetricCard icon={Clock} label="Admin Approved" value={adminClearedClaims.length} tone="sky" />
         <MetricCard icon={ShieldCheck} label="Pending Review" value={totals.pendingReview} tone="amber" />
         <MetricCard icon={CheckCircle2} label="Approved" value={totals.approved} tone="emerald" />
       </div>
@@ -186,7 +197,7 @@ export default function SuperAdminReimbursementApprovals() {
           <div className="rounded-2xl border border-slate-700/50 bg-[#111827]/80 p-5 backdrop-blur-sm">
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-white/85">Select Project</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Open a project to review only the reimbursement claims routed from that project.
+              Open a project to review only reimbursement claims already approved by Admin.
             </p>
           </div>
 
@@ -317,14 +328,24 @@ export default function SuperAdminReimbursementApprovals() {
                             </button>
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => setSelectedClaim(claim)}
-                            className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] px-4 py-2.5 text-xs font-semibold text-white/70 transition hover:bg-white/[0.09] hover:text-white"
-                          >
-                            <Eye size={13} />
-                            Details
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedClaim(claim)}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] px-4 py-2.5 text-xs font-semibold text-white/70 transition hover:bg-white/[0.09] hover:text-white"
+                            >
+                              <Eye size={13} />
+                              Details
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAuditClaim(claim)}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20"
+                            >
+                              <History size={13} />
+                              Audit Trail
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -347,6 +368,23 @@ export default function SuperAdminReimbursementApprovals() {
         onReject={() => selectedClaim && decide(selectedClaim.id, "REJECTED")}
         tone="red"
       />
+
+      <SlidePanel
+        open={Boolean(auditClaim)}
+        onClose={() => setAuditClaim(null)}
+        title="Reimbursement — Audit Trail"
+        width="md"
+      >
+        {auditClaim && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-sm font-semibold text-white">{auditClaim.employee}</p>
+              <p className="mt-1 text-xs text-white/45">{auditClaim.id} • {auditClaim.claimTitle || auditClaim.category || "Reimbursement"}</p>
+            </div>
+            <AuditTrail entries={buildReimbursementAuditTrail(auditClaim)} tone="red" />
+          </div>
+        )}
+      </SlidePanel>
     </div>
   );
 }
@@ -354,6 +392,7 @@ export default function SuperAdminReimbursementApprovals() {
 function MetricCard({ icon: Icon, label, value, tone }) {
   const tones = {
     red: "border-red-400/20 bg-red-500/10 text-red-300",
+    sky: "border-sky-400/20 bg-sky-500/10 text-sky-300",
     slate: "border-slate-500/20 bg-slate-500/10 text-slate-300",
     amber: "border-amber-400/20 bg-amber-500/10 text-amber-300",
     emerald: "border-emerald-400/20 bg-emerald-500/10 text-emerald-300",

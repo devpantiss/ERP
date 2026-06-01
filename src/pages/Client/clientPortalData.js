@@ -97,6 +97,27 @@ const designations = [
 const odishaDistrictPool = ["Angul", "Bolangir", "Jharsuguda", "Khurda", "Cuttack", "Sundargarh"];
 const outsideStatePool = ["Telangana", "Karnataka", "Maharashtra", "Gujarat", "Tamil Nadu"];
 
+const clientDummyPlacementGeography = {
+  sameDistrict: 86,
+  differentDistrict: 64,
+  outsideState: 47,
+  odishaDistricts: [
+    { location: "Angul", count: 42 },
+    { location: "Jharsuguda", count: 31 },
+    { location: "Sundargarh", count: 28 },
+    { location: "Khurda", count: 24 },
+    { location: "Cuttack", count: 18 },
+    { location: "Bolangir", count: 7 },
+  ],
+  outsideStates: [
+    { location: "Telangana", count: 15 },
+    { location: "Karnataka", count: 12 },
+    { location: "Maharashtra", count: 9 },
+    { location: "Gujarat", count: 7 },
+    { location: "Tamil Nadu", count: 4 },
+  ],
+};
+
 export const getClientProjects = (clientName) =>
   selectAdminProjectReports().filter(
     (project) => project.fundingAgency === clientName || project.fundingAgencyName === clientName
@@ -325,24 +346,6 @@ export const getClientDeliveryMetrics = (projects) => {
 
   const metrics = [
     {
-      id: "mobilized",
-      label: "Total Mobilized",
-      helper: "Mobilized candidates against outreach target",
-      ...totals.mobilized,
-    },
-    {
-      id: "trained",
-      label: "Total Trained",
-      helper: "Learners who completed training",
-      ...totals.trained,
-    },
-    {
-      id: "placed",
-      label: "Total Placed",
-      helper: "Placed candidates against placement target",
-      ...totals.placed,
-    },
-    {
       id: "enrolled",
       label: "Total Enrolled",
       helper: "Enrolled candidates against sanctioned target",
@@ -353,6 +356,12 @@ export const getClientDeliveryMetrics = (projects) => {
       label: "Total Certified",
       helper: "Certified candidates against assessment target",
       ...totals.certified,
+    },
+    {
+      id: "placed",
+      label: "Total Placed",
+      helper: "Placed candidates against placement target",
+      ...totals.placed,
     },
     {
       id: "retention",
@@ -385,9 +394,17 @@ export const getClientPlacementGeography = (projects) => {
   const snapshots = projects.map(buildClientProjectSnapshot);
   const odishaDistrictCounts = new Map();
   const outsideStateCounts = new Map();
-  let sameDistrict = 0;
-  let differentDistrict = 0;
-  let outsideState = 0;
+  let sameDistrict = clientDummyPlacementGeography.sameDistrict;
+  let differentDistrict = clientDummyPlacementGeography.differentDistrict;
+  let outsideState = clientDummyPlacementGeography.outsideState;
+
+  clientDummyPlacementGeography.odishaDistricts.forEach((item) => {
+    addLocationCount(odishaDistrictCounts, item.location, item.count);
+  });
+
+  clientDummyPlacementGeography.outsideStates.forEach((item) => {
+    addLocationCount(outsideStateCounts, item.location, item.count);
+  });
 
   snapshots.forEach((project, projectIndex) => {
     project.centers.forEach((center, centerIndex) => {

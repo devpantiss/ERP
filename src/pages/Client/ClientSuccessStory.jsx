@@ -1,29 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
-  Award,
-  Building2,
-  CalendarDays,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  GraduationCap,
+  Download,
+  Eye,
   PlayCircle,
   Quote,
-  TrendingUp,
   Video,
+  X,
 } from "lucide-react";
-import {
-  buildClientProjectSnapshot,
-  getClientProjects,
-  getClientSummary,
-  getStoredClient,
-} from "./clientPortalData";
-
-const STORY_IMAGES = [
-  "/images/client-gallery/1.png",
-  "/images/client-gallery/7.png",
-  "/images/client-gallery/9.png",
-];
+import { getClientProjects, getStoredClient } from "./clientPortalData";
 
 const STUDENT_TESTIMONIALS = [
   {
@@ -124,18 +111,18 @@ const VIDEO_TESTIMONIALS = [
 export default function ClientSuccessStory() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
   const [videoIndex, setVideoIndex] = useState(0);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const client = getStoredClient();
   const projects = getClientProjects(client.name);
-  const summary = getClientSummary(projects);
-  const featuredProject = projects[0];
-  const snapshot = featuredProject ? buildClientProjectSnapshot(featuredProject) : null;
-  const events = buildEvents(snapshot);
   const visibleTestimonials = [
     STUDENT_TESTIMONIALS[testimonialIndex],
     STUDENT_TESTIMONIALS[(testimonialIndex + 1) % STUDENT_TESTIMONIALS.length],
     STUDENT_TESTIMONIALS[(testimonialIndex + 2) % STUDENT_TESTIMONIALS.length],
   ];
-  const selectedVideoTestimonial = VIDEO_TESTIMONIALS[videoIndex];
+  const activeVideos = [
+    VIDEO_TESTIMONIALS[videoIndex],
+    VIDEO_TESTIMONIALS[(videoIndex + 1) % VIDEO_TESTIMONIALS.length],
+  ];
   const showPreviousTestimonial = () => {
     setTestimonialIndex((current) =>
       current === 0 ? STUDENT_TESTIMONIALS.length - 1 : current - 1
@@ -144,45 +131,18 @@ export default function ClientSuccessStory() {
   const showNextTestimonial = () => {
     setTestimonialIndex((current) => (current + 1) % STUDENT_TESTIMONIALS.length);
   };
+  const showPreviousVideo = () => {
+    setVideoIndex((current) => (current === 0 ? VIDEO_TESTIMONIALS.length - 1 : current - 1));
+  };
+  const showNextVideo = () => {
+    setVideoIndex((current) => (current + 1) % VIDEO_TESTIMONIALS.length);
+  };
 
   return (
     <section className="space-y-7">
-      <section className="overflow-hidden rounded-3xl border border-violet-200/10 bg-[#12071f]/80 shadow-xl shadow-black/20">
-        <div className="grid gap-0 xl:grid-cols-[1.05fr_0.95fr]">
-          <div className="p-6 md:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
-              Success Story
-            </p>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight text-white md:text-5xl">
-              Skills training converted into measurable employment outcomes.
-            </h1>
-            <p className="mt-5 max-w-2xl text-sm leading-6 text-white/55 md:text-base">
-              A concise client-facing testimonial view covering project achievements, delivery events,
-              learner progress, placement outcomes, and visual evidence from the field.
-            </p>
-
-            <div className="mt-7 grid gap-3 sm:grid-cols-3">
-              <HeroMetric label="Project" value={featuredProject?.name || "Portfolio"} />
-              <HeroMetric label="Centers" value={summary.centers} />
-              <HeroMetric label="Health" value={`${summary.health}%`} />
-            </div>
-          </div>
-
-          <div className="grid min-h-[360px] grid-cols-2 gap-2 bg-black/20 p-2">
-            <img
-              src={STORY_IMAGES[2]}
-              alt=""
-              className="col-span-2 h-56 w-full rounded-2xl object-cover md:h-72 xl:h-full"
-            />
-            <img src={STORY_IMAGES[0]} alt="" className="h-36 w-full rounded-2xl object-cover xl:hidden" />
-            <img src={STORY_IMAGES[1]} alt="" className="h-36 w-full rounded-2xl object-cover xl:hidden" />
-          </div>
-        </div>
-      </section>
-
       <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-6 shadow-xl shadow-black/20">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <SectionTitle eyebrow="Student Testimonials" title="Learner voices from the field" />
+          <SectionTitle eyebrow="Text Testimony" title={`${client.name} learner voices`} />
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -225,128 +185,60 @@ export default function ClientSuccessStory() {
       </section>
 
       <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-6 shadow-xl shadow-black/20">
-        <SectionTitle eyebrow="Achievements" title="Project achievements" />
-        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <Achievement icon={CheckCircle2} title="Training completion" detail={`${snapshot?.completedTraining || 0} learners completed core training modules.`} />
-          <Achievement icon={Award} title="Assessment readiness" detail={`${snapshot?.certified || 0} learners certified across active centers.`} />
-          <Achievement icon={TrendingUp} title="Placement conversion" detail={`${snapshot?.placed || 0} learners moved into placement outcomes.`} />
-          <Achievement icon={Building2} title="Center delivery" detail={`${summary.centers} centers monitored with attendance and progress indicators.`} />
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-6 shadow-xl shadow-black/20">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-            <SectionTitle eyebrow="Video Testimony" title="Learner stories on video" />
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <SectionTitle eyebrow="Video Testimony" title="Learner video slider" />
+          <div className="flex items-center gap-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100">
               <Video size={14} />
-              Field evidence
+              Zoho overlay playback
             </div>
+            <button
+              type="button"
+              onClick={showPreviousVideo}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:bg-violet-500/15 hover:text-white"
+              aria-label="Previous video testimony"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={showNextVideo}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/70 transition hover:bg-violet-500/15 hover:text-white"
+              aria-label="Next video testimony"
+            >
+              <ChevronRight size={18} />
+            </button>
           </div>
+        </div>
 
-          <div className="mt-5 overflow-hidden rounded-3xl border border-white/10 bg-black/30">
-            {selectedVideoTestimonial.video ? (
-              <video
-                key={selectedVideoTestimonial.id}
-                src={selectedVideoTestimonial.video}
-                poster={selectedVideoTestimonial.poster}
-                controls
-                className="aspect-video w-full bg-black object-cover"
-              />
-            ) : (
-              <div className="relative aspect-video overflow-hidden">
-                <img
-                  src={selectedVideoTestimonial.poster}
-                  alt=""
-                  className="h-full w-full object-cover opacity-75"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white shadow-2xl shadow-black/40 backdrop-blur">
-                    <PlayCircle size={38} />
-                  </div>
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-200">
-                    Video testimony placeholder
-                  </p>
-                  <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
-                    Add the learner video file to activate playback. The testimony metadata and poster are already wired here.
-                  </p>
-                </div>
-              </div>
-            )}
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          {activeVideos.map((testimonial) => (
+            <VideoTestimonySlide
+              key={testimonial.id}
+              testimonial={testimonial}
+              onOpen={() => setSelectedVideo(testimonial)}
+            />
+          ))}
+        </div>
 
-            <div className="border-t border-white/10 p-5">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">{selectedVideoTestimonial.name}</h3>
-                  <p className="mt-1 text-sm text-violet-200">{selectedVideoTestimonial.role}</p>
-                  <p className="mt-1 text-xs text-white/40">{selectedVideoTestimonial.center}</p>
-                </div>
-                <span className="w-fit rounded-full border border-emerald-300/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-200">
-                  {selectedVideoTestimonial.outcome}
-                </span>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-white/60">
-                "{selectedVideoTestimonial.quote}"
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {VIDEO_TESTIMONIALS.map((testimonial, index) => (
-              <button
-                key={testimonial.id}
-                type="button"
-                onClick={() => setVideoIndex(index)}
-                className={`group flex items-center gap-3 rounded-2xl border p-3 text-left transition ${
-                  videoIndex === index
-                    ? "border-violet-300/40 bg-violet-500/15"
-                    : "border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/[0.04]"
-                }`}
-              >
-                <img
-                  src={testimonial.poster}
-                  alt=""
-                  className="h-12 w-12 rounded-xl object-cover"
-                />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-white">{testimonial.name}</p>
-                  <p className="mt-1 truncate text-xs text-white/40">{testimonial.role}</p>
-                </div>
-              </button>
-            ))}
+        <div className="mt-5 flex justify-center gap-2">
+          {VIDEO_TESTIMONIALS.map((testimonial, index) => (
+            <button
+              key={testimonial.id}
+              type="button"
+              onClick={() => setVideoIndex(index)}
+              className={`h-2 rounded-full transition-all ${
+                videoIndex === index ? "w-8 bg-violet-300" : "w-2 bg-white/20 hover:bg-white/40"
+              }`}
+              aria-label={`Show video testimony ${index + 1}`}
+            />
+          ))}
           </div>
         </section>
 
-      <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-6 shadow-xl shadow-black/20">
-        <SectionTitle eyebrow="Events" title="Events conducted" />
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {events.map((event) => (
-            <EventCard key={event.title} event={event} />
-          ))}
-        </div>
-      </section>
-
+      <VideoTestimonyOverlay testimonial={selectedVideo} onClose={() => setSelectedVideo(null)} />
     </section>
   );
-}
-
-function buildEvents(snapshot) {
-  if (!snapshot?.centers?.length) {
-    return [
-      { title: "Mobilization Drive", location: "Project center", date: "Ongoing", detail: "Community outreach and learner onboarding." },
-      { title: "Practical Training", location: "Skill lab", date: "Ongoing", detail: "Hands-on skill demonstrations and assessment preparation." },
-      { title: "Placement Connect", location: "Employer desk", date: "Ongoing", detail: "Employer engagement and interview readiness." },
-    ];
-  }
-
-  return snapshot.centers.slice(0, 3).map((center, index) => ({
-    title: ["Mobilization Drive", "Practical Training Session", "Placement Readiness Camp"][index] || "Center Event",
-    location: center.location,
-    date: ["12 May 2026", "18 May 2026", "24 May 2026"][index] || "May 2026",
-    detail: `${center.jobRoles.slice(0, 2).join(" and ")} learners supported through ${center.batches.length} active batches.`,
-  }));
 }
 
 function SectionTitle({ eyebrow, title }) {
@@ -354,15 +246,6 @@ function SectionTitle({ eyebrow, title }) {
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">{eyebrow}</p>
       <h2 className="mt-2 text-2xl font-semibold text-white">{title}</h2>
-    </div>
-  );
-}
-
-function HeroMetric({ label, value }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <p className="text-2xl font-semibold text-white">{value}</p>
-      <p className="mt-1 text-xs text-white/40">{label}</p>
     </div>
   );
 }
@@ -393,25 +276,143 @@ function TestimonialCard({ testimonial }) {
   );
 }
 
-function Achievement({ icon: Icon, title, detail }) {
+function VideoTestimonySlide({ testimonial, onOpen }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      <Icon size={19} className="text-violet-300" />
-      <p className="mt-4 font-semibold text-white">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-white/45">{detail}</p>
-    </div>
+    <article className="group overflow-hidden rounded-3xl border border-white/10 bg-black/25 shadow-xl shadow-black/20 transition hover:-translate-y-0.5 hover:border-violet-300/35">
+      <button type="button" onClick={onOpen} className="relative block h-64 w-full overflow-hidden text-left sm:h-72">
+        <img src={testimonial.poster} alt="" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+        <div className="absolute left-5 top-5 rounded-full border border-white/15 bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+          Video testimony
+        </div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="flex h-16 w-16 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white shadow-2xl shadow-black/40 backdrop-blur transition group-hover:scale-105 group-hover:bg-violet-500/25">
+            <PlayCircle size={34} />
+          </span>
+        </div>
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <h3 className="text-xl font-semibold text-white">{testimonial.name}</h3>
+          <p className="mt-1 text-sm text-violet-200">{testimonial.role}</p>
+        </div>
+      </button>
+      <div className="border-t border-white/10 p-5">
+        <p className="text-sm leading-6 text-white/60">"{testimonial.quote}"</p>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-white/40">{testimonial.center}</p>
+          <button
+            type="button"
+            onClick={onOpen}
+            className="inline-flex items-center gap-2 rounded-xl border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-500/20"
+          >
+            <Eye size={14} />
+            View
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
-function EventCard({ event }) {
-  return (
-    <article className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-200">
-        <CalendarDays size={18} />
-      </div>
-      <h3 className="text-lg font-semibold text-white">{event.title}</h3>
-      <p className="mt-1 text-sm text-violet-200">{event.location} • {event.date}</p>
-      <p className="mt-3 text-sm leading-6 text-white/45">{event.detail}</p>
-    </article>
+function VideoTestimonyOverlay({ testimonial, onClose }) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!testimonial) {
+      setVisible(false);
+      return undefined;
+    }
+
+    const frame = requestAnimationFrame(() => setVisible(true));
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [testimonial, onClose]);
+
+  if (!testimonial || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex justify-end" onClick={onClose}>
+      <div className={`absolute inset-0 bg-black/50 backdrop-blur-[3px] transition-opacity duration-200 ${visible ? "opacity-100" : "opacity-0"}`} />
+      <aside
+        className={`relative flex h-full w-full max-w-[680px] flex-col border-l border-violet-500/25 bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${visible ? "translate-x-0" : "translate-x-full"}`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-[#0b1220] px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Zoho Projects Style Video Review</p>
+            <h3 className="mt-1 truncate text-xl font-semibold text-white">{testimonial.name}</h3>
+            <p className="mt-1 truncate text-sm text-slate-400">{testimonial.role} • {testimonial.center}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/10 bg-white/[0.05] text-slate-400 transition hover:bg-white/[0.1] hover:text-white"
+            aria-label="Close video testimony"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#070b16] p-5">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-black/40">
+            {testimonial.video ? (
+              <video src={testimonial.video} poster={testimonial.poster} controls autoPlay className="aspect-video w-full bg-black object-cover" />
+            ) : (
+              <div className="relative aspect-video">
+                <img src={testimonial.poster} alt="" className="h-full w-full object-cover opacity-75" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="flex h-20 w-20 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white shadow-2xl shadow-black/40 backdrop-blur">
+                    <PlayCircle size={40} />
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <p className="text-sm leading-6 text-white/70">"{testimonial.quote}"</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-full border border-emerald-300/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-200">
+                {testimonial.outcome}
+              </span>
+              <span className="rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100">
+                {testimonial.center}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-white/10 bg-[#0b1220] px-5 py-3">
+          {testimonial.video ? (
+            <a
+              href={testimonial.video}
+              download
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.1] hover:text-white"
+            >
+              <Download size={15} />
+              Download
+            </a>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.1] hover:text-white"
+          >
+            Close
+          </button>
+        </div>
+      </aside>
+    </div>,
+    document.body
   );
 }

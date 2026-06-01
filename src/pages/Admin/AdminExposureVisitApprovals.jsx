@@ -1,5 +1,7 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildExposureVisitAuditTrail } from "../../utils/auditTrailHelpers";
 import { useState, useMemo } from "react";
 import { CheckCircle, XCircle, Calendar, FileText, Eye, X, ZoomIn, ShieldCheck, Upload, AlertCircle, Clock } from "lucide-react";
 
@@ -143,6 +145,11 @@ function DocPreviewModal({ visit, onClose, onVerifyDoc, onVerifyAll }) {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Audit Trail */}
+        <div className="mt-4">
+          <AuditTrail entries={buildExposureVisitAuditTrail(visit)} tone="violet" compact />
         </div>
 
         {/* Footer */}

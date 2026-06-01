@@ -5,6 +5,7 @@ import {
   Eye,
   FolderKanban,
   HandCoins,
+  History,
   ReceiptText,
   ShieldCheck,
   XCircle,
@@ -12,6 +13,9 @@ import {
 import { mockDb } from "../../mock-db/index.js";
 import { useHrStore } from "../../stores/hrStore.js";
 import ReimbursementClaimOverlay from "../shared/ReimbursementClaimOverlay.jsx";
+import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildReimbursementAuditTrail } from "../../utils/auditTrailHelpers";
 
 const ADMIN_EMPLOYEE_ID = "EMP-0007";
 
@@ -64,6 +68,7 @@ function normalizeClaim(claim) {
 export default function AdminReimbursementApprovals() {
   const { reimbursements, fetchReimbursements, updateReimbursement } = useHrStore();
   const [selectedClaim, setSelectedClaim] = useState(null);
+  const [auditClaim, setAuditClaim] = useState(null);
   const admin = mockDb.employees.byId[ADMIN_EMPLOYEE_ID];
   const adminProjectIds = admin?.projectIds || [];
 
@@ -189,14 +194,24 @@ export default function AdminReimbursementApprovals() {
                           </button>
                         </div>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedClaim(claim)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.09] hover:text-white"
-                        >
-                          <Eye size={13} />
-                          Details
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedClaim(claim)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.05] px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.09] hover:text-white"
+                          >
+                            <Eye size={13} />
+                            Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setAuditClaim(claim)}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-violet-500/15 px-3 py-2 text-xs font-semibold text-violet-300 transition hover:bg-violet-500/25"
+                            title="Audit Trail"
+                          >
+                            <History size={13} />
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -218,6 +233,23 @@ export default function AdminReimbursementApprovals() {
         onReject={() => selectedClaim && decide(selectedClaim.id, "REJECTED")}
         tone="violet"
       />
+
+      <SlidePanel
+        open={Boolean(auditClaim)}
+        onClose={() => setAuditClaim(null)}
+        title="Reimbursement — Audit Trail"
+        width="md"
+      >
+        {auditClaim && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-sm font-semibold text-white">{auditClaim.employee}</p>
+              <p className="mt-1 text-xs text-white/45">{auditClaim.id} • {auditClaim.claimTitle || auditClaim.category || "Reimbursement"}</p>
+            </div>
+            <AuditTrail entries={buildReimbursementAuditTrail(auditClaim)} tone="violet" />
+          </div>
+        )}
+      </SlidePanel>
     </section>
   );
 }

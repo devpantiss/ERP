@@ -11,10 +11,15 @@ import {
   selectProjectCardsFromSalaries,
   selectSalaryRows,
 } from "../../stores/selectors/salarySelectors.js";
+import { History } from "lucide-react";
+import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildSalaryAuditTrail } from "../../utils/auditTrailHelpers";
 
 export default function AdminSalaryApprovals() {
   const { salaries, fetchSalaries, updateSalary } = useSalaryStore();
   const [selectedProject, setSelectedProject] = useState(null);
+  const [auditRow, setAuditRow] = useState(null);
 
   useEffect(() => {
     fetchSalaries();
@@ -115,6 +120,19 @@ export default function AdminSalaryApprovals() {
         />
       ),
     },
+    {
+      key: "audit",
+      label: "Audit",
+      render: (row) => (
+        <button
+          onClick={() => setAuditRow(row)}
+          className="rounded-lg bg-violet-500/15 p-2 text-violet-300 transition hover:bg-violet-500/25"
+          title="Audit Trail"
+        >
+          <History size={14} />
+        </button>
+      ),
+    },
   ];
 
   return (
@@ -131,10 +149,27 @@ export default function AdminSalaryApprovals() {
       />
 
       {selectedProject ? (
-        <DataTable columns={columns} rows={projectRows} minWidth="1620px" />
+        <DataTable columns={columns} rows={projectRows} minWidth="1700px" />
       ) : (
         <ProjectCards projects={projects} onSelect={setSelectedProject} />
       )}
+
+      <SlidePanel
+        open={Boolean(auditRow)}
+        onClose={() => setAuditRow(null)}
+        title="Salary — Audit Trail"
+        width="md"
+      >
+        {auditRow && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-sm font-semibold text-white">{auditRow.employee}</p>
+              <p className="mt-1 text-xs text-white/45">{auditRow.id} • {auditRow.center} • {auditRow.month}</p>
+            </div>
+            <AuditTrail entries={buildSalaryAuditTrail(auditRow)} tone="violet" />
+          </div>
+        )}
+      </SlidePanel>
     </section>
   );
 }

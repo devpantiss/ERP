@@ -1196,7 +1196,6 @@ export default function AdminProjectManagement({ readOnly = false, theme = "viol
 }
 
 function EnterpriseProjectDashboard({
-  portfolio,
   projectSnapshots,
   selectedProject,
   activeCenter,
@@ -1209,7 +1208,6 @@ function EnterpriseProjectDashboard({
   onBatchSelect,
   onBack,
 }) {
-  const mode = !selectedProject ? "Portfolio" : !activeCenter ? "Project" : "Center";
   const pageThemeClass = theme === "red" ? "super-admin-project-theme" : "";
 
   return (
@@ -1228,20 +1226,6 @@ function EnterpriseProjectDashboard({
               Move from portfolio health to project execution to center-level
               delivery without losing context.
             </p>
-          </div>
-
-          <div className="grid min-w-full gap-3 sm:grid-cols-3 lg:min-w-[460px]">
-            <EnterpriseMetric label="Mode" value={mode} caption="Current view" />
-            <EnterpriseMetric
-              label="Live Programs"
-              value={`${portfolio.activeProjects}/${portfolio.projects}`}
-              caption="Active portfolio"
-            />
-            <EnterpriseMetric
-              label="Health"
-              value={`${portfolio.avgHealthScore}%`}
-              caption="Portfolio average"
-            />
           </div>
         </div>
 

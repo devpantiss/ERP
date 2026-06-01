@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, CheckCircle2, Clock, FolderKanban, ShieldCheck, XCircle } from "lucide-react";
+import { ArrowLeft, CalendarDays, CheckCircle2, Clock, FolderKanban, History, ShieldCheck, XCircle } from "lucide-react";
 import { Breadcrumb, PageHeader } from "./SuperAdminSharedComponents";
 import { readLeaveRequests, ROLE_LABEL, writeLeaveRequests } from "../shared/leaveWorkflow";
+import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildLeaveAuditTrail } from "../../utils/auditTrailHelpers";
 
 const PROJECT_BY_ROLE = {
   trainer: "Tata Steel Foundation Livelihood Program",
@@ -21,9 +24,14 @@ export default function SuperAdminLeaveApprovals() {
   const [requests, setRequests] = useState(() => readLeaveRequests().map(normalizeLeave));
   const [selectedProject, setSelectedProject] = useState(null);
   const [rejectDraft, setRejectDraft] = useState(null);
+  const [auditRequest, setAuditRequest] = useState(null);
 
   const adminCleared = useMemo(
-    () => requests.filter((request) => request.status !== "Pending Admin Review"),
+    () => requests.filter((request) => (
+      request.status === "Pending Super Admin Review" ||
+      request.status === "Approved" ||
+      (request.status === "Rejected" && Boolean(request.superAdminDecision || request.superAdminRejectionReason))
+    )),
     [requests]
   );
   const projects = useMemo(() => summarizeProjects(adminCleared), [adminCleared]);
@@ -31,7 +39,11 @@ export default function SuperAdminLeaveApprovals() {
   const totals = useMemo(() => summarizeTotals(adminCleared), [adminCleared]);
 
   const persist = (nextRequests) => {
-    const writable = nextRequests.map(({ project, ...request }) => request);
+    const writable = nextRequests.map((request) => {
+      const persistedRequest = { ...request };
+      delete persistedRequest.project;
+      return persistedRequest;
+    });
     writeLeaveRequests(writable);
     setRequests(nextRequests);
   };
@@ -141,9 +153,17 @@ export default function SuperAdminLeaveApprovals() {
                           <div className="inline-flex min-w-[140px] flex-col gap-2">
                             <Action tone="approve" onClick={() => decide(request.id, "Approved")}>Approve</Action>
                             <Action tone="reject" onClick={() => setRejectDraft({ id: request.id, reason: "" })}>Reject</Action>
+                            <button type="button" onClick={() => setAuditRequest(request)} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20">
+                              <History size={13} /> Audit Trail
+                            </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-500">Closed</span>
+                          <div className="flex flex-col gap-2">
+                            <span className="text-xs text-slate-500">Closed</span>
+                            <button type="button" onClick={() => setAuditRequest(request)} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20">
+                              <History size={13} /> Audit Trail
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -176,6 +196,23 @@ export default function SuperAdminLeaveApprovals() {
           </form>
         </div>
       )}
+
+      <SlidePanel
+        open={Boolean(auditRequest)}
+        onClose={() => setAuditRequest(null)}
+        title="Leave Request — Audit Trail"
+        width="md"
+      >
+        {auditRequest && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-sm font-semibold text-white">{auditRequest.employee}</p>
+              <p className="mt-1 text-xs text-white/45">{auditRequest.id} • {auditRequest.type} • {auditRequest.days} day(s)</p>
+            </div>
+            <AuditTrail entries={buildLeaveAuditTrail(auditRequest)} tone="red" />
+          </div>
+        )}
+      </SlidePanel>
     </div>
   );
 }

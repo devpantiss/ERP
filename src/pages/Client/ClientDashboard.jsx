@@ -3,15 +3,11 @@ import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
   Award,
-  Building2,
-  FolderKanban,
-  GraduationCap,
   MapPinned,
   Medal,
   ShieldCheck,
   TrendingUp,
   UserCheck,
-  UserPlus,
 } from "lucide-react";
 import {
   Bar,
@@ -29,7 +25,6 @@ import {
   getClientDeliveryMetrics,
   getClientPlacementGeography,
   getClientProjects,
-  getClientSummary,
   getProjectSummary,
   getStoredClient,
 } from "./clientPortalData";
@@ -37,10 +32,15 @@ import {
 const DELIVERY_ICON = {
   certified: Award,
   enrolled: UserCheck,
-  mobilized: UserPlus,
   placed: Medal,
   retention: ShieldCheck,
-  trained: GraduationCap,
+};
+
+const DELIVERY_COLORS = {
+  enrolled: "#a78bfa",
+  certified: "#34d399",
+  placed: "#22d3ee",
+  retention: "#f59e0b",
 };
 
 const PLACEMENT_COLORS = {
@@ -57,9 +57,12 @@ const formatNumber = (value) => new Intl.NumberFormat("en-IN").format(value || 0
 export default function ClientDashboard() {
   const client = getStoredClient();
   const projects = getClientProjects(client.name);
-  const summary = getClientSummary(projects);
   const deliveryMetrics = getClientDeliveryMetrics(projects);
   const placementGeography = getClientPlacementGeography(projects);
+  const dashboardCards = deliveryMetrics.metrics.map((metric) => ({
+    ...metric,
+    icon: DELIVERY_ICON[metric.id] || TrendingUp,
+  }));
 
   return (
     <section className="space-y-6">
@@ -70,10 +73,15 @@ export default function ClientDashboard() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat icon={FolderKanban} label="Projects" value={summary.projects} />
-        <Stat icon={Building2} label="Centers" value={summary.centers} />
-        <Stat icon={GraduationCap} label="Candidates" value={summary.candidates} />
-        <Stat icon={TrendingUp} label="Portfolio Health" value={`${summary.health}%`} />
+        {dashboardCards.map((metric) => (
+          <Stat
+            key={metric.id}
+            icon={metric.icon}
+            label={metric.label}
+            value={formatNumber(metric.actual)}
+            caption={`${metric.percentage}% of target`}
+          />
+        ))}
       </div>
 
       <section className="overflow-hidden rounded-3xl border border-violet-200/10 bg-[#12071f]/80 shadow-xl shadow-black/20">
@@ -82,7 +90,7 @@ export default function ClientDashboard() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Delivery Command Center</p>
             <h2 className="mt-2 text-2xl font-semibold text-white">Targets and outcomes</h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-white/45">
-              Mobilization, enrollment, training, certification, placement, and 3-month retention progress across active projects.
+              Enrollment, certification, placement, and 3-month retention progress across active projects.
             </p>
           </div>
           <div className="mt-4 rounded-2xl border border-violet-300/20 bg-violet-500/10 px-4 py-3 text-sm text-violet-100 md:mt-0">
@@ -329,6 +337,7 @@ function PlacementTooltip({ active, payload }) {
 
 function TargetMetricCard({ metric }) {
   const Icon = DELIVERY_ICON[metric.id] || TrendingUp;
+  const color = DELIVERY_COLORS[metric.id] || "#a78bfa";
 
   return (
     <article className="rounded-3xl border border-white/10 bg-black/20 p-4">
@@ -336,23 +345,30 @@ function TargetMetricCard({ metric }) {
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-500/15">
           <Icon size={20} className="text-violet-200" />
         </div>
-        <span className="rounded-full border border-violet-300/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-200">
-          {metric.percentage}%
-        </span>
+        <MiniDonut percentage={metric.percentage} color={color} />
       </div>
       <p className="text-sm font-medium text-white/50">{metric.label}</p>
       <div className="mt-2 flex items-end justify-between gap-3">
         <p className="text-3xl font-semibold text-white">{formatNumber(metric.actual)}</p>
         <p className="pb-1 text-xs text-white/40">Target {formatNumber(metric.target)}</p>
       </div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-violet-400 to-cyan-300"
-          style={{ width: `${metric.percentage}%` }}
-        />
-      </div>
       <p className="mt-3 text-xs leading-5 text-white/40">{metric.helper}</p>
     </article>
+  );
+}
+
+function MiniDonut({ percentage, color }) {
+  return (
+    <div
+      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
+      style={{
+        background: `conic-gradient(${color} 0deg ${percentage * 3.6}deg, rgba(255,255,255,0.09) ${percentage * 3.6}deg 360deg)`,
+      }}
+    >
+      <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#12071f] text-[11px] font-semibold text-white">
+        {percentage}%
+      </div>
+    </div>
   );
 }
 
@@ -360,7 +376,7 @@ function TargetDonut({ metrics, percentage }) {
   return (
     <div>
       <h3 className="text-lg font-semibold text-white">Target Achievement</h3>
-      <p className="mt-1 text-sm text-white/45">Combined progress across the six delivery metrics.</p>
+      <p className="mt-1 text-sm text-white/45">Combined progress across the four delivery metrics.</p>
       <div
         className="mx-auto mt-6 flex h-48 w-48 items-center justify-center rounded-full"
         style={{
@@ -397,7 +413,7 @@ export function Header({ eyebrow, title, description }) {
   );
 }
 
-export function Stat({ icon: Icon, label, value }) {
+export function Stat({ icon: Icon, label, value, caption }) {
   return (
     <div className="rounded-3xl border border-violet-200/10 bg-white/[0.04] p-5">
       <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-500/15">
@@ -405,6 +421,7 @@ export function Stat({ icon: Icon, label, value }) {
       </div>
       <p className="text-2xl font-semibold text-white">{value}</p>
       <p className="text-sm text-white/45">{label}</p>
+      {caption ? <p className="mt-2 text-xs font-medium text-violet-200/70">{caption}</p> : null}
     </div>
   );
 }

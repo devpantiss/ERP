@@ -6,6 +6,7 @@ import {
   FileCheck,
   HandCoins,
   MapPinned,
+  ReceiptText,
   ShieldCheck,
   Wallet,
 } from "lucide-react";
@@ -32,6 +33,13 @@ const approvalSections = [
     path: "/super-admin/approvals/salary",
     icon: Wallet,
     pending: 1,
+  },
+  {
+    title: "Invoice Approvals",
+    description: "Invoices raised by Admin that come directly for Super Admin review.",
+    path: "/super-admin/approvals/invoices",
+    icon: ReceiptText,
+    pending: 3,
   },
   {
     title: "Reimbursement Approvals",

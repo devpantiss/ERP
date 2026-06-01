@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Ban, CheckCircle2, Clock, FolderKanban, Search, ShieldCheck, Wallet } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2, Clock, FolderKanban, History, Search, ShieldCheck, Wallet } from "lucide-react";
 import { buildSalaryWorkEvidence, SalaryWorkEvidence } from "../shared/salaryWorkEvidence";
 import { Breadcrumb, PageHeader } from "./SuperAdminSharedComponents";
 import { useSalaryStore } from "../../stores/salaryStore";
 import { selectSalaryRows } from "../../stores/selectors/salarySelectors";
+import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildSalaryAuditTrail } from "../../utils/auditTrailHelpers";
 
 function formatCurrency(value) {
   return `₹${Number(value || 0).toLocaleString("en-IN")}`;
@@ -24,6 +27,7 @@ export default function SuperAdminSalaryApprovals() {
   const { salaries, fetchSalaries, updateSalary } = useSalaryStore();
   const [selectedProject, setSelectedProject] = useState(null);
   const [search, setSearch] = useState("");
+  const [auditRow, setAuditRow] = useState(null);
 
   useEffect(() => {
     fetchSalaries();
@@ -146,9 +150,17 @@ export default function SuperAdminSalaryApprovals() {
                           <div className="inline-flex min-w-[145px] flex-col gap-2">
                             <button type="button" onClick={() => decide(row.id, "PAID")} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500/15 px-4 py-2.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/25"><CheckCircle2 size={13} />Mark Paid</button>
                             <button type="button" onClick={() => decide(row.id, "REJECTED")} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/15 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/25"><Ban size={13} />Return</button>
+                            <button type="button" onClick={() => setAuditRow(row)} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20">
+                              <History size={13} /> Audit Trail
+                            </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-500">Closed</span>
+                          <div className="flex flex-col gap-2">
+                            <span className="text-xs text-slate-500">Closed</span>
+                            <button type="button" onClick={() => setAuditRow(row)} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500/10 px-4 py-2.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/20">
+                              <History size={13} /> Audit Trail
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -159,6 +171,23 @@ export default function SuperAdminSalaryApprovals() {
           </div>
         </section>
       )}
+
+      <SlidePanel
+        open={Boolean(auditRow)}
+        onClose={() => setAuditRow(null)}
+        title="Salary — Audit Trail"
+        width="md"
+      >
+        {auditRow && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-sm font-semibold text-white">{auditRow.employee}</p>
+              <p className="mt-1 text-xs text-white/45">{auditRow.id} • {auditRow.center} • {auditRow.month}</p>
+            </div>
+            <AuditTrail entries={buildSalaryAuditTrail(auditRow)} tone="red" />
+          </div>
+        )}
+      </SlidePanel>
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildGenericApprovalAuditTrail } from "../../utils/auditTrailHelpers";
 import {
   ArrowLeft,
   BookOpen,
@@ -518,6 +520,12 @@ export default function AdminApprovals() {
                   View Attachments
                 </button>
               </div>
+
+              {/* Audit Trail */}
+              <AuditTrail
+                entries={buildGenericApprovalAuditTrail(selectedRequest)}
+                tone="violet"
+              />
             </div>
 
             {/* Sticky Action Footer */}

@@ -41,18 +41,16 @@ function toSalaryStatusLabel(status) {
 }
 
 function buildSalaryRecords(salaries) {
-  return selectSalaryRows(salaries).map((salary, index) => {
+  return selectSalaryRows(salaries).filter((salary) => ["Approved", "Paid", "Rejected"].includes(salary.status)).map((salary, index) => {
     const target2 = salary.role === "Placement Officer" ? 40 + index * 2 : 80 + index * 4;
     const achievement2 = Math.max(Math.round(target2 * (salary.attendance / 100)) - (index % 3), 0);
-    const adminApproved = ["Approved", "Paid"].includes(salary.status);
+    const adminApproved = true;
     const superAdminStatus =
       salary.status === "Paid"
         ? "Paid"
         : salary.status === "Rejected"
           ? "Returned"
-          : adminApproved
-            ? "Pending Review"
-            : "Waiting Admin";
+          : "Pending Review";
 
     return {
       ...salary,
@@ -73,7 +71,6 @@ function getStatusClass(status) {
     Paid: "border-emerald-400/25 bg-emerald-500/10 text-emerald-300",
     Pending: "border-amber-400/25 bg-amber-500/10 text-amber-300",
     "Pending Review": "border-amber-400/25 bg-amber-500/10 text-amber-300",
-    "Waiting Admin": "border-slate-500/25 bg-slate-500/10 text-slate-300",
     Returned: "border-red-400/25 bg-red-500/10 text-red-300",
   };
 
@@ -216,8 +213,8 @@ export default function SuperAdminFinanceManagement() {
         title={selectedProject ? `${selectedProject} Salaries` : "Salaries"}
         subtitle={
           selectedProject
-            ? "Review employee salary records for this project and complete Super Admin approval."
-            : "Select a project to view employee salary details and approval status."
+            ? "Review Admin-approved employee salary records for this project and complete Super Admin approval."
+            : "Select a project to view salary records after Admin approval."
         }
       />
       <Breadcrumb items={selectedProject ? ["Super Admin", "Salaries", selectedProject] : ["Super Admin", "Salaries"]} />
@@ -237,7 +234,7 @@ export default function SuperAdminFinanceManagement() {
                 Select Project
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Project cards open the salary details of employees associated with that project.
+                Project cards open salary details that have already passed Admin verification.
               </p>
             </div>
             <Link
@@ -329,7 +326,7 @@ export default function SuperAdminFinanceManagement() {
                   <FilterSelect
                     value={statusFilter}
                     onChange={setStatusFilter}
-                    options={["All", "Pending Review", "Paid", "Returned", "Waiting Admin"]}
+                    options={["All", "Pending Review", "Paid", "Returned"]}
                   />
 
                   <Link
@@ -367,7 +364,7 @@ export default function SuperAdminFinanceManagement() {
                         row={row}
                         onApprove={() => updateSuperAdminStatus(row.id, "Paid", "PAID")}
                         onReturn={() => updateSuperAdminStatus(row.id, "Returned", "REJECTED")}
-                        onReopen={() => updateSuperAdminStatus(row.id, row.adminApproved ? "Pending Review" : "Waiting Admin", row.adminApproved ? "APPROVED" : "SUBMITTED")}
+                        onReopen={() => updateSuperAdminStatus(row.id, "Pending Review", "APPROVED")}
                       />
                     ))
                   ) : (
@@ -469,15 +466,15 @@ function SalaryRow({ row, onApprove, onReturn, onReopen }) {
         <p className="mt-1 font-mono text-xs text-slate-500">{row.id}</p>
       </td>
       <td className="px-5 py-4">
-        <StatusPill status={row.status} />
+        <StatusPill status="Approved" />
         <p className="mt-2 text-xs font-semibold text-slate-500">
-          {row.adminApproved ? "Admin approval given" : "Admin approval pending"}
+          Admin approval given
         </p>
       </td>
       <td className="px-5 py-4">
         <StatusPill status={row.superAdminStatus} />
         <p className="mt-2 text-xs font-semibold text-slate-500">
-          {row.decidedOn ? `Updated ${row.decidedOn}` : row.adminApproved ? "Ready for decision" : "Locked until Admin clears"}
+          {row.decidedOn ? `Updated ${row.decidedOn}` : "Ready for decision"}
         </p>
       </td>
       <td className="px-5 py-4 align-top">
@@ -503,7 +500,7 @@ function SalaryRow({ row, onApprove, onReturn, onReopen }) {
               Return
             </button>
           </div>
-        ) : row.adminApproved ? (
+        ) : (
           <button
             type="button"
             onClick={onReopen}
@@ -512,11 +509,6 @@ function SalaryRow({ row, onApprove, onReturn, onReopen }) {
             <Clock size={14} />
             Reopen
           </button>
-        ) : (
-          <span className="inline-flex min-w-[142px] items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-slate-700 bg-[#0b1220] px-4 py-2.5 text-xs font-black text-slate-500">
-            <Clock size={14} />
-            Awaiting Admin
-          </span>
         )}
       </td>
     </tr>

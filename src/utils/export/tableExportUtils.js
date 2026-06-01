@@ -183,6 +183,87 @@ export async function exportTableToExcel({
   );
 }
 
+export async function exportWorkbookToExcel({
+  sheets = [],
+  fileName,
+  company = DEFAULT_COMPANY,
+  generatedAt = new Date(),
+}) {
+  const [{ default: ExcelJS }, { saveAs }] = await Promise.all([import("exceljs"), import("file-saver")]);
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = company.name || DEFAULT_COMPANY.name;
+  workbook.created = generatedAt;
+
+  sheets.forEach((sheet, sheetIndex) => {
+    const exportColumns = normalizeExportColumns(sheet.columns);
+    const worksheet = workbook.addWorksheet(String(sheet.name || `Sheet ${sheetIndex + 1}`).slice(0, 31), {
+      views: [{ state: "frozen", ySplit: 3 }],
+    });
+    const rows = sheet.rows || [];
+
+    worksheet.mergeCells(1, 1, 1, exportColumns.length || 1);
+    worksheet.getCell(1, 1).value = company.name || DEFAULT_COMPANY.name;
+    worksheet.getCell(1, 1).font = { bold: true, size: 14 };
+
+    worksheet.mergeCells(2, 1, 2, exportColumns.length || 1);
+    worksheet.getCell(2, 1).value = `${sheet.name || "Report"} | Exported ${formatDateTime(generatedAt)} | ${rows.length} records`;
+    worksheet.getCell(2, 1).font = { size: 10, color: { argb: "FF64748B" } };
+
+    worksheet.addRow(exportColumns.map((column) => column.header));
+    const headerRow = worksheet.getRow(3);
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF2563EB" },
+    };
+    headerRow.alignment = { vertical: "middle" };
+
+    const bodyRows = buildExportRows({ columns: exportColumns, rows });
+    bodyRows.forEach((values) => worksheet.addRow(values));
+
+    exportColumns.forEach((column, index) => {
+      const excelColumn = worksheet.getColumn(index + 1);
+      excelColumn.numFmt =
+        column.excelFormat ||
+        (column.type === "date" ? DATE_FORMAT : column.type === "datetime" ? DATE_TIME_FORMAT : undefined);
+
+      if (column.type === "currency") excelColumn.numFmt = column.excelFormat || '"Rs."#,##0.00';
+      if (column.type === "percent") excelColumn.numFmt = column.excelFormat || '0"%"';
+
+      const maxLength = Math.max(
+        String(column.header).length,
+        ...bodyRows.map((row) => String(printableValue(row[index], column)).length)
+      );
+      excelColumn.width = Math.min(Math.max(maxLength + 3, column.minWidth || 12), column.maxWidth || 42);
+    });
+
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFE2E8F0" } },
+          left: { style: "thin", color: { argb: "FFE2E8F0" } },
+          bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+          right: { style: "thin", color: { argb: "FFE2E8F0" } },
+        };
+        cell.alignment = {
+          vertical: "middle",
+          wrapText: true,
+          horizontal: rowNumber === 3 ? "center" : "left",
+        };
+      });
+    });
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  saveAs(
+    new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    }),
+    `${slugifyFileName(fileName || "workbook")}.xlsx`
+  );
+}
+
 export async function imageUrlToDataUrl(url) {
   if (!url) return "";
   try {

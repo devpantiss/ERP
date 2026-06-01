@@ -50,6 +50,7 @@ const DRAWER_ITEMS = [
       { label: "Tour Approvals", path: "/super-admin/approvals/tour", icon: MapPinned },
       { label: "Leave Approvals", path: "/super-admin/approvals/leave", icon: CalendarDays },
       { label: "Salary Approvals", path: "/super-admin/approvals/salary", icon: Wallet },
+      { label: "Invoice Approvals", path: "/super-admin/approvals/invoices", icon: ReceiptText },
       { label: "Reimbursement Approvals", path: "/super-admin/approvals/reimbursements", icon: HandCoins },
       { label: "Operations Approvals", path: "/super-admin/approvals/operations", icon: FileCheck },
     ],
@@ -60,9 +61,6 @@ const DRAWER_ITEMS = [
     label: "Finances",
     icon: Wallet,
     children: [
-      { label: "Salaries", path: "/super-admin/salaries", icon: Wallet },
-      { label: "Invoices", path: "/super-admin/invoices", icon: ReceiptText },
-      { label: "Reimbursements", path: "/super-admin/reimbursements", icon: HandCoins },
       { label: "Insurance", path: "/super-admin/student-insurance-details", icon: ShieldCheck },
     ],
   },

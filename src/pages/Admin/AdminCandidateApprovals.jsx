@@ -1,6 +1,8 @@
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
 import ExportPDFButton from "../../components/common/ExportPDFButton";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildCandidateAuditTrail } from "../../utils/auditTrailHelpers";
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle,
@@ -271,6 +273,8 @@ export default function AdminCandidateApprovals() {
                 </p>
               </div>
             )}
+
+            <AuditTrail entries={buildCandidateAuditTrail(viewCandidate)} tone="violet" compact />
 
             {viewCandidate.status === "Pending" && (
               <div className="flex gap-3">

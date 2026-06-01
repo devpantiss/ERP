@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
-import { CalendarDays, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, History, XCircle } from "lucide-react";
+import SlidePanel from "../../components/common/SlidePanel";
+import AuditTrail from "../../components/common/AuditTrail";
+import { buildLeaveAuditTrail } from "../../utils/auditTrailHelpers";
 import {
   readLeaveRequests,
   ROLE_LABEL,
@@ -16,6 +19,7 @@ const formatDate = (date) =>
 export default function AdminLeaveApprovals() {
   const [requests, setRequests] = useState(() => readLeaveRequests());
   const [rejectDraft, setRejectDraft] = useState(null);
+  const [auditRequest, setAuditRequest] = useState(null);
 
   const summary = useMemo(
     () => ({
@@ -129,9 +133,25 @@ export default function AdminLeaveApprovals() {
                           >
                             Reject
                           </button>
+                          <button
+                            onClick={() => setAuditRequest(request)}
+                            className="rounded-lg bg-violet-500/15 px-3 py-2 text-xs font-semibold text-violet-300 transition hover:bg-violet-500/25"
+                            title="Audit Trail"
+                          >
+                            <History size={13} />
+                          </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-white/35">Closed</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-white/35">Closed</span>
+                          <button
+                            onClick={() => setAuditRequest(request)}
+                            className="rounded-lg bg-violet-500/15 p-1.5 text-xs text-violet-300 transition hover:bg-violet-500/25"
+                            title="Audit Trail"
+                          >
+                            <History size={13} />
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -181,6 +201,23 @@ export default function AdminLeaveApprovals() {
           </form>
         </div>
       )}
+
+      <SlidePanel
+        open={Boolean(auditRequest)}
+        onClose={() => setAuditRequest(null)}
+        title="Leave Request — Audit Trail"
+        width="md"
+      >
+        {auditRequest && (
+          <div className="space-y-5">
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <p className="text-sm font-semibold text-white">{auditRequest.employee}</p>
+              <p className="mt-1 text-xs text-white/45">{auditRequest.id} • {auditRequest.type} • {auditRequest.days} day(s)</p>
+            </div>
+            <AuditTrail entries={buildLeaveAuditTrail(auditRequest)} tone="violet" />
+          </div>
+        )}
+      </SlidePanel>
     </section>
   );
 }
