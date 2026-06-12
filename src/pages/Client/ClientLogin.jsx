@@ -1,31 +1,44 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Building2, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { CLIENT_ACCOUNTS } from "./clientPortalData";
 
+const GENERATED_CLIENT_ACCOUNTS_KEY = "generatedClientAccounts";
+
 export default function ClientLogin() {
   const navigate = useNavigate();
+  const [generatedAccounts, setGeneratedAccounts] = useState([]);
+  const clientAccounts = useMemo(() => [...CLIENT_ACCOUNTS, ...generatedAccounts], [generatedAccounts]);
   const [clientId, setClientId] = useState(CLIENT_ACCOUNTS[0].id);
   const [email, setEmail] = useState(CLIENT_ACCOUNTS[0].email);
   const [password, setPassword] = useState("client123");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    try {
+      const storedAccounts = JSON.parse(localStorage.getItem(GENERATED_CLIENT_ACCOUNTS_KEY) || "[]");
+      setGeneratedAccounts(Array.isArray(storedAccounts) ? storedAccounts : []);
+    } catch {
+      setGeneratedAccounts([]);
+    }
+  }, []);
+
   const selectedClient = useMemo(
-    () => CLIENT_ACCOUNTS.find((client) => client.id === clientId) || CLIENT_ACCOUNTS[0],
-    [clientId]
+    () => clientAccounts.find((client) => client.id === clientId) || clientAccounts[0] || CLIENT_ACCOUNTS[0],
+    [clientAccounts, clientId]
   );
 
   const selectClient = (id) => {
-    const nextClient = CLIENT_ACCOUNTS.find((client) => client.id === id) || CLIENT_ACCOUNTS[0];
+    const nextClient = clientAccounts.find((client) => client.id === id) || clientAccounts[0] || CLIENT_ACCOUNTS[0];
     setClientId(nextClient.id);
     setEmail(nextClient.email);
-    setPassword("client123");
+    setPassword(nextClient.password || "");
     setError("");
   };
 
   const submit = (event) => {
     event.preventDefault();
-    const match = CLIENT_ACCOUNTS.find(
+    const match = clientAccounts.find(
       (client) =>
         client.id === clientId &&
         client.email.toLowerCase() === email.trim().toLowerCase() &&
@@ -33,7 +46,7 @@ export default function ClientLogin() {
     );
 
     if (!match) {
-      setError("Use the selected client's demo email and password client123.");
+      setError("Use the selected client's email and generated password.");
       return;
     }
 
@@ -43,6 +56,7 @@ export default function ClientLogin() {
         id: match.id,
         name: match.name,
         email: match.email,
+        projectIds: match.projectIds || [],
         signedInAt: new Date().toISOString(),
       })
     );
@@ -98,7 +112,7 @@ export default function ClientLogin() {
 
           <label className="block text-sm text-white/55">Client</label>
           <div className="mt-2 grid gap-2">
-            {CLIENT_ACCOUNTS.map((client) => (
+            {clientAccounts.map((client) => (
               <button
                 key={client.id}
                 type="button"
@@ -144,8 +158,7 @@ export default function ClientLogin() {
           </button>
 
           <p className="mt-4 rounded-2xl border border-violet-300/15 bg-violet-500/10 px-4 py-3 text-xs leading-5 text-violet-100/80">
-            Demo credentials: use the selected client email with password{" "}
-            <span className="font-semibold text-white">client123</span>.
+            Demo clients use password <span className="font-semibold text-white">client123</span>. New project clients use the generated password from Super Admin project creation.
           </p>
         </form>
       </section>

@@ -468,7 +468,12 @@ export const getClientPlacementGeography = (projects) => {
 export const getStoredClient = () => {
   try {
     const stored = JSON.parse(localStorage.getItem("clientSession") || "null");
-    return CLIENT_ACCOUNTS.find((client) => client.id === stored?.id) || CLIENT_ACCOUNTS[0];
+    const generatedAccounts = JSON.parse(localStorage.getItem("generatedClientAccounts") || "[]");
+    const clientAccounts = [
+      ...CLIENT_ACCOUNTS,
+      ...(Array.isArray(generatedAccounts) ? generatedAccounts : []),
+    ];
+    return clientAccounts.find((client) => client.id === stored?.id) || CLIENT_ACCOUNTS[0];
   } catch {
     return CLIENT_ACCOUNTS[0];
   }

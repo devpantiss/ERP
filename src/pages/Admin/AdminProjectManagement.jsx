@@ -155,6 +155,21 @@ const DESIGNATIONS = [
   "Retail Floor Executive",
 ];
 
+const PROJECT_POPUP_THEMES = {
+  violet: {
+    drawerBorder: "border-violet-500/25",
+    icon: "border-violet-400/25 bg-violet-500/10 text-violet-200",
+    downloadHover: "hover:border-violet-400/35 hover:bg-violet-500/15",
+    sectionLabel: "text-violet-300",
+  },
+  red: {
+    drawerBorder: "border-red-500/30",
+    icon: "border-red-400/30 bg-red-500/10 text-red-200",
+    downloadHover: "hover:border-red-400/40 hover:bg-red-500/15",
+    sectionLabel: "text-red-300",
+  },
+};
+
 const ENROLLMENT_SAMPLE_PDF =
   "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
 const enrollmentSampleImage = (seed) =>
@@ -1251,6 +1266,7 @@ function EnterpriseProjectDashboard({
           centers={rankedCenters}
           selectedBatch={selectedBatch}
           readOnly={readOnly}
+          theme={theme}
           onBack={onBack}
           onCenterSelect={onCenterSelect}
           onBatchSelect={onBatchSelect}
@@ -1488,6 +1504,7 @@ function EnterpriseCenterView({
   centers,
   selectedBatch,
   readOnly,
+  theme,
   onBack,
   onCenterSelect,
   onBatchSelect,
@@ -1557,6 +1574,7 @@ function EnterpriseCenterView({
         project={project}
         center={center}
         selectedBatch={selectedBatch}
+        theme={theme}
       />
 
     </div>
@@ -1733,11 +1751,11 @@ function CenterOperationsEvidenceSections({ placementDrives, exposureVisits }) {
                   <td className="px-4 py-4 text-right">
                     <button
                       type="button"
-                      onClick={() => setDocumentContext({ type: "Placement Drive", title: drive.driveName, subtitle: `${drive.batch} • ${drive.company}`, documents: drive.documents })}
+                      onClick={() => setDocumentContext({ type: "Placement Drive", title: drive.driveName, subtitle: `${drive.batch} • ${drive.company}`, record: drive, documents: drive.documents })}
                       className="inline-flex items-center gap-2 rounded-lg border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:border-violet-300/50 hover:bg-violet-500/20"
                     >
                       <FileText size={13} />
-                      View {drive.documents.length}
+                      View details
                     </button>
                   </td>
                 </tr>
@@ -1773,11 +1791,11 @@ function CenterOperationsEvidenceSections({ placementDrives, exposureVisits }) {
                 <p className="text-xs leading-5 text-slate-400">{visit.notes}</p>
                 <button
                   type="button"
-                  onClick={() => setDocumentContext({ type: "Exposure Visit", title: visit.industry, subtitle: `${visit.batch} • ${visit.trainer}`, documents: visit.documents })}
+                  onClick={() => setDocumentContext({ type: "Exposure Visit", title: visit.industry, subtitle: `${visit.batch} • ${visit.trainer}`, record: visit, documents: visit.documents })}
                   className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1.5 text-xs font-semibold text-violet-200 transition hover:border-violet-300/50 hover:bg-violet-500/20"
                 >
                   <FileText size={13} />
-                  View {visit.documents.length} uploads
+                  View details
                 </button>
               </div>
               </article>
@@ -1923,9 +1941,10 @@ function StatusChip({ status }) {
   );
 }
 
-function ProjectGallerySection({ items, project, center, selectedBatch }) {
+function ProjectGallerySection({ items, project, center, selectedBatch, theme = "violet" }) {
   const [activeCategory, setActiveCategory] = useState("All");
   const [previewItem, setPreviewItem] = useState(null);
+  const popupTheme = PROJECT_POPUP_THEMES[theme] || PROJECT_POPUP_THEMES.violet;
 
   const categories = useMemo(
     () => ["All", ...Array.from(new Set(items.map((item) => item.category)))],
@@ -2001,12 +2020,12 @@ function ProjectGallerySection({ items, project, center, selectedBatch }) {
         ))}
       </div>
 
-      <GalleryImageModal item={previewItem} onClose={() => setPreviewItem(null)} />
+      <GalleryImageModal item={previewItem} theme={popupTheme} onClose={() => setPreviewItem(null)} />
     </section>
   );
 }
 
-function GalleryImageModal({ item, onClose }) {
+function GalleryImageModal({ item, theme, onClose }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -2042,18 +2061,18 @@ function GalleryImageModal({ item, onClose }) {
         }`}
       />
       <div
-        className={`relative flex h-full w-full max-w-[560px] flex-col border-l border-violet-500/25 bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
+        className={`relative flex h-full w-full max-w-[560px] flex-col border-l ${theme.drawerBorder} bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
           visible ? "translate-x-0" : "translate-x-full"
         }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-[#0b1220] px-5 py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-400/25 bg-violet-500/10 text-violet-200">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${theme.icon}`}>
               <Eye size={18} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">{item.title}</p>
+              <h3 className="truncate text-xl font-semibold text-white">{item.title}</h3>
               <p className="mt-0.5 truncate text-xs text-slate-400">
                 {item.projectName} • {item.centerName}
               </p>
@@ -2063,7 +2082,7 @@ function GalleryImageModal({ item, onClose }) {
             <a
               href={item.src}
               download
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-xs font-semibold text-slate-200 transition hover:border-violet-400/35 hover:bg-violet-500/15 hover:text-white"
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-xs font-semibold text-slate-200 transition ${theme.downloadHover} hover:text-white`}
             >
               <Download size={14} />
               Download
@@ -2079,14 +2098,6 @@ function GalleryImageModal({ item, onClose }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 border-b border-white/10 bg-[#0b1220] px-5 py-2.5">
-          <span className="rounded-md border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
-            {item.category}
-          </span>
-          <span className="text-xs text-slate-600">•</span>
-          <span className="text-xs font-medium text-slate-400">{item.stage}</span>
-        </div>
-
         <div className="min-h-0 flex-1 overflow-y-auto bg-[#070b16]">
           <div className="p-5">
             <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-white/10 bg-black/25 p-3">
@@ -2099,8 +2110,13 @@ function GalleryImageModal({ item, onClose }) {
           </div>
 
           <div className="border-t border-white/10 bg-[#080d1a] p-5">
+            <div className={`mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] ${theme.sectionLabel}`}>
+              <FileText size={14} />
+              Event details
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <GalleryMetaRow label="Captured on" value={item.capturedOn} />
+              <GalleryMetaRow label="Category" value={item.category} />
               <GalleryMetaRow label="Batch" value={item.batchLabel} />
               <GalleryMetaRow label="Location" value={item.location} />
               <GalleryMetaRow label="Captured by" value={item.capturedBy} />
@@ -2527,12 +2543,14 @@ function CandidateRosterTabs({
         <TrainingDetailTable
           candidates={selectedBatch.candidateRecords}
           project={project}
+          center={center}
           batchLabel={selectedBatch.label}
         />
       ) : activeTab === "placements" ? (
         <PlacementsTable
           candidates={selectedBatch.candidateRecords}
           project={project}
+          center={center}
           batchLabel={selectedBatch.label}
           verificationState={verificationState}
           readOnly={readOnly}
@@ -2558,6 +2576,7 @@ function CandidateRosterTabs({
         <CertificationTable
           candidates={selectedBatch.candidateRecords}
           project={project}
+          center={center}
           batchLabel={selectedBatch.label}
           readOnly={readOnly}
         />
@@ -2630,7 +2649,7 @@ function FilterSelect({ label, onChange, options, value }) {
   );
 }
 
-function TrainingDetailTable({ candidates, project, batchLabel }) {
+function TrainingDetailTable({ candidates, project, center, batchLabel }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -2658,6 +2677,7 @@ function TrainingDetailTable({ candidates, project, batchLabel }) {
       { key: "name", header: "Name" },
       { key: "candidateCode", header: "Candidate Code" },
       { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "centerName", header: "Center", exportValue: () => center.name },
       { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
       { key: "jobRole", header: "Job Role" },
       { key: "trainingStatus", header: "Training Status" },
@@ -2668,7 +2688,7 @@ function TrainingDetailTable({ candidates, project, batchLabel }) {
       { key: "totalPracticalHours", header: "Practical Hours", type: "number" },
       { key: "attendanceRate", header: "Attendance %", type: "number" },
     ],
-    [project.name, batchLabel]
+    [project.name, center.name, batchLabel]
   );
 
   return (
@@ -2695,11 +2715,12 @@ function TrainingDetailTable({ candidates, project, batchLabel }) {
         />
       </TableToolbar>
       <div className="max-h-[560px] overflow-auto">
-        <table className="w-full min-w-[960px] text-left text-sm">
+        <table className="w-full min-w-[1080px] text-left text-sm">
           <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Center</th>
               <th className="px-4 py-3 font-medium">Batch</th>
               <th className="px-4 py-3 font-medium">Job Role</th>
               <th className="px-4 py-3 font-medium">Duration Received</th>
@@ -2720,6 +2741,10 @@ function TrainingDetailTable({ candidates, project, batchLabel }) {
                   </p>
                 </td>
                 <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                <td className="px-4 py-4">
+                  <p className="text-slate-300">{center.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{center.location}</p>
+                </td>
                 <td className="px-4 py-4">
                   <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
                     {batchLabel}
@@ -3213,7 +3238,7 @@ function InsuranceDetailsTable({ candidates, project, center, batchLabel, readOn
   );
 }
 
-function CertificationTable({ candidates, project, batchLabel, readOnly = false }) {
+function CertificationTable({ candidates, project, center, batchLabel, readOnly = false }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [certState, setCertState] = useState(() =>
@@ -3246,6 +3271,7 @@ function CertificationTable({ candidates, project, batchLabel, readOnly = false 
       { key: "name", header: "Student" },
       { key: "candidateCode", header: "Candidate Code" },
       { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "centerName", header: "Center", exportValue: () => center.name },
       { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
       { key: "jobRole", header: "Job Role" },
       { key: "attendanceRate", header: "Attendance %", type: "number" },
@@ -3255,7 +3281,7 @@ function CertificationTable({ candidates, project, batchLabel, readOnly = false 
       { key: "certifiedOn", header: "Certified On", exportValue: (candidate) => candidate.certification.certifiedOn || "-" },
       { key: "certificateFile", header: "Certificate File", exportValue: (candidate) => candidate.certification.certificateFile?.name || "Not uploaded" },
     ],
-    [batchLabel, project.name]
+    [batchLabel, center.name, project.name]
   );
 
   const updateCertification = (candidateId, field, value) => {
@@ -3295,11 +3321,12 @@ function CertificationTable({ candidates, project, batchLabel, readOnly = false 
         />
       </TableToolbar>
       <div className="max-h-[560px] overflow-auto">
-        <table className="w-full min-w-[1420px] text-left text-sm">
+        <table className="w-full min-w-[1540px] text-left text-sm">
           <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
             <tr>
               <th className="px-4 py-3 font-medium">Student</th>
               <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Center</th>
               <th className="px-4 py-3 font-medium">Batch</th>
               <th className="px-4 py-3 font-medium">Attendance</th>
               <th className="px-4 py-3 font-medium">Module</th>
@@ -3319,6 +3346,10 @@ function CertificationTable({ candidates, project, batchLabel, readOnly = false 
                     <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
                   </td>
                   <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                  <td className="px-4 py-4">
+                    <p className="text-slate-300">{center.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">{center.location}</p>
+                  </td>
                   <td className="px-4 py-4">
                     <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
                       {batchLabel}
@@ -4139,6 +4170,7 @@ function VerificationToggle({ isVerified, onToggle }) {
 function PlacementsTable({
   candidates,
   project,
+  center,
   batchLabel,
   verificationState,
   readOnly = false,
@@ -4202,6 +4234,7 @@ function PlacementsTable({
       { key: "name", header: "Student Name" },
       { key: "candidateCode", header: "Candidate Code" },
       { key: "projectName", header: "Project", exportValue: () => project.name },
+      { key: "centerName", header: "Center", exportValue: () => center.name },
       { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
       { key: "company", header: "Company" },
       { key: "designation", header: "Designation" },
@@ -4218,7 +4251,7 @@ function PlacementsTable({
         exportValue: (candidate) => verificationState[candidate.id] ? "Verified" : "Pending",
       },
     ],
-    [project.name, batchLabel, verificationState]
+    [project.name, center.name, batchLabel, verificationState]
   );
 
   if (!placedCandidates.length) {
@@ -4271,11 +4304,12 @@ function PlacementsTable({
           />
         </TableToolbar>
         <div className="max-h-[560px] overflow-auto">
-          <table className="w-full min-w-[1280px] text-left text-sm">
+          <table className="w-full min-w-[1400px] text-left text-sm">
             <thead className="sticky top-0 z-10 bg-[#0f172a] text-xs uppercase tracking-[0.16em] text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-medium">Student Name</th>
                 <th className="px-4 py-3 font-medium">Project</th>
+                <th className="px-4 py-3 font-medium">Center</th>
                 <th className="px-4 py-3 font-medium">Batch</th>
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Designation</th>
@@ -4302,6 +4336,10 @@ function PlacementsTable({
                     </p>
                   </td>
                   <td className="px-4 py-4 text-slate-300">{project.name}</td>
+                  <td className="px-4 py-4">
+                    <p className="text-slate-300">{center.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">{center.location}</p>
+                  </td>
                   <td className="px-4 py-4">
                     <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
                       {batchLabel}

@@ -1322,6 +1322,15 @@ function ClientOperationsEvidenceSections({ project, center }) {
 
 const CLIENT_EVIDENCE_IMAGE_POOL = [1, 2, 3, 4, 5, 6, 7, 9, 11];
 
+const CLIENT_POPUP_THEME = {
+  drawerBorder: "border-violet-500/25",
+  icon: "border-violet-400/25 bg-violet-500/10 text-violet-200",
+  mediaCard: "border-violet-400/20 bg-violet-500/[0.04]",
+  downloadHover: "hover:border-violet-400/35 hover:bg-violet-500/15",
+  sectionLabel: "text-violet-300",
+  chip: "border-violet-400/20 bg-violet-500/10 text-violet-200",
+};
+
 function buildClientEvidenceMedia(prefix, index, month, dayStart) {
   const firstImage = CLIENT_EVIDENCE_IMAGE_POOL[(index * 2) % CLIENT_EVIDENCE_IMAGE_POOL.length];
   const secondImage = CLIENT_EVIDENCE_IMAGE_POOL[(index * 2 + 1) % CLIENT_EVIDENCE_IMAGE_POOL.length];
@@ -1586,16 +1595,13 @@ function MediaChips({ media }) {
 
 function ClientEvidenceOverlay({ evidence, onClose }) {
   const [visible, setVisible] = useState(false);
-  const [activeMediaId, setActiveMediaId] = useState("");
 
   useEffect(() => {
     if (!evidence) {
       setVisible(false);
-      setActiveMediaId("");
       return undefined;
     }
 
-    setActiveMediaId(evidence.mediaUploads?.[0]?.id || "");
     const frame = requestAnimationFrame(() => setVisible(true));
     const handleKeyDown = (event) => {
       if (event.key === "Escape") onClose();
@@ -1614,8 +1620,13 @@ function ClientEvidenceOverlay({ evidence, onClose }) {
   if (!evidence || typeof document === "undefined") return null;
 
   const media = evidence.mediaUploads || [];
-  const activeMedia = media.find((item) => item.id === activeMediaId) || media[0];
   const title = evidence.name || evidence.title;
+  const latestUpload = media
+    .map((item) => item.uploadedOn)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+  const theme = CLIENT_POPUP_THEME;
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-end" onClick={onClose}>
@@ -1625,15 +1636,14 @@ function ClientEvidenceOverlay({ evidence, onClose }) {
         }`}
       />
       <aside
-        className={`relative flex h-full w-full max-w-[620px] flex-col border-l border-violet-500/25 bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
+        className={`relative flex h-full w-full max-w-[620px] flex-col border-l ${theme.drawerBorder} bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
           visible ? "translate-x-0" : "translate-x-full"
         }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-[#0b1220] px-5 py-4">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Zoho Projects Style Evidence Review</p>
-            <h3 className="mt-1 truncate text-xl font-semibold text-white">{title}</h3>
+            <h3 className="truncate text-2xl font-semibold text-white">{title}</h3>
             <p className="mt-1 truncate text-sm text-slate-400">
               {evidence.projectName} • {evidence.centerName}
             </p>
@@ -1648,59 +1658,70 @@ function ClientEvidenceOverlay({ evidence, onClose }) {
           </button>
         </div>
 
-        <div className="border-b border-white/10 bg-[#0b1220] px-5 py-3">
-          <div className="flex flex-wrap gap-2">
-            {media.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setActiveMediaId(item.id)}
-                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition ${
-                  activeMedia?.id === item.id
-                    ? "border-violet-300/50 bg-violet-500/20 text-white"
-                    : "border-white/10 bg-white/[0.04] text-slate-400 hover:text-white"
-                }`}
-              >
-                <FileText size={14} />
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="min-h-0 flex-1 overflow-y-auto bg-[#070b16]">
           <div className="p-5">
-            <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-              <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-xl bg-slate-950">
-                <img
-                  src={activeMedia?.src}
-                  alt={`${activeMedia?.label || title} preview`}
-                  className="max-h-[54vh] w-auto max-w-full object-contain"
-                />
-                {activeMedia?.type === "video" ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                    <span className="inline-flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-black/45 text-lg font-black text-white backdrop-blur">
-                      ▶
-                    </span>
+            <div className="grid gap-4">
+              {media.map((item) => (
+                <figure key={item.id} className={`overflow-hidden rounded-2xl border p-3 ${theme.mediaCard}`}>
+                  <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-xl bg-slate-950">
+                    <img
+                      src={item.src}
+                      alt={`${item.label || title} preview`}
+                      className="max-h-[48vh] w-auto max-w-full object-contain"
+                    />
+                    {item.type === "video" ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                        <span className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-black/45 text-base font-black text-white backdrop-blur">
+                          ▶
+                        </span>
+                      </div>
+                    ) : null}
+                    <a
+                      href={item.src}
+                      download
+                      className={`absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-black/45 text-white backdrop-blur transition ${theme.downloadHover}`}
+                      aria-label={`Download ${item.label}`}
+                    >
+                      <Download size={15} />
+                    </a>
                   </div>
-                ) : null}
-              </div>
+                  <figcaption className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+                    <span className="font-semibold text-white">{item.label}</span>
+                    <span className="text-xs font-medium text-slate-400">{formatDate(item.uploadedOn)}</span>
+                  </figcaption>
+                </figure>
+              ))}
+              {!media.length ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 text-sm text-slate-400">
+                  No uploaded media available for this event.
+                </div>
+              ) : null}
             </div>
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <ClientGalleryMetaRow label="Evidence type" value={evidence.type} />
-              <ClientGalleryMetaRow label="Batch" value={evidence.batch} />
-              <ClientGalleryMetaRow label="Job role" value={evidence.jobRole} />
-              <ClientGalleryMetaRow label="Completed on" value={formatDate(evidence.date)} />
-              <ClientGalleryMetaRow label="Uploaded on" value={formatDate(activeMedia?.uploadedOn)} />
-              <ClientGalleryMetaRow label="Status" value="Completed with media upload" />
+            <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className={`mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] ${theme.sectionLabel}`}>
+                <FileText size={14} />
+                Event details
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <ClientGalleryMetaRow label="Evidence type" value={evidence.type} />
+                <ClientGalleryMetaRow label="Batch" value={evidence.batch} />
+                <ClientGalleryMetaRow label="Job role" value={evidence.jobRole} />
+                <ClientGalleryMetaRow label="Completed on" value={formatDate(evidence.date)} />
+                <ClientGalleryMetaRow label="Uploaded files" value={`${media.length} files`} />
+                <ClientGalleryMetaRow label="Latest upload" value={latestUpload ? formatDate(latestUpload) : "-"} />
+                <ClientGalleryMetaRow label="Status" value="Completed with media upload" />
+                {evidence.company ? <ClientGalleryMetaRow label="Company" value={evidence.company} /> : null}
+                {evidence.location ? <ClientGalleryMetaRow label="Location" value={evidence.location} /> : null}
+                {evidence.trainer ? <ClientGalleryMetaRow label="Coordinator" value={evidence.trainer} /> : null}
+              </div>
             </div>
 
             <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.04] p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Documents</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(evidence.documents || []).map((document) => (
-                  <span key={document} className="inline-flex items-center gap-1 rounded-lg border border-violet-400/20 bg-violet-500/10 px-2.5 py-1.5 text-xs font-semibold text-violet-200">
+                  <span key={document} className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${theme.chip}`}>
                     <FileText size={13} />
                     {document}
                   </span>
@@ -1711,16 +1732,6 @@ function ClientEvidenceOverlay({ evidence, onClose }) {
         </div>
 
         <div className="flex justify-end gap-2 border-t border-white/10 bg-[#0b1220] px-5 py-3">
-          {activeMedia?.src ? (
-            <a
-              href={activeMedia.src}
-              download
-              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.1] hover:text-white"
-            >
-              <Download size={15} />
-              Download
-            </a>
-          ) : null}
           <button
             type="button"
             onClick={onClose}
@@ -1915,6 +1926,7 @@ function CenterGallery({ project, center }) {
 
 function ClientGalleryDrawer({ item, onClose }) {
   const [visible, setVisible] = useState(false);
+  const theme = CLIENT_POPUP_THEME;
 
   useEffect(() => {
     if (!item) {
@@ -1947,18 +1959,18 @@ function ClientGalleryDrawer({ item, onClose }) {
         }`}
       />
       <div
-        className={`relative flex h-full w-full max-w-[560px] flex-col border-l border-violet-500/25 bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
+        className={`relative flex h-full w-full max-w-[560px] flex-col border-l ${theme.drawerBorder} bg-[#080d1a] text-white shadow-[-24px_0_70px_rgba(0,0,0,0.55)] transition-transform duration-300 ease-out ${
           visible ? "translate-x-0" : "translate-x-full"
         }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-[#0b1220] px-5 py-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-400/25 bg-violet-500/10 text-violet-200">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${theme.icon}`}>
               <Eye size={18} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-white">{item.title}</p>
+              <h3 className="truncate text-xl font-semibold text-white">{item.title}</h3>
               <p className="mt-0.5 truncate text-xs text-slate-400">
                 {item.projectName} • {item.centerName}
               </p>
@@ -1968,7 +1980,7 @@ function ClientGalleryDrawer({ item, onClose }) {
             <a
               href={item.src}
               download
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-xs font-semibold text-slate-200 transition hover:border-violet-400/35 hover:bg-violet-500/15 hover:text-white"
+              className={`inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 text-xs font-semibold text-slate-200 transition ${theme.downloadHover} hover:text-white`}
             >
               <Download size={14} />
               Download
@@ -1984,14 +1996,6 @@ function ClientGalleryDrawer({ item, onClose }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 border-b border-white/10 bg-[#0b1220] px-5 py-2.5">
-          <span className="rounded-md border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
-            {item.category}
-          </span>
-          <span className="text-xs text-slate-600">•</span>
-          <span className="text-xs font-medium text-slate-400">{item.stage}</span>
-        </div>
-
         <div className="min-h-0 flex-1 overflow-y-auto bg-[#070b16]">
           <div className="p-5">
             <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-white/10 bg-black/25 p-3">
@@ -2004,8 +2008,13 @@ function ClientGalleryDrawer({ item, onClose }) {
           </div>
 
           <div className="border-t border-white/10 bg-[#080d1a] p-5">
+            <div className={`mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] ${theme.sectionLabel}`}>
+              <FileText size={14} />
+              Event details
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <ClientGalleryMetaRow label="Captured on" value={item.capturedOn} />
+              <ClientGalleryMetaRow label="Category" value={item.category} />
               <ClientGalleryMetaRow label="Location" value={item.location} />
               <ClientGalleryMetaRow label="Captured by" value={item.capturedBy} />
               <ClientGalleryMetaRow label="Project" value={item.projectName} />

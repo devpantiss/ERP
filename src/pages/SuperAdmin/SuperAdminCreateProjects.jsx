@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AtSign,
+  Copy,
   FolderKanban,
+  KeyRound,
   Plus,
   Search,
   SquarePen,
@@ -37,6 +39,7 @@ const emptyBatch = {
 };
 
 const batchStatuses = ["Active", "Verified", "Closed"];
+const CLIENT_CREDENTIALS_STORAGE_KEY = "generatedClientAccounts";
 
 function normalizeBatchStatus(status) {
   if (status === "Completed") return "Closed";
@@ -49,6 +52,46 @@ function getAssignedAdmin(projectId, adminUsers) {
     const assignments = user.projectIds || [];
     return assignments.includes(projectId);
   });
+}
+
+function slugify(value) {
+  return String(value || "client")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32) || "client";
+}
+
+function generateClientPassword(projectName, projectId) {
+  const seed = `${projectName}-${projectId}`.replace(/[^a-zA-Z0-9]/g, "");
+  const suffix = seed.slice(-4).padStart(4, "0");
+  return `Pantiss@${suffix}`;
+}
+
+function buildClientCredentials(project) {
+  const id = `client-${slugify(project.name)}-${slugify(project.id)}`;
+  return {
+    id,
+    name: project.fundingAgency || project.name,
+    email: `${id}@pantiss-client.org`,
+    password: generateClientPassword(project.name, project.id),
+    contact: project.fundingAgency || "Client SPOC",
+    designation: "Client Portal User",
+    projectIds: [project.id],
+  };
+}
+
+function saveGeneratedClientAccount(account) {
+  try {
+    const existing = JSON.parse(localStorage.getItem(CLIENT_CREDENTIALS_STORAGE_KEY) || "[]");
+    const next = [
+      account,
+      ...existing.filter((item) => item.id !== account.id && item.email !== account.email),
+    ];
+    localStorage.setItem(CLIENT_CREDENTIALS_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    localStorage.setItem(CLIENT_CREDENTIALS_STORAGE_KEY, JSON.stringify([account]));
+  }
 }
 
 function seedProjects(projectHierarchy, adminUsers) {
@@ -75,6 +118,7 @@ function seedProjects(projectHierarchy, adminUsers) {
       totalBatchTarget: project.totalBatchTarget || "",
       plannedBatches: batches.length,
       lead: assignedAdmin ? [assignedAdmin] : [],
+      clientCredentials: buildClientCredentials(project),
       batches,
     };
   });
@@ -163,13 +207,16 @@ export default function SuperAdminCreateProjects() {
 
   const saveProject = () => {
     if (!canSaveProject) return;
-    const nextProject = {
+    const baseProject = {
       ...projectDraft,
       totalBatchTarget: Number(projectDraft.totalBatchTarget),
       plannedBatches: Number(projectDraft.plannedBatches || 0),
       id: `SA-P-${String(Date.now()).slice(-5)}`,
       batches: [],
     };
+    const clientCredentials = buildClientCredentials(baseProject);
+    const nextProject = { ...baseProject, clientCredentials };
+    saveGeneratedClientAccount(clientCredentials);
     setProjects((current) => [nextProject, ...current]);
     setShowProjectModal(false);
   };
@@ -301,7 +348,7 @@ export default function SuperAdminCreateProjects() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1360px] text-left text-sm">
+          <table className="w-full min-w-[1560px] text-left text-sm">
             <thead className="bg-[#0b1220] text-xs font-black uppercase tracking-[0.14em] text-slate-500">
               <tr>
                 <th className="px-5 py-4">Project</th>
@@ -309,6 +356,7 @@ export default function SuperAdminCreateProjects() {
                 <th className="px-5 py-4">Center</th>
                 <th className="px-5 py-4">Training Plan</th>
                 <th className="px-5 py-4">Project Lead/Admin</th>
+                <th className="px-5 py-4">Client Portal</th>
                 <th className="px-5 py-4">Timeline</th>
                 <th className="px-5 py-4">Batches</th>
                 <th className="px-5 py-4">Status</th>
@@ -342,6 +390,9 @@ export default function SuperAdminCreateProjects() {
                         people={adminUsers}
                         onChange={(people) => updateProjectLead(project.id, people.slice(-1))}
                       />
+                    </td>
+                    <td className="min-w-72 px-5 py-4 align-top">
+                      <ClientCredentialsCell credentials={project.clientCredentials || buildClientCredentials(project)} />
                     </td>
                     <td className="px-5 py-4">
                       {formatDate(project.startDate)} - {formatDate(project.endDate)}
@@ -380,7 +431,7 @@ export default function SuperAdminCreateProjects() {
               })}
               {!filteredProjects.length && (
                 <tr>
-                  <td colSpan={9} className="px-5 py-10 text-center text-sm font-bold text-slate-500">
+                  <td colSpan={10} className="px-5 py-10 text-center text-sm font-bold text-slate-500">
                     No projects match the selected filters.
                   </td>
                 </tr>
@@ -501,6 +552,45 @@ function InlineAdminAssign({ values, people, onChange }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ClientCredentialsCell({ credentials }) {
+  const [copied, setCopied] = useState(false);
+
+  const copyCredentials = async () => {
+    const text = `Client Portal ID: ${credentials.id}\nEmail: ${credentials.email}\nPassword: ${credentials.password}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-sky-400/20 bg-sky-500/10 px-3 py-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="inline-flex items-center gap-1.5 text-xs font-black text-white">
+            <KeyRound size={12} className="text-sky-300" />
+            {credentials.id}
+          </p>
+          <p className="mt-1 truncate text-[11px] font-bold text-slate-400">{credentials.email}</p>
+          <p className="mt-1 font-mono text-[11px] font-black text-emerald-300">{credentials.password}</p>
+        </div>
+        <button
+          type="button"
+          onClick={copyCredentials}
+          className="shrink-0 rounded-md border border-sky-400/20 bg-sky-500/10 p-1.5 text-sky-200 transition hover:bg-sky-500/20"
+          title="Copy client portal credentials"
+        >
+          <Copy size={13} />
+        </button>
+      </div>
+      {copied && <p className="mt-2 text-[10px] font-black uppercase tracking-[0.12em] text-sky-200">Copied</p>}
     </div>
   );
 }
