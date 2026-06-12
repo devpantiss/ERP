@@ -37,19 +37,19 @@ const DELIVERY_ICON = {
 };
 
 const DELIVERY_COLORS = {
-  enrolled: "#a78bfa",
-  certified: "#34d399",
-  placed: "#22d3ee",
-  retention: "#f59e0b",
+  enrolled: "#5eead4",
+  certified: "#86efac",
+  placed: "#93c5fd",
+  retention: "#d6b56d",
 };
 
 const PLACEMENT_COLORS = {
-  district: ["#34d399", "#f59e0b"],
+  district: ["#5eead4", "#d6b56d"],
   location: {
-    "Odisha district": "#a78bfa",
-    "Outside Odisha": "#22d3ee",
+    "Odisha district": "#5eead4",
+    "Outside Odisha": "#93c5fd",
   },
-  local: ["#a78bfa", "#22d3ee"],
+  local: ["#5eead4", "#93c5fd"],
 };
 
 const formatNumber = (value) => new Intl.NumberFormat("en-IN").format(value || 0);
@@ -306,7 +306,7 @@ function PlacementBarCard({ data }) {
               tick={{ fill: "rgba(255,255,255,0.52)", fontSize: 11 }}
               tickLine={false}
             />
-            <Tooltip content={<PlacementTooltip />} cursor={{ fill: "rgba(167,139,250,0.08)" }} />
+            <Tooltip content={<PlacementTooltip />} cursor={{ fill: "rgba(94,234,212,0.08)" }} />
             <Bar dataKey="count" radius={[8, 8, 0, 0]}>
               {activeData.map((entry) => (
                 <Cell key={entry.location} fill={activeColor} />
@@ -380,7 +380,7 @@ function TargetDonut({ metrics, percentage }) {
       <div
         className="mx-auto mt-6 flex h-48 w-48 items-center justify-center rounded-full"
         style={{
-          background: `conic-gradient(#a78bfa 0deg ${percentage * 3.6}deg, rgba(255,255,255,0.08) ${percentage * 3.6}deg 360deg)`,
+          background: `conic-gradient(#5eead4 0deg ${percentage * 3.6}deg, rgba(255,255,255,0.08) ${percentage * 3.6}deg 360deg)`,
         }}
       >
         <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full border border-white/10 bg-[#12071f] text-center shadow-inner shadow-black/40">

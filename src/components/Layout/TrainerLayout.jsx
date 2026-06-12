@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   GraduationCap,
   MapPin,
-  BarChart3,
   CalendarDays,
   Briefcase,
   IndianRupee,
@@ -23,7 +22,6 @@ const DOCK_ITEMS = [
 ];
 
 const DRAWER_ITEMS = [
-  { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
   { label: "Testimonials", path: "/trainer/testimonials", icon: Quote },
   {
     label: "HR Entitlement",

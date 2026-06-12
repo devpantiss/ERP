@@ -24,10 +24,10 @@ const NAV_ITEMS = [
 ];
 
 const ACCENT = {
-  activeBg: "bg-violet-500/10",
-  activeText: "text-violet-300",
-  dot: "bg-violet-300",
-  headerText: "text-violet-300",
+  activeBg: "bg-teal-500/10",
+  activeText: "text-teal-200",
+  dot: "bg-teal-300",
+  headerText: "text-teal-200",
 };
 
 export default function ClientLayout() {
@@ -41,14 +41,14 @@ export default function ClientLayout() {
   };
 
   return (
-    <div className="client-portal flex min-h-screen bg-[#05020a] text-white">
+    <div className="client-portal flex min-h-screen bg-[#06090d] text-white">
       <aside
         data-collapsed={collapsed}
-        className="perf-sidebar sticky top-0 hidden h-screen flex-col border-r border-violet-200/10 bg-[#10061d]/95 md:flex [--sidebar-expanded-width:18rem]"
+        className="perf-sidebar sticky top-0 hidden h-screen flex-col border-r border-slate-700/60 bg-[#0b1118]/95 md:flex [--sidebar-expanded-width:18rem]"
       >
-        <div className="flex h-16 items-center justify-between gap-3 border-b border-violet-200/10 px-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-300/20 bg-violet-500/15">
-            <Building2 size={20} className="shrink-0 text-violet-200" />
+        <div className="flex h-16 items-center justify-between gap-3 border-b border-slate-700/60 px-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-teal-300/20 bg-teal-500/10">
+            <Building2 size={20} className="shrink-0 text-teal-100" />
           </div>
             <div className="perf-sidebar-label min-w-0 flex-1">
               <p className="text-sm font-semibold text-white">Client Portal</p>
@@ -74,7 +74,7 @@ export default function ClientLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
                     isActive
-                      ? "bg-violet-500/15 text-violet-200"
+                      ? "bg-teal-500/10 text-teal-100"
                       : "text-white/60 hover:bg-white/[0.04] hover:text-white"
                   }`
                 }
@@ -86,9 +86,9 @@ export default function ClientLayout() {
           })}
         </nav>
 
-        <div className="border-t border-violet-200/10 p-4">
+        <div className="border-t border-slate-700/60 p-4">
             <div className="perf-sidebar-label mb-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-            <UserRound size={18} className="mb-2 text-violet-300" />
+            <UserRound size={18} className="mb-2 text-teal-200" />
             <p className="text-sm font-semibold text-white">{client.contact}</p>
             <p className="text-xs text-white/40">{client.designation}</p>
             </div>
@@ -107,9 +107,8 @@ export default function ClientLayout() {
 
       <div className="relative min-w-0 flex-1 overflow-hidden">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-56 left-1/3 h-[520px] w-[520px] rounded-full bg-violet-600/20 blur-[160px]" />
-          <div className="absolute bottom-0 right-0 h-[420px] w-[420px] rounded-full bg-fuchsia-500/10 blur-[150px]" />
-          <div className="absolute inset-0 opacity-[0.16] bg-[linear-gradient(to_right,rgba(196,181,253,0.18)_1px,transparent_1px),linear-gradient(to_bottom,rgba(196,181,253,0.18)_1px,transparent_1px)] bg-size-[48px_48px]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(20,83,45,0.14),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,11,0.98))]" />
+          <div className="absolute inset-0 opacity-[0.12] bg-[linear-gradient(to_right,rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.12)_1px,transparent_1px)] bg-size-[52px_52px]" />
         </div>
 
         <main className="relative z-10 pb-24 md:pb-0">

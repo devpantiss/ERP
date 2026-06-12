@@ -3,17 +3,11 @@ import SuperAdminSidebar from "../Sidebars/SuperAdminSidebar";
 import MobileBottomDock from "../common/MobileBottomDock";
 import {
   LayoutDashboard,
-  Users,
-  UserCog,
   FolderKanban,
-  Activity,
   CalendarDays,
   Camera,
-  Building2,
   FileCheck,
-  Megaphone,
   MapPinned,
-  Briefcase,
   MessageSquareWarning,
   Wallet,
   ReceiptText,
@@ -30,6 +24,7 @@ import {
 const DOCK_ITEMS = [
   { label: "Dashboard", shortLabel: "Home", path: "/super-admin/dashboard", icon: LayoutDashboard },
   { label: "Projects", path: "/super-admin/project-details", icon: FolderKanban },
+  { label: "Live Feed", shortLabel: "Live", path: "/super-admin/live-feed", icon: Camera },
   { label: "Access & Target", shortLabel: "Access", path: "/super-admin/access-target", icon: Target },
 ];
 
@@ -39,10 +34,10 @@ const DRAWER_ITEMS = [
     icon: FolderKanban,
     children: [
       { label: "Project Details", path: "/super-admin/project-details", icon: FolderKanban },
-      { label: "Candidate Details", path: "/super-admin/candidate-details", icon: Users },
       { label: "Batch Certification", path: "/super-admin/batch-certification", icon: Award },
     ],
   },
+  { label: "Live Feed", path: "/super-admin/live-feed", icon: Camera },
   {
     label: "Approvals",
     icon: FileCheck,
@@ -55,7 +50,6 @@ const DRAWER_ITEMS = [
       { label: "Operations Approvals", path: "/super-admin/approvals/operations", icon: FileCheck },
     ],
   },
-  { label: "Industry Database", path: "/super-admin/industry-database", icon: Building2 },
   { label: "Grievance Tracker", path: "/super-admin/grievance-tracker", icon: MessageSquareWarning },
   {
     label: "Finances",

@@ -38,7 +38,7 @@ export default function AdminInvoiceManagement() {
   const [bills, setBills] = useState(buildInitialProjectBills);
   const [rentFile, setRentFile] = useState("");
   const [electricityFile, setElectricityFile] = useState("");
-  const [otherBill, setOtherBill] = useState({ billName: "", amount: "", description: "" });
+  const [otherBill, setOtherBill] = useState({ billName: "", amount: "", description: "", fileName: "" });
 
   const projects = useMemo(() => buildProjectSummaries(EMPLOYEES), []);
   const monthLabel = getMonthLabel(selectedMonth);
@@ -106,7 +106,7 @@ export default function AdminInvoiceManagement() {
       billName: `${category} Bill`,
       amount: 0,
       fileName,
-      description: "Uploaded for finance review",
+      description: "Uploaded for Super Admin review",
     });
     resetFile("");
   };
@@ -117,18 +117,18 @@ export default function AdminInvoiceManagement() {
       category: "Others",
       billName: otherBill.billName.trim(),
       amount: Number(otherBill.amount),
-      fileName: "",
+      fileName: otherBill.fileName,
       description: otherBill.description.trim() || "Manual bill entry",
     });
-    setOtherBill({ billName: "", amount: "", description: "" });
+    setOtherBill({ billName: "", amount: "", description: "", fileName: "" });
   };
 
   if (!selectedProject) {
     return (
       <section className="space-y-6 text-white">
         <WorkspaceHeader
-          title="Invoices Raised"
-          subtitle="Select a project to open monthly billing."
+          title="Raise Invoices"
+          subtitle="Select a project to raise monthly invoices for Super Admin approval."
         />
         <ProjectCards projects={projects} onSelect={setSelectedProject} />
       </section>
@@ -142,7 +142,7 @@ export default function AdminInvoiceManagement() {
       <div className="relative z-10 mx-auto max-w-[1440px] space-y-6 px-6 py-6 md:px-8 md:py-8">
         <WorkspaceHeader
           title={`${selectedProject.name} Invoices`}
-          subtitle="Project-wise monthly billing workspace."
+          subtitle="Project-wise invoice raising workspace."
           selectedProject={selectedProject}
           onBack={() => setSelectedProject(null)}
         />
@@ -151,11 +151,11 @@ export default function AdminInvoiceManagement() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <div className="mb-3 inline-flex rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-200">
-                Finance Workspace
+                Admin Billing Workspace
               </div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Invoices Raised</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Raise Invoices</h1>
               <p className="mt-3 text-sm leading-6 text-white/58 md:text-base">
-                A streamlined monthly workspace for project billing, release eligibility, file-backed bills, and ledger review.
+                Raise monthly project invoices, attach file-backed bills, and send pending entries to Super Admin for approval.
               </p>
             </div>
 
@@ -330,8 +330,8 @@ function FoodTab({
                 </p>
                 <p className="mt-2 text-sm text-white/55">
                   {isEligible
-                    ? "You can proceed with invoice generation and send it for approval."
-                    : "Invoice generation should remain locked until attendance improves or an exception is cleared."}
+                    ? "You can raise this invoice and send it to Super Admin for approval."
+                    : "Invoice raising should remain locked until attendance improves or an exception is cleared."}
                 </p>
               </div>
             </div>
@@ -347,7 +347,7 @@ function FoodTab({
 
       <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">Invoice Action</p>
-        <h2 className="mt-3 text-2xl font-semibold text-white">Release Panel</h2>
+        <h2 className="mt-3 text-2xl font-semibold text-white">Raise Invoice</h2>
 
         <div className="mt-8 rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/38">Target Amount</p>
@@ -366,7 +366,7 @@ function FoodTab({
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 py-3 text-sm font-semibold text-emerald-200"
             >
               <CheckCircle2 size={16} />
-              Already Submitted
+              Already Raised
             </button>
           ) : (
             <button
@@ -414,7 +414,7 @@ function UploadTab({ title, icon: Icon, fileName, onFileChange, onAdd, billLimit
           <FileUp size={34} className="text-sky-300" />
           <p className="mt-4 text-sm font-semibold text-white">{fileName || "Upload PDF/Image"}</p>
           <p className="mt-2 text-xs text-white/45">
-            {fileName ? "File ready to add to this billing month." : "PDF, JPG, or PNG accepted for frontend review."}
+            {fileName ? "File ready to add to this billing month." : "PDF, JPG, or PNG accepted for Super Admin review."}
           </p>
         </label>
       </div>
@@ -435,7 +435,7 @@ function UploadTab({ title, icon: Icon, fileName, onFileChange, onAdd, billLimit
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-cyan-400 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(14,165,233,0.18)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:border disabled:border-white/10 disabled:bg-none disabled:text-white/35 disabled:shadow-none"
           >
             <Send size={16} />
-            {billLimitReached ? "Bill Limit Reached" : "Add Bill"}
+            {billLimitReached ? "Bill Limit Reached" : "Raise Bill"}
           </button>
         </div>
       </div>
@@ -474,16 +474,28 @@ function OthersTab({ value, onChange, onAdd, billLimitReached }) {
             placeholder="Optional description"
             className="w-full resize-none rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-orange-400/35 disabled:text-white/30"
           />
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-2xl border border-dashed border-white/14 bg-white/[0.03] px-4 py-4 text-sm text-white/70 transition hover:border-orange-400/35 hover:text-white">
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              className="hidden"
+              disabled={billLimitReached}
+              onChange={(event) => onChange({ ...value, fileName: event.target.files?.[0]?.name || "" })}
+            />
+            <span>{value.fileName || "Upload supporting bill"}</span>
+            <FileUp size={18} className="shrink-0 text-orange-300" />
+          </label>
         </div>
       </div>
 
       <div className="rounded-[28px] border border-white/10 bg-white/[0.03] p-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/42">Invoice Action</p>
-        <h2 className="mt-3 text-2xl font-semibold text-white">Manual Release Panel</h2>
+        <h2 className="mt-3 text-2xl font-semibold text-white">Raise Manual Bill</h2>
         <div className="mt-8 rounded-[24px] border border-white/10 bg-white/[0.03] p-6">
           <div className="space-y-4 text-sm text-white/58">
             <DetailRow label="Bill name" value={value.billName || "Not entered"} />
             <DetailRow label="Amount" value={value.amount ? `₹${Number(value.amount).toLocaleString("en-IN")}` : "Not entered"} />
+            <DetailRow label="Supporting file" value={value.fileName || "Not uploaded"} />
             <DetailRow label="Persistence" value="Frontend only" />
           </div>
           <button
@@ -493,7 +505,7 @@ function OthersTab({ value, onChange, onAdd, billLimitReached }) {
             className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 py-3 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(249,115,22,0.24)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:border disabled:border-white/10 disabled:bg-none disabled:text-white/35 disabled:shadow-none"
           >
             <Send size={16} />
-            {billLimitReached ? "Bill Limit Reached" : "Add Bill"}
+            {billLimitReached ? "Bill Limit Reached" : "Raise Bill"}
           </button>
         </div>
       </div>
@@ -505,7 +517,7 @@ function BillingHistory({ bills, activeTab }) {
   return (
     <div className="overflow-hidden rounded-[28px] border border-white/10 bg-[rgba(12,20,32,0.88)] backdrop-blur-xl">
       <div className="border-b border-white/10 px-6 py-5">
-        <h2 className="text-lg font-semibold text-white">{activeTab} Billing History</h2>
+        <h2 className="text-lg font-semibold text-white">{activeTab} Invoices Raised</h2>
         <p className="mt-1 text-sm text-white/48">
           Current project and reporting month records for the selected category.
         </p>

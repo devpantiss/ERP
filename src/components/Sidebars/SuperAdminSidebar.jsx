@@ -2,12 +2,8 @@ import { useState, memo } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import {
   ShieldAlert,
-  Users,
-  Briefcase,
   UserPlus,
   FolderKanban,
-  Building2,
-  UserCog,
   Settings,
   UserRoundPen,
   ChevronLeft,
@@ -16,11 +12,9 @@ import {
   LayoutDashboard,
   LogOut,
   Lock,
-  Activity,
   CalendarDays,
   Camera,
   FileCheck,
-  Megaphone,
   MapPinned,
   MessageSquareWarning,
   ReceiptText,
@@ -40,8 +34,15 @@ const SECTIONS = [
     icon: FolderKanban,
     items: [
       { label: "Project Details", path: "/super-admin/project-details", icon: FolderKanban },
-      { label: "Candidate Details", path: "/super-admin/candidate-details", icon: Users },
       { label: "Batch Certification", path: "/super-admin/batch-certification", icon: Award },
+    ],
+  },
+  {
+    key: "live-feed",
+    title: "Live Feed",
+    icon: Camera,
+    items: [
+      { label: "Live Feed Viewer", path: "/super-admin/live-feed", icon: Camera },
     ],
   },
   {
@@ -55,14 +56,6 @@ const SECTIONS = [
       { label: "Invoice Approvals", path: "/super-admin/approvals/invoices", icon: ReceiptText },
       { label: "Reimbursement Approvals", path: "/super-admin/approvals/reimbursements", icon: HandCoins },
       { label: "Operations Approvals", path: "/super-admin/approvals/operations", icon: FileCheck },
-    ],
-  },
-  {
-    key: "industry-database",
-    title: "Industry Database",
-    icon: Building2,
-    items: [
-      { label: "Industry Database", path: "/super-admin/industry-database", icon: Building2 },
     ],
   },
   {

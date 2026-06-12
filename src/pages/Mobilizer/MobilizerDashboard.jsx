@@ -1,9 +1,7 @@
 import React from 'react'
 import Section1 from '../../components/Mobilizer/Dashboard/Section1'
 import Section2 from '../../components/Mobilizer/Dashboard/Section2'
-import Section3 from '../../components/Mobilizer/Dashboard/Section3'
 // import Section4 from '../../components/Mobilizer/Dashboard/Section4'
-import Section5 from '../../components/Mobilizer/Dashboard/Section5'
 
 const MobilizerDashboard = () => {
   return (
@@ -16,9 +14,7 @@ const MobilizerDashboard = () => {
         />
 
         <Section2 />
-        <Section3 />
         {/* <Section4 /> */}
-        <Section5 />
     </div>
   )
 }

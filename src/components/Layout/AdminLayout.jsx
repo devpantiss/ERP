@@ -13,6 +13,7 @@ import {
   Radio,
   Briefcase,
   Quote,
+  ReceiptText,
   UserRoundPen,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ const DOCK_ITEMS = [
 ];
 
 const DRAWER_ITEMS = [
+  { label: "Invoices", path: "/admin/invoices", icon: ReceiptText },
   {
     label: "Approvals",
     icon: FileCheck,

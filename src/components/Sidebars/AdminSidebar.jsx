@@ -14,6 +14,7 @@ import {
   MapPinned,
   Quote,
   Radio,
+  ReceiptText,
   UserRoundPen,
   Users,
   Wallet,
@@ -29,6 +30,11 @@ const MENU_ITEMS = [
     label: "Project Details",
     path: "/admin/project-details-reports",
     icon: Briefcase,
+  },
+  {
+    label: "Invoices",
+    path: "/admin/invoices",
+    icon: ReceiptText,
   },
   {
     label: "Live Feed",

@@ -2,9 +2,7 @@ import { useState, memo } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
-  UserCheck,
   MapPin,
-  BarChart3,
   CalendarDays,
   UserRoundPen,
   ChevronLeft,
@@ -25,7 +23,6 @@ const TOP_MENU = [
   { label: "Dashboard", path: "/trainer/dashboard", icon: LayoutDashboard },
   { label: "Teaching Management", path: "/trainer/teaching-management", icon: GraduationCap },
   { label: "Exposure Visits", path: "/trainer/exposure-visits", icon: MapPin },
-  { label: "Module Progress", path: "/trainer/module-progress", icon: BarChart3 },
   { label: "Testimonials", path: "/trainer/testimonials", icon: Quote },
 ];
 

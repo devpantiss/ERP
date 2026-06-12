@@ -57,7 +57,6 @@ const TrainerExposureVisits = lazy(() => import("./pages/Trainer/TrainerExposure
 const TrainerStudyModules = lazy(() => import("./pages/Trainer/TrainerStudyModules"));
 const TrainerProfile = lazy(() => import("./pages/Trainer/TrainerProfile"));
 const TrainerLab = lazy(() => import("./pages/Trainer/TrainerLab"));
-const TrainersModuleHistory = lazy(() => import("./pages/Trainer/TrainersModuleHistory"));
 const TrainerLiveFeedHost = lazy(() => import("./pages/Trainer/TrainerLiveFeedHost"));
 const TrainerLiveFeedViewer = lazy(() => import("./pages/Trainer/TrainerLiveFeedViewer"));
 const TrainerRevenue = lazy(() => import("./pages/Trainer/TrainerRevenue"));
@@ -66,7 +65,6 @@ const TeachingManagementSystem = lazy(() => import("./pages/Trainer/TeachingMana
 // Placement
 const PlacementDashboard = lazy(() => import("./pages/Placement/PlacementDashboard"));
 const PlacementCompanyList = lazy(() => import("./pages/Placement/PlacementCompanyList"));
-const PlacementCompanyDatabaseStepper = lazy(() => import("./pages/Placement/PlacementCompanyDatabaseStepper"));
 const PlacementDrivesDetails = lazy(() => import("./pages/Placement/PlacementDriveDetails"));
 const PlacementDriveStepper = lazy(() => import("./pages/Placement/PlacementDriveStepper"));
 const PlacementStudentsList = lazy(() => import("./pages/Placement/PlacementsStudentsList"));
@@ -212,7 +210,6 @@ function App() {
               <Route path="study-modules" element={<TrainerStudyModules />} />
               <Route path="profile" element={<TrainerProfile />} />
               <Route path="labs" element={<TrainerLab />} />
-              <Route path="module-progress" element={<TrainersModuleHistory />} />
               <Route path="live-feed-host" element={<TrainerLiveFeedHost />} />
               <Route path="revenue" element={<TrainerRevenue />} />
               <Route path="testimonials" element={<AdminTestimonials />} />
@@ -259,6 +256,7 @@ function App() {
 
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="employee-list" element={<AdminTrainerList />} />
+              <Route path="invoices" element={<AdminInvoiceManagement />} />
               <Route
                 path="financial-management/salary-approvals"
                 element={<AdminSalaryApprovals />}
@@ -349,10 +347,19 @@ function App() {
               <Route path="project-details-reports" element={<SuperAdminProjectDetails />} />
               <Route path="candidate-details" element={<SuperAdminCandidateDetails />} />
               <Route path="placement-drives" element={<SuperAdminPlacementDrivesPage />} />
-              <Route path="industry-database" element={<PlacementCompanyList />} />
-              <Route path="company-database" element={<PlacementCompanyList />} />
               <Route path="openings-dashboard" element={<PlacementOpeningsDashboard />} />
               <Route path="job-openings" element={<PlacementOpeningsDashboard />} />
+              <Route
+                path="live-feed"
+                element={
+                  <AdminTrainerLiveFeed
+                    title="Live Feed Viewer"
+                    projectTitleSuffix="Live Feed Viewer"
+                    emptySubtitle="Select a project to view all live monitoring streams across assigned centers."
+                    selectedSubtitle="Real-time monitoring streams visible to Super Admin for the selected project."
+                  />
+                }
+              />
               <Route path="mobilization" element={<SuperAdminMobilizationPage />} />
               <Route path="community-engagement-drives" element={<SuperAdminCommunityEngagementDrives />} />
               <Route path="training-tracking" element={<SuperAdminTrainingTracking />} />

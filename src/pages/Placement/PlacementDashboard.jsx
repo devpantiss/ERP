@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import Section1 from "../../components/PlacementPage/PlacementDashboard/Section1";
 import Section2 from "../../components/PlacementPage/PlacementDashboard/Section2";
-import Section3 from "../../components/PlacementPage/PlacementDashboard/Section3";
 import Section4 from "../../components/PlacementPage/PlacementDashboard/Section4";
 
 const projects = [
@@ -40,7 +39,6 @@ const PlacementDashboard = () => {
       {/* Sections */}
       <Section1 project={selectedProject} />
       <Section2 project={selectedProject} />
-      <Section3 project={selectedProject} />
       <Section4 project={selectedProject} />
 
     </div>

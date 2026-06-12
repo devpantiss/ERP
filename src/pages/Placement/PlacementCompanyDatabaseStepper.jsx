@@ -4,9 +4,7 @@ import {
   Building2,
   MapPin,
   User,
-  FileText,
   CheckCircle2,
-  Upload,
 } from "lucide-react";
 
 /* ================= CONFIG ================= */
@@ -32,8 +30,7 @@ const STEPS = [
   { id: 1, title: "Company Info", icon: Building2 },
   { id: 2, title: "Location", icon: MapPin },
   { id: 3, title: "SPOC Details", icon: User },
-  { id: 4, title: "Documents", icon: FileText },
-  { id: 5, title: "Review", icon: CheckCircle2 },
+  { id: 4, title: "Review", icon: CheckCircle2 },
 ];
 
 /* ================= COMPONENT ================= */
@@ -50,8 +47,6 @@ export default function PlacementCompanyDatabaseStepper({ onClose }) {
     spocName: "",
     contact: "",
     email: "",
-    loi: null,
-    mou: null,
   });
 
   const next = () => setStep((s) => Math.min(s + 1, STEPS.length));
@@ -139,12 +134,7 @@ export default function PlacementCompanyDatabaseStepper({ onClose }) {
           )}
 
           {/* STEP 4 */}
-          {step === 4 && (
-            <StepDocs form={form} handleChange={handleChange} />
-          )}
-
-          {/* STEP 5 */}
-          {step === 5 && <StepReview form={form} />}
+          {step === 4 && <StepReview form={form} />}
 
           {/* NAVIGATION */}
           <div className="flex justify-between mt-8">
@@ -288,27 +278,6 @@ function StepSpoc({ form, handleChange }) {
   );
 }
 
-function StepDocs({ handleChange }) {
-  return (
-    <div className="space-y-6">
-
-      <h3 className="text-lg font-semibold">
-        Partnership Documents (Optional)
-      </h3>
-
-      <UploadCard
-        label="LOI Document"
-        onFile={(f) => handleChange("loi", f)}
-      />
-
-      <UploadCard
-        label="MOU Document"
-        onFile={(f) => handleChange("mou", f)}
-      />
-    </div>
-  );
-}
-
 function StepReview({ form }) {
   return (
     <div className="space-y-4">
@@ -356,25 +325,6 @@ function Select({ label, value, options, onChange }) {
           <option key={o}>{o}</option>
         ))}
       </select>
-    </div>
-  );
-}
-
-function UploadCard({ label, onFile }) {
-  return (
-    <div>
-      <p className="text-sm text-white/60 mb-1">{label}</p>
-      <label className="border border-dashed border-slate-600 rounded-lg p-6 flex flex-col items-center cursor-pointer hover:border-cyan-400 transition">
-        <Upload className="mb-2 text-white/60" />
-        <span className="text-xs text-white/60">
-          Click to Upload
-        </span>
-        <input
-          type="file"
-          className="hidden"
-          onChange={(e) => onFile(e.target.files[0])}
-        />
-      </label>
     </div>
   );
 }

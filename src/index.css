@@ -1205,3 +1205,98 @@ div[class]:has(> table) table :where(th, td) {
   from { transform: translateY(100%); }
   to   { transform: translateY(0); }
 }
+
+/* Client portal: mature institutional theme for government-facing review. */
+.client-portal {
+  --client-bg: #06090d;
+  --client-panel: rgba(13, 19, 27, 0.88);
+  --client-panel-strong: rgba(9, 14, 20, 0.94);
+  --client-border: rgba(148, 163, 184, 0.16);
+  --client-border-strong: rgba(94, 234, 212, 0.26);
+  --client-accent: #5eead4;
+  --client-accent-strong: #2dd4bf;
+  --client-secondary: #93c5fd;
+  --client-brass: #d6b56d;
+  background: var(--client-bg);
+  color: #f8fafc;
+}
+
+.client-portal :where([class*="bg-[#05020a]"], [class*="bg-[#10061d]"], [class*="bg-[#12071f]"], [class*="bg-[#160c24]"]) {
+  background-color: var(--client-panel);
+}
+
+.client-portal :where([class*="bg-violet"], [class*="bg-fuchsia"], [class*="bg-purple"]) {
+  background-color: rgba(45, 212, 191, 0.12);
+}
+
+.client-portal :where([class*="hover:bg-violet"]:hover, [class*="hover:bg-fuchsia"]:hover, [class*="hover:bg-purple"]:hover) {
+  background-color: rgba(45, 212, 191, 0.18);
+}
+
+.client-portal :where([class*="bg-cyan"], [class*="bg-sky"], [class*="bg-blue"]) {
+  background-color: rgba(147, 197, 253, 0.12);
+}
+
+.client-portal :where([class*="hover:bg-cyan"]:hover, [class*="hover:bg-sky"]:hover, [class*="hover:bg-blue"]:hover) {
+  background-color: rgba(147, 197, 253, 0.18);
+}
+
+.client-portal :where([class*="text-violet"], [class*="text-fuchsia"], [class*="text-purple"]) {
+  color: var(--client-accent);
+}
+
+.client-portal :where([class*="text-cyan"], [class*="text-sky"], [class*="text-blue"]) {
+  color: var(--client-secondary);
+}
+
+.client-portal :where([class*="border-violet"], [class*="border-fuchsia"], [class*="border-purple"], [class*="border-cyan"], [class*="border-sky"], [class*="border-blue"]) {
+  border-color: var(--client-border-strong);
+}
+
+.client-portal :where([class*="border-white/10"], [class*="border-slate"]) {
+  border-color: var(--client-border);
+}
+
+.client-portal :where([class*="shadow-violet"], [class*="shadow-fuchsia"], [class*="shadow-purple"]) {
+  --tw-shadow-color: rgba(0, 0, 0, 0.42);
+  --tw-shadow: var(--tw-shadow-colored);
+}
+
+.client-portal :where(button[class*="bg-violet"], a[class*="bg-violet"], button[class*="bg-cyan"], a[class*="bg-cyan"]) {
+  background-color: rgba(13, 148, 136, 0.92);
+  color: #f8fafc;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.24);
+}
+
+.client-portal :where(button[class*="bg-violet"]:hover, a[class*="bg-violet"]:hover, button[class*="bg-cyan"]:hover, a[class*="bg-cyan"]:hover) {
+  background-color: rgba(15, 118, 110, 0.96);
+}
+
+.client-portal :where([class*="from-violet"], [class*="from-fuchsia"], [class*="from-purple"]) {
+  --tw-gradient-from: rgba(20, 184, 166, 0.92) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(20, 184, 166, 0) var(--tw-gradient-to-position);
+}
+
+.client-portal :where([class*="to-fuchsia"], [class*="to-violet"], [class*="to-purple"]) {
+  --tw-gradient-to: rgba(214, 181, 109, 0.88) var(--tw-gradient-to-position);
+}
+
+.client-portal :where([class*="via-fuchsia"], [class*="via-violet"], [class*="via-purple"]) {
+  --tw-gradient-to: rgba(20, 184, 166, 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops:
+    var(--tw-gradient-from),
+    rgba(15, 118, 110, 0.72) var(--tw-gradient-via-position),
+    var(--tw-gradient-to);
+}
+
+.client-portal :where([class*="rounded-3xl"], [class*="rounded-[28px]"]) {
+  border-radius: 14px;
+}
+
+.client-portal :where([class*="rounded-2xl"]) {
+  border-radius: 12px;
+}
+
+.client-portal :where([class*="rounded-xl"]) {
+  border-radius: 10px;
+}

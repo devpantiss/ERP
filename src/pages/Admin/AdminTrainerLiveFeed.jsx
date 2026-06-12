@@ -9,7 +9,12 @@ const statusStyles = {
   Queued: "bg-amber-500/10 text-amber-300 border-amber-400/20",
 };
 
-export default function AdminTrainerLiveFeed() {
+export default function AdminTrainerLiveFeed({
+  title = "Live Feed",
+  projectTitleSuffix = "Live Feed",
+  emptySubtitle = "Select a project to view its live monitoring streams.",
+  selectedSubtitle = "Real-time monitoring streams for the selected project.",
+}) {
   const [selectedProject, setSelectedProject] = useState(null);
 
   const projects = useMemo(() => buildProjectSummaries(LIVE_FEEDS), []);
@@ -27,12 +32,8 @@ export default function AdminTrainerLiveFeed() {
   return (
     <div className="space-y-6">
       <WorkspaceHeader
-        title={selectedProject ? `${selectedProject.name} Live Feed` : "Live Feed"}
-        subtitle={
-          selectedProject
-            ? "Real-time monitoring streams for the selected project."
-            : "Select a project to view its live monitoring streams."
-        }
+        title={selectedProject ? `${selectedProject.name} ${projectTitleSuffix}` : title}
+        subtitle={selectedProject ? selectedSubtitle : emptySubtitle}
         selectedProject={selectedProject}
         onBack={() => setSelectedProject(null)}
       />

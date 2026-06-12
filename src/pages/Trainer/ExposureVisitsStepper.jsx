@@ -1,31 +1,23 @@
-import { useMemo, useRef, useState } from "react";
-import Webcam from "react-webcam";
+import { useMemo, useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import {
   Building2,
   Users,
   ClipboardList,
-  Camera,
-  MapPin,
   CheckCircle2,
-  UploadCloud,
   ChevronRight,
   ChevronLeft,
-  ImageIcon,
 } from "lucide-react";
 import { selectTrainingCatalog } from "../../stores/selectors/trainingSelectors";
 
 /* ================= MAIN ================= */
 
 export default function ExposureVisitEnterprisePro({ trainerEmployeeId = "EMP-0001", onClose, onSubmit }) {
-  const webcamRef = useRef(null);
   const catalog = useMemo(() => selectTrainingCatalog(trainerEmployeeId), [trainerEmployeeId]);
   const initialBatch = catalog.batches[0];
   const initialProject = catalog.projects.find((project) => project.id === initialBatch?.projectId) || catalog.projects[0];
 
   const [step, setStep] = useState(1);
-  const [showCamera, setShowCamera] = useState(false);
-  const [loadingGPS, setLoadingGPS] = useState(false);
 
   const [form, setForm] = useState({
     companyId: catalog.companies[0]?.id || "",
@@ -35,60 +27,11 @@ export default function ExposureVisitEnterprisePro({ trainerEmployeeId = "EMP-00
     batchId: initialBatch?.id || "",
     trade: initialBatch?.trade || "",
     date: "",
-    candidates: "",
-    attended: "",
-    images: [],
-    location: null,
   });
-
-  /* ================= GPS ================= */
-
-  const captureLocation = () => {
-    setLoadingGPS(true);
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setForm({
-          ...form,
-          location: {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          },
-        });
-
-        setLoadingGPS(false);
-      },
-      () => setLoadingGPS(false)
-    );
-  };
-
-  /* ================= IMAGE ================= */
-
-  const handleUpload = (files) => {
-    const imgs = Array.from(files).map((f) =>
-      URL.createObjectURL(f)
-    );
-
-    setForm({
-      ...form,
-      images: [...form.images, ...imgs],
-    });
-  };
-
-  const capturePhoto = () => {
-    const img = webcamRef.current.getScreenshot();
-
-    setForm({
-      ...form,
-      images: [...form.images, img],
-    });
-
-    setShowCamera(false);
-  };
 
   /* ================= NAVIGATION ================= */
 
-  const next = () => setStep((s) => Math.min(4, s + 1));
+  const next = () => setStep((s) => Math.min(3, s + 1));
   const prev = () => setStep((s) => Math.max(1, s - 1));
   const submit = () => {
     const batch = catalog.batches.find((item) => item.id === form.batchId);
@@ -101,10 +44,10 @@ export default function ExposureVisitEnterprisePro({ trainerEmployeeId = "EMP-00
       status: "SUBMITTED",
       spocName: form.spocName,
       spocPhone: form.spocPhone,
-      candidates: Number(form.candidates || 0),
-      attended: Number(form.attended || 0),
-      images: form.images,
-      location: form.location,
+      candidates: 0,
+      attended: 0,
+      images: [],
+      location: null,
     });
     onClose?.();
   };
@@ -132,18 +75,7 @@ export default function ExposureVisitEnterprisePro({ trainerEmployeeId = "EMP-00
               <TrainingStep form={form} setForm={setForm} catalog={catalog} />
             )}
 
-            {step === 3 && (
-              <EvidenceStep
-                form={form}
-                setForm={setForm}
-                handleUpload={handleUpload}
-                captureLocation={captureLocation}
-                loadingGPS={loadingGPS}
-                setShowCamera={setShowCamera}
-              />
-            )}
-
-            {step === 4 && <ReviewStep form={form} />}
+            {step === 3 && <ReviewStep form={form} />}
 
           </div>
 
@@ -161,7 +93,7 @@ export default function ExposureVisitEnterprisePro({ trainerEmployeeId = "EMP-00
               <div />
             )}
 
-            {step < 4 ? (
+            {step < 3 ? (
               <button
                 onClick={next}
                 className="flex items-center gap-2 px-5 py-2 bg-emerald-500 text-black rounded-md font-medium"
@@ -178,16 +110,6 @@ export default function ExposureVisitEnterprisePro({ trainerEmployeeId = "EMP-00
         </div>
       </div>
       </SlidePanel>
-
-      <SlidePanel open={showCamera} onClose={() => setShowCamera(false)} title="Capture Photo" width="sm">
-          <Webcam ref={webcamRef} screenshotFormat="image/jpeg" className="rounded-lg w-full" />
-          <button
-            onClick={capturePhoto}
-            className="w-full mt-4 py-2 bg-emerald-500 text-black rounded"
-          >
-            Capture Photo
-          </button>
-      </SlidePanel>
     </>
   );
 }
@@ -198,7 +120,6 @@ function Header({ step }) {
   const steps = [
     { icon: Building2, label: "Industry Details" },
     { icon: Users, label: "Training Info" },
-    { icon: ImageIcon, label: "Evidence" },
     { icon: ClipboardList, label: "Review" },
   ];
 
@@ -318,92 +239,6 @@ function TrainingStep({ form, setForm, catalog }) {
   );
 }
 
-/* ================= STEP 3 ================= */
-
-function EvidenceStep({
-  form,
-  setForm,
-  handleUpload,
-  captureLocation,
-  loadingGPS,
-  setShowCamera,
-}) {
-  return (
-    <FormCard
-      title="Evidence & Attendance"
-      description="Upload visit photos (optional) and record attendance"
-      icon={Camera}
-    >
-      <Grid>
-        <Input label="Total Candidates" value={form.candidates} onChange={(v) => setForm({ ...form, candidates: v })} />
-        <Input label="Attended" value={form.attended} onChange={(v) => setForm({ ...form, attended: v })} />
-      </Grid>
-
-      {/* UPLOAD AREA */}
-      <div className="mt-6">
-
-        <p className="text-sm mb-2 font-medium">
-          Visit Photos (Optional)
-        </p>
-
-        <label className="upload-box">
-          <input
-            type="file"
-            multiple
-            hidden
-            accept="image/*"
-            onChange={(e) => handleUpload(e.target.files)}
-          />
-
-          <div className="flex flex-col items-center gap-2">
-            <UploadCloud size={28} />
-            <span>Click to upload images</span>
-            <span className="text-xs text-white/60">
-              JPG, PNG up to 10MB
-            </span>
-          </div>
-        </label>
-
-        {/* PREVIEW */}
-        <div className="flex gap-3 mt-4 flex-wrap">
-          {form.images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              className="w-24 h-16 object-cover rounded"
-            />
-          ))}
-        </div>
-
-        {/* CAMERA */}
-        <button
-          onClick={() => setShowCamera(true)}
-          className="mt-4 px-4 py-2 bg-slate-700 rounded-md"
-        >
-          Capture from Camera
-        </button>
-      </div>
-
-      {/* LOCATION */}
-      <div className="mt-6">
-        <button
-          onClick={captureLocation}
-          className="flex items-center gap-2 px-4 py-2 bg-slate-700 rounded-md"
-        >
-          <MapPin size={16} />
-          {loadingGPS ? "Capturing..." : "Capture Location"}
-        </button>
-
-        {form.location && (
-          <p className="text-xs text-emerald-400 mt-2">
-            Location captured ✓
-          </p>
-        )}
-      </div>
-    </FormCard>
-  );
-}
-
 /* ================= REVIEW ================= */
 
 function ReviewStep({ form }) {
@@ -507,15 +342,6 @@ const styles = `
   padding: 10px 12px;
 }
 
-.upload-box {
-  border: 1px dashed #334155;
-  padding: 24px;
-  border-radius: 10px;
-  display: flex;
-  justify-content: center;
-  cursor: pointer;
-  background: #020617;
-}
 `;
 
 document.head.insertAdjacentHTML(

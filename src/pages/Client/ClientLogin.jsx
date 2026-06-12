@@ -50,10 +50,10 @@ export default function ClientLogin() {
   };
 
   return (
-    <main className="client-portal min-h-screen overflow-hidden bg-[#05020a] text-white">
+    <main className="client-portal min-h-screen overflow-hidden bg-[#06090d] text-white">
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-40 left-1/4 h-[420px] w-[420px] rounded-full bg-violet-600/25 blur-[140px]" />
-        <div className="absolute bottom-0 right-0 h-[520px] w-[520px] rounded-full bg-fuchsia-500/10 blur-[160px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(20,83,45,0.16),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,11,0.98))]" />
+        <div className="absolute inset-0 opacity-[0.12] bg-[linear-gradient(to_right,rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.12)_1px,transparent_1px)] bg-size-[52px_52px]" />
       </div>
 
       <section className="relative mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-5 py-10 lg:grid-cols-[1fr_440px]">
