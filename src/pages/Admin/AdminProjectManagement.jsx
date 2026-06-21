@@ -3238,6 +3238,18 @@ function InsuranceDetailsTable({ candidates, project, center, batchLabel, readOn
   );
 }
 
+function ProgressValue({ value }) {
+  const tone = value >= 85 ? "bg-emerald-400" : value >= 70 ? "bg-sky-400" : "bg-amber-400";
+  return (
+    <div className="min-w-28">
+      <p className="font-black text-white">{value}%</p>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-700">
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.min(value, 100)}%` }} />
+      </div>
+    </div>
+  );
+}
+
 function CertificationTable({ candidates, project, center, batchLabel, readOnly = false }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");

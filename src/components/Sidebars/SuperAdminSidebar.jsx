@@ -21,6 +21,7 @@ import {
   Wallet,
   HandCoins,
   Award,
+  IndianRupee,
   ShieldCheck,
   Target,
 } from "lucide-react";
@@ -72,6 +73,7 @@ const SECTIONS = [
     icon: Wallet,
     items: [
       { label: "Insurance", path: "/super-admin/student-insurance-details", icon: ShieldCheck },
+      { label: "Fee Collection", path: "/super-admin/fee-collection", icon: IndianRupee },
     ],
   },
   {

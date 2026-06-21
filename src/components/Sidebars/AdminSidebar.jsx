@@ -9,6 +9,7 @@ import {
   ChevronRight,
   FileCheck,
   HandCoins,
+  IndianRupee,
   LayoutDashboard,
   LogOut,
   MapPinned,
@@ -35,6 +36,11 @@ const MENU_ITEMS = [
     label: "Invoices",
     path: "/admin/invoices",
     icon: ReceiptText,
+  },
+  {
+    label: "Fee Collection",
+    path: "/admin/fee-collection",
+    icon: IndianRupee,
   },
   {
     label: "Live Feed",

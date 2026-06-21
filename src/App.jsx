@@ -106,6 +106,7 @@ const AdminStudentsKitDistribution = lazy(() => import("./pages/Admin/AdminStude
 const AdminStudentInsuranceDetails = lazy(() => import("./pages/Admin/AdminStudentInsuranceDetails"));
 const AdminBatchCertification = lazy(() => import("./pages/Admin/AdminBatchCertification"));
 const AdminTestimonials = lazy(() => import("./pages/Admin/AdminTestimonials"));
+const AdminFeeCollection = lazy(() => import("./pages/Admin/AdminFeeCollection"));
 
 // Super Admin
 const SuperAdminDashboard = lazy(() => import("./pages/SuperAdmin/SuperAdminDashboard"));
@@ -140,6 +141,7 @@ const SuperAdminOperationsApprovals = lazy(() => import("./pages/SuperAdmin/Supe
 const SuperAdminTourApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminTourApprovals"));
 const SuperAdminLeaveApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminLeaveApprovals"));
 const SuperAdminSalaryApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminSalaryApprovals"));
+const SuperAdminFeeMonitor = lazy(() => import("./pages/SuperAdmin/SuperAdminFeeMonitor"));
 
 // ─── Suspense fallback ───────────────────────────────────────────────────────
 const PageFallback = (
@@ -308,6 +310,7 @@ function App() {
               <Route path="placement-drive-approvals" element={<AdminPlacementDriveApprovals />} />
               <Route path="placement-tracker" element={<AdminPlacementTracker />} />
               <Route path="grievance-portal" element={<AdminGrievancePortal />} />
+              <Route path="fee-collection" element={<AdminFeeCollection />} />
             </Route>
 
             {/* Super Admin Layout Routes */}
@@ -366,6 +369,7 @@ function App() {
               <Route path="exposure-visits" element={<SuperAdminExposureVisits />} />
               <Route path="student-insurance-details" element={<AdminStudentInsuranceDetails />} />
               <Route path="batch-certification" element={<AdminBatchCertification uploadedBy="Super Admin" />} />
+              <Route path="fee-collection" element={<SuperAdminFeeMonitor />} />
 
               {/* Approvals */}
               <Route path="approvals" element={<SuperAdminApprovalsHub />} />
