@@ -1,40 +1,54 @@
-import { useMemo, useState, useCallback, useRef } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import {
   IndianRupee,
   Search,
   Upload,
-  Eye,
   Download,
   FileText,
   X,
   Plus,
-  CheckCircle2,
   Clock,
-  XCircle,
-  TrendingUp,
-  Target,
   CreditCard,
   Banknote,
   ChevronDown,
   Trash2,
   Paperclip,
-  Check,
   Hash,
   Save,
 } from "lucide-react";
+import Pagination from "../../components/common/Pagination";
+import SlidePanel from "../../components/common/SlidePanel";
+import TableExportActions from "../../components/common/TableExportActions";
 import { SA_PROJECTS } from "../SuperAdmin/superAdminData";
 import {
   FEE_TARGETS,
   TRAINING_MONTHS,
-  PAYMENT_MODES,
   getEntriesForBatchMonth,
   getBatchMonthSummary,
 } from "./feeCollectionData";
 
+const ITEMS_PER_PAGE = 8;
+const EXPORT_COLUMNS = [
+  { key: "projectName", header: "Project" },
+  { key: "centerName", header: "Center" },
+  { key: "batchLabel", header: "Batch" },
+  { key: "monthLabel", header: "Month" },
+  { key: "studentName", header: "Student" },
+  { key: "studentId", header: "Student ID" },
+  { key: "amount", header: "Amount", type: "currency", currency: "INR" },
+  { key: "paymentMode", header: "Mode" },
+  { key: "transactionRef", header: "Transaction Ref" },
+  { key: "proofStatus", header: "Proof" },
+  { key: "status", header: "Status" },
+  { key: "enteredOn", header: "Entered On", type: "date" },
+  { key: "enteredBy", header: "Entered By" },
+  { key: "remarks", header: "Remarks" },
+];
+
 /* ═══════════════════════════════════════════════════════════════
    ADMIN FEE COLLECTION — Zoho Projects Style
-   Inline spreadsheet editing, no modals, clean productivity UI
+   Spreadsheet list with overlay entry forms for focused data entry
    ═══════════════════════════════════════════════════════════════ */
 
 function formatCurrency(value) {
@@ -245,8 +259,8 @@ function ProofPreviewOverlay({ entry, onClose }) {
   );
 }
 
-/* ── Inline new row ── */
-function InlineNewRow({ batch, month, onAdd, onCancel, colSpan }) {
+/* ── Zoho Projects-style New Entry Overlay Modal ── */
+function NewEntryOverlay({ batch, month, onAdd, onClose, batchOption }) {
   const candidates = batch?.candidates || [];
   const target = FEE_TARGETS.find((t) => t.batchId === batch?.id);
   const feeAmount = target?.feePerStudent || 1200;
@@ -256,144 +270,237 @@ function InlineNewRow({ batch, month, onAdd, onCancel, colSpan }) {
   const [paymentMode, setPaymentMode] = useState("Online");
   const [transactionRef, setTransactionRef] = useState("");
   const [proofFile, setProofFile] = useState(null);
-  const refInput = useRef(null);
+  const [remarks, setRemarks] = useState("");
 
   const selectedStudent = candidates.find((c) => c.id === studentId);
+  const canSave = Boolean(studentId && amount && transactionRef.trim());
 
   function handleSave() {
-    if (!studentId || !amount || !transactionRef) return;
+    if (!canSave) return;
     onAdd({
       studentId,
       studentName: selectedStudent?.name || "Unknown",
       amount: Number(amount),
       paymentMode,
-      transactionRef,
+      transactionRef: transactionRef.trim(),
       proofFile: proofFile
         ? {
             name: proofFile.name,
-            type: proofFile.type,
+            type: proofFile.type || "application/octet-stream",
             url: URL.createObjectURL(proofFile),
             uploadedOn: new Date().toISOString().split("T")[0],
           }
         : null,
       month,
+      remarks: remarks.trim(),
     });
   }
 
-  const canSave = studentId && amount && transactionRef;
-
   return (
-    <tr className="bg-violet-500/[0.04] border-t-2 border-violet-500/30">
-      {/* # */}
-      <td className="px-3 py-2.5 text-center">
-        <div className="flex h-5 w-5 items-center justify-center rounded bg-violet-500/20 text-[10px] font-bold text-violet-300 mx-auto">
-          <Plus size={10} />
-        </div>
-      </td>
-      {/* Student */}
-      <td className="px-3 py-2.5">
-        <select
-          value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
-          className="w-full min-w-[140px] rounded-md border border-violet-400/30 bg-[#0b1220] px-2 py-1.5 text-xs font-bold text-white outline-none transition focus:border-violet-400/60"
-          autoFocus
-        >
-          {candidates.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </td>
-      {/* Amount */}
-      <td className="px-3 py-2.5">
-        <div className="relative">
-          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-white/25">₹</span>
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full min-w-[70px] rounded-md border border-violet-400/30 bg-[#0b1220] py-1.5 pl-5 pr-2 text-xs font-bold text-white outline-none transition focus:border-violet-400/60"
-          />
-        </div>
-      </td>
-      {/* Mode */}
-      <td className="px-3 py-2.5">
-        <InlineModeToggle value={paymentMode} onChange={setPaymentMode} />
-      </td>
-      {/* Ref */}
-      <td className="px-3 py-2.5">
-        <input
-          ref={refInput}
-          value={transactionRef}
-          onChange={(e) => setTransactionRef(e.target.value)}
-          placeholder={paymentMode === "Online" ? "UPI/NEFT ref" : "Receipt no."}
-          className="w-full min-w-[100px] rounded-md border border-violet-400/30 bg-[#0b1220] px-2 py-1.5 text-xs font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && canSave) handleSave();
-            if (e.key === "Escape") onCancel();
-          }}
-        />
-      </td>
-      {/* Proof */}
-      <td className="px-3 py-2.5">
-        {proofFile ? (
-          <div className="flex items-center gap-1">
-            <span className="flex items-center gap-1 rounded border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-300">
-              <Paperclip size={9} />
-              <span className="max-w-[50px] truncate">{proofFile.name.split('.')[0]}</span>
-            </span>
-            <button type="button" onClick={() => setProofFile(null)} className="text-white/25 hover:text-white/60">
-              <X size={10} />
-            </button>
+    <SlidePanel open onClose={onClose} title="New Fee Entry" width="xl">
+      <div className="flex min-h-full flex-col">
+        <div className="mb-5 flex items-center gap-3 rounded-lg border border-slate-700/60 bg-[#111827] px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+            <Plus size={18} />
           </div>
-        ) : (
-          <label className="inline-flex cursor-pointer items-center gap-1 rounded border border-dashed border-violet-400/30 px-2 py-1 text-[10px] font-bold text-violet-300/60 transition hover:border-violet-400/50 hover:text-violet-300">
-            <Paperclip size={9} />
-            Attach
-            <input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              className="hidden"
-              onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-white">Record a student fee payment</p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span className="max-w-[12rem] truncate text-[10px] font-bold text-violet-300/80">
+                {batchOption?.project?.name}
+              </span>
+              <ChevronDown size={9} className="rotate-[-90deg] text-white/15" />
+              <span className="max-w-[10rem] truncate text-[10px] font-bold text-white/40">
+                {batchOption?.center?.name}
+              </span>
+              <ChevronDown size={9} className="rotate-[-90deg] text-white/15" />
+              <span className="max-w-[10rem] truncate text-[10px] font-bold text-white/40">
+                {batch?.label}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-5">
+          <div>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+              Student <span className="text-red-400">*</span>
+            </label>
+            <select
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              className="w-full rounded-lg border border-slate-700 bg-[#111827] px-4 py-3 text-sm font-bold text-white outline-none transition focus:border-violet-400/60"
+              autoFocus
+            >
+              {candidates.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.id})
+                </option>
+              ))}
+            </select>
+            {selectedStudent && (
+              <p className="mt-1.5 text-[10px] text-white/25">
+                ID: <span className="font-mono text-white/40">{selectedStudent.id}</span>
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+                Amount (₹) <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <IndianRupee size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" />
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-[#111827] py-3 pl-9 pr-4 text-sm font-bold text-white outline-none transition focus:border-violet-400/60"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+                Payment Mode
+              </label>
+              <div className="flex h-[46px] items-stretch overflow-hidden rounded-lg border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode("Online")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 text-xs font-bold transition ${
+                    paymentMode === "Online"
+                      ? "border-r border-sky-500/30 bg-sky-500/20 text-sky-300"
+                      : "border-r border-slate-700 bg-[#111827] text-white/30 hover:text-white/50"
+                  }`}
+                >
+                  <CreditCard size={13} />
+                  Online
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode("Offline")}
+                  className={`flex flex-1 items-center justify-center gap-1.5 text-xs font-bold transition ${
+                    paymentMode === "Offline"
+                      ? "bg-orange-500/20 text-orange-300"
+                      : "bg-[#111827] text-white/30 hover:text-white/50"
+                  }`}
+                >
+                  <Banknote size={13} />
+                  Offline
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+              Transaction Reference <span className="text-red-400">*</span>
+            </label>
+            <div className="relative">
+              <Hash size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20" />
+              <input
+                value={transactionRef}
+                onChange={(e) => setTransactionRef(e.target.value)}
+                placeholder={paymentMode === "Online" ? "e.g. UPI-987654321" : "e.g. RCP-12345"}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] py-3 pl-9 pr-4 text-sm font-bold text-white outline-none transition placeholder:text-slate-600 focus:border-violet-400/60"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && canSave) handleSave();
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+              Payment Proof
+            </label>
+            {proofFile ? (
+              <div className="flex items-center justify-between rounded-lg border border-emerald-500/25 bg-emerald-500/[0.06] px-4 py-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-300">
+                    <Paperclip size={14} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="max-w-[14rem] truncate text-xs font-bold text-emerald-200 sm:max-w-[22rem]">
+                      {proofFile.name}
+                    </p>
+                    <p className="text-[10px] text-emerald-300/50">
+                      {(proofFile.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setProofFile(null)}
+                  className="rounded-lg p-1.5 text-emerald-300/40 transition hover:bg-emerald-500/15 hover:text-emerald-200"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <label className="group flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-slate-700 bg-[#111827]/50 px-4 py-5 transition hover:border-violet-400/40 hover:bg-violet-500/[0.03]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-white/25 transition group-hover:bg-violet-500/15 group-hover:text-violet-300">
+                  <Upload size={18} />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-white/40 transition group-hover:text-violet-300">
+                    Upload proof
+                  </p>
+                  <p className="mt-0.5 text-[10px] text-white/20">PDF, JPG, PNG</p>
+                </div>
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                />
+              </label>
+            )}
+          </div>
+
+          <div>
+            <label className="mb-2 block text-[10px] font-bold uppercase tracking-[0.16em] text-white/40">
+              Remarks <span className="text-white/15">(optional)</span>
+            </label>
+            <textarea
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              placeholder="Add any additional notes..."
+              rows={3}
+              className="w-full resize-none rounded-lg border border-slate-700 bg-[#111827] px-4 py-3 text-sm text-white/70 outline-none transition placeholder:text-slate-600 focus:border-violet-400/60"
             />
-          </label>
-        )}
-      </td>
-      {/* Status */}
-      <td className="px-3 py-2.5">
-        <span className="inline-flex items-center gap-1 rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-300">
-          <Clock size={9} />
-          Pending
-        </span>
-      </td>
-      {/* Date */}
-      <td className="px-3 py-2.5 text-[11px] text-white/40">
-        Today
-      </td>
-      {/* Actions */}
-      <td className="px-3 py-2.5">
-        <div className="flex items-center gap-1">
+          </div>
+
+          <div className="flex items-center gap-3 rounded-lg border border-slate-700/50 bg-[#111827] px-4 py-3">
+            <div className="flex items-center gap-2">
+              <Clock size={13} className="text-amber-400" />
+              <span className="text-xs font-bold text-amber-300">Pending</span>
+            </div>
+            <span className="text-[10px] text-white/20">Initial status</span>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-2.5 border-t border-slate-700/60 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-700 px-5 py-2.5 text-xs font-bold text-white/50 transition hover:bg-slate-800 hover:text-white/70"
+          >
+            Cancel
+          </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={!canSave}
-            className="rounded-md bg-violet-600 p-1.5 text-white transition hover:bg-violet-500 disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Save (Enter)"
+            className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-30 disabled:shadow-none"
           >
-            <Check size={12} />
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-md border border-slate-700 p-1.5 text-white/30 transition hover:bg-slate-800 hover:text-white/60"
-            title="Cancel (Esc)"
-          >
-            <X size={12} />
+            <Save size={13} />
+            Save Entry
           </button>
         </div>
-      </td>
-    </tr>
+      </div>
+    </SlidePanel>
   );
 }
 
@@ -423,7 +530,8 @@ export default function AdminFeeCollection() {
   const [search, setSearch] = useState("");
   const [entries, setEntries] = useState(() => [...getEntriesForBatchMonth(batchOptions[0]?.value || "", "2026-04")]);
   const [previewEntry, setPreviewEntry] = useState(null);
-  const [showNewRow, setShowNewRow] = useState(false);
+  const [showNewEntryModal, setShowNewEntryModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const selectedOption = batchOptions.find((o) => o.value === selectedBatchId);
   const selectedBatch = selectedOption?.batch;
@@ -434,7 +542,8 @@ export default function AdminFeeCollection() {
     setEntries([...getEntriesForBatchMonth(batchId, month)]);
     setSearch("");
     setStatusFilter("All");
-    setShowNewRow(false);
+    setShowNewEntryModal(false);
+    setCurrentPage(1);
   }, []);
 
   function handleBatchChange(val) {
@@ -474,6 +583,26 @@ export default function AdminFeeCollection() {
     });
   }, [entries, search, statusFilter]);
 
+  const totalPages = Math.ceil(filteredEntries.length / ITEMS_PER_PAGE);
+  const activePage = Math.min(currentPage, Math.max(totalPages, 1));
+  const pageStartIndex = (activePage - 1) * ITEMS_PER_PAGE;
+  const pageEndIndex = Math.min(pageStartIndex + ITEMS_PER_PAGE, filteredEntries.length);
+  const paginatedEntries = useMemo(
+    () => filteredEntries.slice(pageStartIndex, pageStartIndex + ITEMS_PER_PAGE),
+    [filteredEntries, pageStartIndex]
+  );
+  const exportRows = useMemo(
+    () =>
+      filteredEntries.map((entry) => ({
+        ...entry,
+        monthLabel: formatMonth(entry.month || selectedMonth),
+        proofStatus: entry.proofFile?.name || "Not attached",
+        remarks: entry.remarks || "",
+      })),
+    [filteredEntries, selectedMonth]
+  );
+  const exportContextName = `${selectedOption?.project?.name || "Project"} - ${selectedBatch?.label || "Batch"} - ${formatMonth(selectedMonth)}`;
+
   /* ── Upload proof ── */
   function handleUploadProof(entryId, file) {
     if (!file) return;
@@ -506,7 +635,7 @@ export default function AdminFeeCollection() {
     setEntries((prev) => prev.filter((e) => e.id !== entryId));
   }
 
-  /* ── Add new entry (from inline row) ── */
+  /* ── Add new entry (from overlay modal) ── */
   function handleAddEntry(data) {
     const newEntry = {
       id: `FEE-NEW-${Date.now()}`,
@@ -521,12 +650,16 @@ export default function AdminFeeCollection() {
       paymentMode: data.paymentMode,
       transactionRef: data.transactionRef,
       proofFile: data.proofFile,
+      remarks: data.remarks,
       status: "Pending",
       enteredBy: "Admin",
       enteredOn: new Date().toISOString().split("T")[0],
     };
     setEntries((prev) => [...prev, newEntry]);
-    setShowNewRow(false);
+    setSearch("");
+    setStatusFilter("All");
+    setCurrentPage(Math.max(1, Math.ceil((entries.length + 1) / ITEMS_PER_PAGE)));
+    setShowNewEntryModal(false);
   }
 
   /* ── Inline mode change ── */
@@ -628,7 +761,10 @@ export default function AdminFeeCollection() {
             <button
               key={s}
               type="button"
-              onClick={() => setStatusFilter(s)}
+              onClick={() => {
+                setStatusFilter(s);
+                setCurrentPage(1);
+              }}
               className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition ${
                 statusFilter === s
                   ? "bg-violet-500/20 text-violet-300"
@@ -653,7 +789,10 @@ export default function AdminFeeCollection() {
           <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/20" />
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search..."
             className="w-44 rounded-md border border-slate-700 bg-[#111827] py-1.5 pl-7 pr-2.5 text-xs text-white/70 outline-none transition placeholder:text-slate-600 focus:border-violet-400/50 focus:w-56"
           />
@@ -661,8 +800,27 @@ export default function AdminFeeCollection() {
 
         {/* Record count */}
         <span className="rounded-md bg-slate-800/60 px-2 py-1 text-[10px] font-bold text-white/30">
-          {filteredEntries.length} records
+          {filteredEntries.length > 0
+            ? `${pageStartIndex + 1}-${pageEndIndex} of ${filteredEntries.length} records`
+            : "0 records"}
         </span>
+
+        <TableExportActions
+          moduleName={`Fee Collection | ${exportContextName}`}
+          fileName={`fee_collection_${exportContextName}`}
+          columns={EXPORT_COLUMNS}
+          rows={exportRows}
+          company={{ name: "Pantiss ERP", logo: "/activity.png" }}
+        />
+
+        <button
+          type="button"
+          onClick={() => setShowNewEntryModal(true)}
+          className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-violet-600/20 transition hover:bg-violet-500"
+        >
+          <Plus size={13} />
+          Add Entry
+        </button>
       </div>
 
       {/* ─── Batch context bar ─── */}
@@ -719,14 +877,14 @@ export default function AdminFeeCollection() {
               </tr>
             </thead>
             <tbody>
-              {filteredEntries.map((entry, idx) => (
+              {paginatedEntries.map((entry, idx) => (
                 <tr
                   key={entry.id}
                   className="group border-b border-slate-700/30 transition-colors hover:bg-white/[0.02]"
                 >
                   {/* Row # */}
                   <td className="px-3 py-2 text-center text-[10px] font-bold text-white/15">
-                    {idx + 1}
+                    {pageStartIndex + idx + 1}
                   </td>
                   {/* Student */}
                   <td className="px-3 py-2">
@@ -781,19 +939,9 @@ export default function AdminFeeCollection() {
                 </tr>
               ))}
 
-              {/* Inline new row */}
-              {showNewRow && selectedBatch && (
-                <InlineNewRow
-                  batch={selectedBatch}
-                  month={selectedMonth}
-                  onAdd={handleAddEntry}
-                  onCancel={() => setShowNewRow(false)}
-                  colSpan={9}
-                />
-              )}
 
               {/* Empty state */}
-              {filteredEntries.length === 0 && !showNewRow && (
+              {filteredEntries.length === 0 && (
                 <tr>
                   <td
                     colSpan={9}
@@ -807,24 +955,11 @@ export default function AdminFeeCollection() {
           </table>
         </div>
 
-        {/* ─── Add row footer (Zoho style) ─── */}
-        <div className="border-t border-slate-700/40 bg-[#0b1220]">
-          {!showNewRow ? (
-            <button
-              type="button"
-              onClick={() => setShowNewRow(true)}
-              className="flex w-full items-center gap-2 px-5 py-2.5 text-xs font-bold text-violet-300/60 transition hover:bg-violet-500/[0.05] hover:text-violet-300"
-            >
-              <Plus size={13} />
-              Add a fee entry...
-            </button>
-          ) : (
-            <div className="px-5 py-2 text-[10px] text-white/20">
-              Press <kbd className="rounded border border-slate-700 bg-slate-800 px-1 py-0.5 font-mono text-[9px]">Enter</kbd> to save
-              · <kbd className="rounded border border-slate-700 bg-slate-800 px-1 py-0.5 font-mono text-[9px]">Esc</kbd> to cancel
-            </div>
-          )}
-        </div>
+        <Pagination
+          currentPage={activePage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Proof preview panel */}
@@ -832,6 +967,17 @@ export default function AdminFeeCollection() {
         <ProofPreviewOverlay
           entry={previewEntry}
           onClose={() => setPreviewEntry(null)}
+        />
+      )}
+
+      {/* New entry overlay modal */}
+      {showNewEntryModal && selectedBatch && (
+        <NewEntryOverlay
+          batch={selectedBatch}
+          month={selectedMonth}
+          onAdd={handleAddEntry}
+          onClose={() => setShowNewEntryModal(false)}
+          batchOption={selectedOption}
         />
       )}
     </section>
