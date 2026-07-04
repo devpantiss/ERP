@@ -16,6 +16,10 @@ import {
   Paperclip,
   Hash,
   Save,
+  TrendingUp,
+  Users,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
 import Pagination from "../../components/common/Pagination";
 import SlidePanel from "../../components/common/SlidePanel";
@@ -676,8 +680,189 @@ export default function AdminFeeCollection() {
         ? "text-amber-400"
         : "text-red-400";
 
+  const impactCards = [
+    {
+      id: "target",
+      label: "Monthly Target",
+      value: formatCurrency(summary.monthlyTarget),
+      subLabel: "for this batch & month",
+      icon: IndianRupee,
+      gradient: "from-violet-600/20 to-violet-900/10",
+      iconBg: "bg-violet-500/20",
+      iconColor: "text-violet-300",
+      glow: "shadow-violet-500/10",
+      border: "border-violet-500/20",
+      accent: "bg-violet-400",
+      accentWidth: "100%",
+    },
+    {
+      id: "collected",
+      label: "Total Collected",
+      value: formatCurrency(summary.totalCollected),
+      subLabel: `${summary.collectionRate}% of target`,
+      icon: TrendingUp,
+      gradient: "from-emerald-600/20 to-emerald-900/10",
+      iconBg: "bg-emerald-500/20",
+      iconColor: "text-emerald-300",
+      glow: "shadow-emerald-500/10",
+      border: "border-emerald-500/20",
+      accent: "bg-emerald-400",
+      accentWidth: `${Math.min(summary.collectionRate, 100)}%`,
+      highlight: "text-emerald-300",
+    },
+    {
+      id: "pending",
+      label: "Pending Amount",
+      value: formatCurrency(summary.pendingAmount),
+      subLabel: "yet to be collected",
+      icon: AlertCircle,
+      gradient: "from-amber-600/20 to-amber-900/10",
+      iconBg: "bg-amber-500/20",
+      iconColor: "text-amber-300",
+      glow: "shadow-amber-500/10",
+      border: "border-amber-500/20",
+      accent: "bg-amber-400",
+      accentWidth:
+        summary.monthlyTarget > 0
+          ? `${Math.min((summary.pendingAmount / summary.monthlyTarget) * 100, 100)}%`
+          : "0%",
+      highlight: "text-amber-300",
+    },
+    {
+      id: "rate",
+      label: "Collection Rate",
+      value: `${summary.collectionRate}%`,
+      subLabel: "payment completion",
+      icon: TrendingUp,
+      gradient:
+        summary.collectionRate >= 80
+          ? "from-emerald-600/20 to-emerald-900/10"
+          : summary.collectionRate >= 50
+          ? "from-amber-600/20 to-amber-900/10"
+          : "from-red-600/20 to-red-900/10",
+      iconBg:
+        summary.collectionRate >= 80
+          ? "bg-emerald-500/20"
+          : summary.collectionRate >= 50
+          ? "bg-amber-500/20"
+          : "bg-red-500/20",
+      iconColor:
+        summary.collectionRate >= 80
+          ? "text-emerald-300"
+          : summary.collectionRate >= 50
+          ? "text-amber-300"
+          : "text-red-300",
+      glow:
+        summary.collectionRate >= 80
+          ? "shadow-emerald-500/10"
+          : summary.collectionRate >= 50
+          ? "shadow-amber-500/10"
+          : "shadow-red-500/10",
+      border:
+        summary.collectionRate >= 80
+          ? "border-emerald-500/20"
+          : summary.collectionRate >= 50
+          ? "border-amber-500/20"
+          : "border-red-500/20",
+      accent:
+        summary.collectionRate >= 80
+          ? "bg-emerald-400"
+          : summary.collectionRate >= 50
+          ? "bg-amber-400"
+          : "bg-red-400",
+      accentWidth: `${Math.min(summary.collectionRate, 100)}%`,
+      highlight:
+        summary.collectionRate >= 80
+          ? "text-emerald-300"
+          : summary.collectionRate >= 50
+          ? "text-amber-300"
+          : "text-red-300",
+    },
+    {
+      id: "paid",
+      label: "Students Paid",
+      value: `${summary.studentsPaid}`,
+      subLabel: `out of ${summary.totalStudents} students`,
+      icon: Users,
+      gradient: "from-sky-600/20 to-sky-900/10",
+      iconBg: "bg-sky-500/20",
+      iconColor: "text-sky-300",
+      glow: "shadow-sky-500/10",
+      border: "border-sky-500/20",
+      accent: "bg-sky-400",
+      accentWidth:
+        summary.totalStudents > 0
+          ? `${Math.min((summary.studentsPaid / summary.totalStudents) * 100, 100)}%`
+          : "0%",
+      highlight: "text-sky-300",
+    },
+    {
+      id: "verified",
+      label: "Verified",
+      value: `${summary.studentsVerified}`,
+      subLabel: "payments verified",
+      icon: CheckCircle2,
+      gradient: "from-indigo-600/20 to-indigo-900/10",
+      iconBg: "bg-indigo-500/20",
+      iconColor: "text-indigo-300",
+      glow: "shadow-indigo-500/10",
+      border: "border-indigo-500/20",
+      accent: "bg-indigo-400",
+      accentWidth:
+        summary.totalStudents > 0
+          ? `${Math.min((summary.studentsVerified / summary.totalStudents) * 100, 100)}%`
+          : "0%",
+      highlight: "text-indigo-300",
+    },
+  ];
+
   return (
     <section className="space-y-0 text-white">
+
+      {/* ─── Impact Cards Row ─── */}
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        {impactCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <div
+              key={card.id}
+              className={`relative overflow-hidden rounded-2xl border ${card.border} bg-gradient-to-br ${card.gradient} p-4 shadow-lg ${card.glow} transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-xl`}
+            >
+              {/* Subtle radial glow backdrop */}
+              <div className="pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/[0.03] blur-2xl" />
+
+              {/* Icon + label row */}
+              <div className="mb-3 flex items-center justify-between">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${card.iconBg} ${card.iconColor}`}>
+                  <Icon size={18} />
+                </div>
+              </div>
+
+              {/* Value */}
+              <p className={`text-xl font-extrabold tracking-tight ${card.highlight || "text-white"}`}>
+                {card.value}
+              </p>
+
+              {/* Label */}
+              <p className="mt-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
+                {card.label}
+              </p>
+
+              {/* Sub-label */}
+              <p className="mt-0.5 text-[10px] text-white/25">{card.subLabel}</p>
+
+              {/* Bottom accent bar */}
+              <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className={`h-1 rounded-full ${card.accent} transition-all duration-700`}
+                  style={{ width: card.accentWidth }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* ─── Zoho-style Top Bar ─── */}
       <div className="rounded-t-2xl border border-slate-700/60 bg-[#111827] px-5 py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
