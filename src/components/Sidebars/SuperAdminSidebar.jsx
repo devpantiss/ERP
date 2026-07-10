@@ -24,6 +24,7 @@ import {
   IndianRupee,
   ShieldCheck,
   Target,
+  BookOpen,
 } from "lucide-react";
 
 /* ================= MENU CONFIG ================= */
@@ -74,6 +75,14 @@ const SECTIONS = [
     items: [
       { label: "Insurance", path: "/super-admin/student-insurance-details", icon: ShieldCheck },
       { label: "Fee Collection", path: "/super-admin/fee-collection", icon: IndianRupee },
+    ],
+  },
+  {
+    key: "training",
+    title: "Training",
+    icon: BookOpen,
+    items: [
+      { label: "Module Content", path: "/super-admin/module-content", icon: BookOpen },
     ],
   },
   {

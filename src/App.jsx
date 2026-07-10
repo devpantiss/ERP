@@ -142,6 +142,7 @@ const SuperAdminTourApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdmin
 const SuperAdminLeaveApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminLeaveApprovals"));
 const SuperAdminSalaryApprovals = lazy(() => import("./pages/SuperAdmin/SuperAdminSalaryApprovals"));
 const SuperAdminFeeMonitor = lazy(() => import("./pages/SuperAdmin/SuperAdminFeeMonitor"));
+const SuperAdminModuleContent = lazy(() => import("./pages/SuperAdmin/SuperAdminModuleContent"));
 
 // ─── Suspense fallback ───────────────────────────────────────────────────────
 const PageFallback = (
@@ -370,6 +371,7 @@ function App() {
               <Route path="student-insurance-details" element={<AdminStudentInsuranceDetails />} />
               <Route path="batch-certification" element={<AdminBatchCertification uploadedBy="Super Admin" />} />
               <Route path="fee-collection" element={<SuperAdminFeeMonitor />} />
+              <Route path="module-content" element={<SuperAdminModuleContent />} />
 
               {/* Approvals */}
               <Route path="approvals" element={<SuperAdminApprovalsHub />} />
