@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import {
   BriefcaseBusiness,
-  Database,
+  Camera,
   Download,
-  FileSpreadsheet,
   FileText,
+  Landmark,
   LoaderCircle,
-  Settings2,
-  Eye,
+  Newspaper,
   CheckCircle2,
 } from "lucide-react";
 import { Header } from "./ClientDashboard";
@@ -167,7 +166,8 @@ const getGalleryCategory = (asset) => {
 const REPORT_TYPES = [
   {
     id: "mpr",
-    title: "Monthly Progress Report",
+    category: "program",
+    title: "MPR",
     subtitle: "Full donor-ready monthly report with narrative sections, financials, success stories, and gallery.",
     icon: FileText,
     sections: [
@@ -182,18 +182,8 @@ const REPORT_TYPES = [
     ],
   },
   {
-    id: "batchwise",
-    title: "Batchwise Details",
-    subtitle: "Batch-level status, enrolled learners, attendance, assessment, certification, placement, and trainer mapping.",
-    icon: FileSpreadsheet,
-    sections: [
-      "Report summary with aggregate KPIs",
-      "Batch overview table (all centers)",
-      "Per-batch candidate details with training & placement status",
-    ],
-  },
-  {
     id: "placement",
+    category: "program",
     title: "Placement Report",
     subtitle: "Placement summary with placed candidates, recruiter mapping, salary range, designations, and pending pipeline.",
     icon: BriefcaseBusiness,
@@ -203,15 +193,51 @@ const REPORT_TYPES = [
       "Pipeline candidates pending placement",
     ],
   },
+  {
+    id: "photobook",
+    category: "program",
+    title: "Photobook",
+    subtitle: "Visual evidence of mobilization, training, practical sessions, employer engagement, and field activities.",
+    icon: Camera,
+    sections: ["Activity gallery", "Center and location captions", "Evidence dates and ownership"],
+  },
+  {
+    id: "closure",
+    category: "program",
+    title: "Closure Report",
+    subtitle: "End-of-program delivery summary covering targets, outcomes, lessons, risks, and closure readiness.",
+    icon: CheckCircle2,
+    sections: ["Final delivery summary", "Outcomes and pending actions", "Closure recommendations"],
+  },
+  {
+    id: "newsletter",
+    category: "program",
+    title: "News Letter",
+    subtitle: "A concise stakeholder update featuring program highlights, learner outcomes, and key milestones.",
+    icon: Newspaper,
+    sections: ["Program highlights", "Impact snapshot", "Stories and upcoming milestones"],
+  },
+  {
+    id: "audited-financial",
+    category: "financial",
+    title: "Audited Financial Report",
+    subtitle: "Financial utilization statement with approved budget, expenditure, commitments, and remaining balance.",
+    icon: Landmark,
+    sections: ["Budget utilization", "Invoice and procurement summary", "Financial observations"],
+  },
+  {
+    id: "invoices",
+    category: "financial",
+    title: "Invoices",
+    subtitle: "Consolidated invoice register for the selected project, centers, and reporting period.",
+    icon: FileText,
+    sections: ["Invoice register", "Vendor and center mapping", "Amounts, due dates, and status"],
+  },
 ];
 
-const DOWNLOADABLE_LISTS = [
-  { id: "batch-list", label: "Batch List", icon: FileSpreadsheet },
-  { id: "candidate-list", label: "Candidate List", icon: Database },
-  { id: "placement-list", label: "Placement List", icon: BriefcaseBusiness },
-  { id: "invoice-list", label: "Invoice List", icon: FileText },
-  { id: "procurement-list", label: "Procurement List", icon: Settings2 },
-  { id: "gallery-list", label: "Evidence Gallery", icon: Eye },
+const REPORT_GROUPS = [
+  { id: "program", title: "Program Reports" },
+  { id: "financial", title: "Financial Reports" },
 ];
 
 /* ─── Main Component ────────────────────────────────────────────────────────── */
@@ -350,26 +376,6 @@ export default function ClientReports() {
     }
   };
 
-  const downloadList = (listType) => {
-    if (!selectedProject || !selectedCenters.length) {
-      toast.error("Select a project and center to download a list.");
-      return;
-    }
-
-    const list = DOWNLOADABLE_LISTS.find((item) => item.id === listType);
-    const rows = buildDownloadableListRows(listType, selectedCenters, selectedProject);
-    if (!rows.length) {
-      toast.error("No records available for this list.");
-      return;
-    }
-
-    downloadCsv(
-      rows,
-      `${client.name}_${selectedProject.name}_${list?.label || "List"}_${month}_${year}`
-    );
-    toast.success(`${list?.label || "List"} downloaded.`);
-  };
-
   if (!selectedProject) {
     return (
       <section className="space-y-7">
@@ -386,8 +392,8 @@ export default function ClientReports() {
     <section className="space-y-6">
       <Header
         eyebrow="Reports"
-        title="Preview reports & lists"
-        description="Select a project, center, and reporting period to preview client documents before downloading."
+        title="Program & financial reports"
+        description="Preview and download program delivery documents and financial records for the selected reporting scope."
       />
 
       {/* ── Filters ─────────────────────────────────────────────────────────── */}
@@ -441,31 +447,40 @@ export default function ClientReports() {
 
         <div className="grid min-h-[680px] lg:grid-cols-[360px_minmax(0,1fr)]">
           <aside className="border-b border-white/10 bg-black/20 p-4 lg:border-b-0 lg:border-r">
-            <div className="space-y-2">
-              {REPORT_TYPES.map((report) => {
-                const Icon = report.icon;
-                const isActive = report.id === selectedReportId;
-                return (
-                  <button
-                    key={report.id}
-                    type="button"
-                    onClick={() => setSelectedReportId(report.id)}
-                    className={`w-full rounded-xl border px-4 py-3 text-left transition ${
-                      isActive
-                        ? "border-violet-300/40 bg-violet-500/15 text-white"
-                        : "border-white/10 bg-white/[0.03] text-white/60 hover:border-violet-300/25 hover:text-white"
-                    }`}
-                  >
-                    <span className="flex items-start gap-3">
-                      <Icon size={18} className={isActive ? "mt-0.5 text-violet-200" : "mt-0.5 text-white/35"} />
-                      <span className="min-w-0">
-                        <span className="block text-sm font-semibold">{report.title}</span>
-                        <span className="mt-1 block text-xs leading-5 text-white/40">{report.subtitle}</span>
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+            <div className="space-y-5">
+              {REPORT_GROUPS.map((group) => (
+                <div key={group.id}>
+                  <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                    {group.title}
+                  </p>
+                  <div className="space-y-2">
+                    {REPORT_TYPES.filter((report) => report.category === group.id).map((report) => {
+                      const Icon = report.icon;
+                      const isActive = report.id === selectedReportId;
+                      return (
+                        <button
+                          key={report.id}
+                          type="button"
+                          onClick={() => setSelectedReportId(report.id)}
+                          className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                            isActive
+                              ? "border-violet-300/40 bg-violet-500/15 text-white"
+                              : "border-white/10 bg-white/[0.03] text-white/60 hover:border-violet-300/25 hover:text-white"
+                          }`}
+                        >
+                          <span className="flex items-start gap-3">
+                            <Icon size={18} className={isActive ? "mt-0.5 text-violet-200" : "mt-0.5 text-white/35"} />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold">{report.title}</span>
+                              <span className="mt-1 block text-xs leading-5 text-white/40">{report.subtitle}</span>
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
@@ -537,39 +552,6 @@ export default function ClientReports() {
         </div>
       </section>
 
-      {/* ── CSV List Downloads ──────────────────────────────────────────────── */}
-      <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-5 shadow-xl shadow-black/20">
-        <div className="mb-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">CSV Exports</p>
-          <h2 className="mt-2 text-xl font-semibold text-white">Downloadable lists</h2>
-          <p className="mt-2 text-sm text-white/45">
-            Export raw data as CSV files. Lists follow the selected project and center scope.
-          </p>
-        </div>
-        <div className="overflow-hidden rounded-2xl border border-white/10">
-          {DOWNLOADABLE_LISTS.map((list) => {
-            const ListIcon = list.icon;
-            return (
-              <button
-                key={list.id}
-                type="button"
-                onClick={() => downloadList(list.id)}
-                className="group flex w-full items-center justify-between gap-3 border-b border-white/10 bg-black/20 px-4 py-4 text-left transition last:border-b-0 hover:bg-violet-500/10"
-              >
-                <span className="flex min-w-0 items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-500/15">
-                    <ListIcon size={17} className="text-violet-200" />
-                  </span>
-                  <span className="truncate text-sm font-semibold text-white/80 group-hover:text-white">
-                    {list.label}
-                  </span>
-                </span>
-                <Download size={15} className="shrink-0 text-white/30 group-hover:text-violet-200" />
-              </button>
-            );
-          })}
-        </div>
-      </section>
     </section>
   );
 }
@@ -606,37 +588,144 @@ function finalizeReportPdf(doc, fileName, output = "download") {
 }
 
 function generateReportByType(reportType, payload) {
-  if (reportType === "batchwise") {
-    return generateBatchwiseDetailsPdf(payload);
-  }
-
   if (reportType === "placement") {
     return generatePlacementReportPdf(payload);
+  }
+
+  if (["photobook", "closure", "newsletter", "audited-financial", "invoices"].includes(reportType)) {
+    return generateSupportingReportPdf(reportType, payload);
   }
 
   return generateMonthlyProgressPdf(payload);
 }
 
-function csvValue(value) {
-  const normalized = value === null || value === undefined ? "" : String(value);
-  return `"${normalized.replace(/"/g, '""')}"`;
-}
+async function generateSupportingReportPdf(reportType, { centers, client, month, output, project, summary, year }) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const report = REPORT_TYPES.find((item) => item.id === reportType);
+  const doc = new jsPDF({ orientation: reportType === "invoices" ? "landscape" : "portrait", unit: "pt", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 40;
+  const accent = report?.category === "financial" ? [5, 150, 105] : [124, 58, 237];
+  const analytics = buildReportAnalytics(centers, project);
+  const scope = `${month} ${year} | ${getReportScopeLabel(centers, project)}`;
 
-function downloadCsv(rows, fileName) {
-  const headers = Object.keys(rows[0] || {});
-  const csv = [
-    headers.map(csvValue).join(","),
-    ...rows.map((row) => headers.map((header) => csvValue(row[header])).join(",")),
-  ].join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `${slugifyFileName(fileName)}.csv`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  addSimpleReportCover(doc, {
+    accent,
+    client,
+    margin,
+    month,
+    pageWidth,
+    project,
+    reportTitle: report?.title || "Client Report",
+    subtitle: scope,
+    year,
+  });
+
+  if (reportType === "photobook") {
+    const gallery = centers.flatMap((center) => buildGalleryItems(project, center));
+    const items = gallery.slice(0, 12);
+    for (let index = 0; index < items.length; index += 2) {
+      doc.addPage();
+      addSimplePageHeader(doc, { accent, margin, month, pageWidth, title: "Program Evidence", year });
+      const pair = items.slice(index, index + 2);
+      for (let itemIndex = 0; itemIndex < pair.length; itemIndex += 1) {
+        const item = pair[itemIndex];
+        const y = 72 + itemIndex * 340;
+        try {
+          const imageData = await imageUrlToDataUrl(item.src);
+          doc.addImage(imageData, getImageFormat(imageData), margin, y, pageWidth - margin * 2, 230, undefined, "FAST");
+        } catch {
+          doc.setFillColor(241, 245, 249);
+          doc.rect(margin, y, pageWidth - margin * 2, 230, "F");
+        }
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        doc.text(item.title, margin, y + 252);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`${item.centerName} | ${item.location} | ${item.capturedOn}`, margin, y + 268);
+      }
+    }
+  } else if (reportType === "audited-financial") {
+    autoTable(doc, {
+      startY: 145,
+      margin: { left: margin, right: margin },
+      head: [["Financial Head", "Amount", "Observation"]],
+      body: [
+        ["Approved Budget", formatCurrency(analytics.approvedBudget), "Program investment baseline"],
+        ["Cumulative Utilization", formatCurrency(analytics.cumulativeUtilization), "Invoices, commitments, and operating utilization"],
+        ["Procurement Commitments", formatCurrency(analytics.committedProcurement), "Mapped procurement obligations"],
+        ["Remaining Balance", formatCurrency(analytics.remainingBalance), "Available against approved budget"],
+      ],
+      headStyles: { fillColor: accent },
+      styles: { fontSize: 9, cellPadding: 7 },
+    });
+    const utilization = analytics.approvedBudget
+      ? Math.round((analytics.cumulativeUtilization / analytics.approvedBudget) * 100)
+      : 0;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Reported utilization: ${utilization}%. Invoice records included: ${analytics.projectInvoices.length}.`, margin, doc.lastAutoTable.finalY + 28);
+  } else if (reportType === "invoices") {
+    const invoiceRows = buildDownloadableListRows("invoice-list", centers, project);
+    autoTable(doc, {
+      startY: 138,
+      margin: { left: margin, right: margin },
+      head: [["Vendor", "Category", "Center", "Amount", "Raised On", "Due On", "Status"]],
+      body: invoiceRows.length
+        ? invoiceRows.map((invoice) => [invoice.Vendor, invoice.Category, invoice.Center, formatCurrency(invoice.Amount), invoice["Raised On"], invoice["Due On"], invoice.Status])
+        : [["No invoice records available", "—", "—", "—", "—", "—", "—"]],
+      headStyles: { fillColor: accent },
+      styles: { fontSize: 8, cellPadding: 5 },
+    });
+  } else {
+    const isClosure = reportType === "closure";
+    const rows = isClosure
+      ? [
+          ["Learners enrolled", formatNumber(summary.learners), "Delivery scope completed or in progress"],
+          ["Training completed", formatNumber(summary.completed), percent(summary.completed, summary.learners)],
+          ["Certified", formatNumber(summary.certified), percent(summary.certified, summary.completed)],
+          ["Placed", formatNumber(summary.placed), percent(summary.placed, summary.learners)],
+          ["Open center issues", formatNumber(centers.reduce((sum, center) => sum + center.grievances, 0)), "Requires closure evidence where applicable"],
+        ]
+      : [
+          ["Active centers", formatNumber(summary.centers), "Program footprint"],
+          ["Learners reached", formatNumber(summary.learners), "Current reporting scope"],
+          ["Certified learners", formatNumber(summary.certified), `${analytics.passPercentage} pass rate`],
+          ["Placed learners", formatNumber(summary.placed), `${analytics.placementPercentage} placement rate`],
+          ["Average attendance", `${summary.attendance}%`, "Learner participation"],
+        ];
+    autoTable(doc, {
+      startY: 145,
+      margin: { left: margin, right: margin },
+      head: [[isClosure ? "Closure Indicator" : "Program Highlight", "Result", "Context"]],
+      body: rows,
+      headStyles: { fillColor: accent },
+      styles: { fontSize: 9, cellPadding: 7 },
+    });
+    const narrative = isClosure
+      ? "The closure review consolidates delivery achievement, learner outcomes, unresolved center observations, and the evidence required for final program sign-off."
+      : `${project.name} continues to demonstrate measurable learner progress across training, certification, and livelihood outcomes. The selected reporting period captures current portfolio highlights for stakeholder communication.`;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(doc.splitTextToSize(narrative, pageWidth - margin * 2), margin, doc.lastAutoTable.finalY + 30);
+  }
+
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let page = 1; page <= totalPages; page += 1) {
+    doc.setPage(page);
+    addSimpleFooter(doc, { client, margin, pageHeight, pageWidth, project, section: report?.title || "Client Report" });
+  }
+
+  return finalizeReportPdf(doc, `${client.name}_${project.name}_${month}_${year}_${reportType}`, output);
 }
 
 function buildDownloadableListRows(listType, centers, project) {
@@ -1236,7 +1325,7 @@ async function generateMonthlyProgressPdf({ centers, client, month, output, proj
   return finalizeReportPdf(doc, `${client.name}_${project.name}_${month}_${year}_monthly_progress_report`, output);
 }
 
-async function generateBatchwiseDetailsPdf({ centers, client, month, output, project, year }) {
+async function _generateBatchwiseDetailsPdf({ centers, client, month, output, project, year }) {
   const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),

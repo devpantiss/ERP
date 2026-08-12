@@ -61,13 +61,13 @@ export function ClientProjectDetail() {
   const client = getStoredClient();
   const project = getClientProjects(client.name).find((item) => item.id === projectId);
   const [selectedCenterId, setSelectedCenterId] = useState("");
-  const [selectedBatchId, setSelectedBatchId] = useState("");
+  const [selectedBatchId, setSelectedBatchId] = useState("all");
   const [centralExporting, setCentralExporting] = useState(false);
   const batchRefs = useRef({});
   const snapshot = useMemo(() => (project ? buildClientProjectSnapshot(project) : null), [project]);
 
   useEffect(() => {
-    if (!selectedBatchId) return undefined;
+    if (!selectedBatchId || selectedBatchId === "all") return undefined;
 
     const frame = requestAnimationFrame(() => {
       batchRefs.current[selectedBatchId]?.scrollIntoView({
@@ -102,10 +102,24 @@ export function ClientProjectDetail() {
   const selectedBatch =
     selectedCenter?.batches.find((batch) => batch.id === selectedBatchId) ||
     null;
+  const totalDataBatch = selectedCenter
+    ? {
+        id: "all",
+        label: "Total data",
+        track: "All batches",
+        candidateRecords: selectedCenter.batches.flatMap((batch) =>
+          (batch.candidateRecords || []).map((candidate) => ({
+            ...candidate,
+            sourceBatchId: batch.id,
+            sourceBatchLabel: batch.label,
+          }))
+        ),
+      }
+    : null;
 
   const handleCenterChange = (centerId) => {
     setSelectedCenterId(centerId);
-    setSelectedBatchId("");
+    setSelectedBatchId("all");
   };
 
   const handleCentralListDownload = async () => {
@@ -153,6 +167,8 @@ export function ClientProjectDetail() {
         <MetricCard label="Placed" value={snapshot.placed} caption="Offer or joining completed" icon={TrendingUp} />
         <MetricCard label="Open issues" value={summary.grievances} caption="Center-level operational risks" icon={CircleAlert} />
       </div>
+
+      <ReturnOnInvestmentSection project={project} snapshot={snapshot} />
 
       {selectedCenter && (
         <section className="rounded-3xl border border-violet-200/10 bg-[#12071f]/80 p-5 shadow-xl shadow-black/20">
@@ -208,6 +224,20 @@ export function ClientProjectDetail() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
+                <label className="flex h-10 items-center gap-2 rounded-xl border border-violet-300/20 bg-black/25 px-3 text-sm text-white/55">
+                  <span className="whitespace-nowrap">Data view</span>
+                  <select
+                    value={selectedBatchId}
+                    onChange={(event) => setSelectedBatchId(event.target.value)}
+                    className="min-w-36 bg-transparent font-semibold text-white outline-none"
+                    aria-label="Filter batch details"
+                  >
+                    <option value="all">Total data</option>
+                    {selectedCenter.batches.map((batch) => (
+                      <option key={batch.id} value={batch.id}>{batch.label}</option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   type="button"
                   onClick={handleCentralListDownload}
@@ -222,6 +252,10 @@ export function ClientProjectDetail() {
             </div>
 
             <div className="mt-5 space-y-3">
+              {selectedBatchId === "all" && totalDataBatch ? (
+                <ClientBatchStudentDetails batch={totalDataBatch} center={selectedCenter} project={project} />
+              ) : null}
+
               {selectedCenter.batches.map((batch) => (
                 <div
                   key={batch.id}
@@ -240,7 +274,7 @@ export function ClientProjectDetail() {
                 >
                   <button
                     type="button"
-                    onClick={() => setSelectedBatchId((current) => (current === batch.id ? "" : batch.id))}
+                    onClick={() => setSelectedBatchId((current) => (current === batch.id ? "all" : batch.id))}
                     className="w-full p-4 text-left transition hover:bg-violet-500/10"
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -275,6 +309,91 @@ export function ClientProjectDetail() {
         </div>
       )}
     </section>
+  );
+}
+
+function ReturnOnInvestmentSection({ project, snapshot }) {
+  const metrics = useMemo(() => {
+    const candidates = getAllClientProjectCandidates(snapshot, project);
+    const placedCandidates = candidates.filter((candidate) => candidate.placementStatus === "Placed");
+    const estimatedInvestment = Math.max(snapshot.summary.candidates * 26000, 1);
+    const annualIncomeGenerated = placedCandidates.reduce(
+      (sum, candidate) => sum + (candidate.salary || 0) * 12,
+      0
+    );
+    const netEconomicReturn = annualIncomeGenerated - estimatedInvestment;
+    const roi = Math.round((netEconomicReturn / estimatedInvestment) * 100);
+    const returnMultiple = annualIncomeGenerated / estimatedInvestment;
+
+    return {
+      annualIncomeGenerated,
+      estimatedInvestment,
+      netEconomicReturn,
+      placed: placedCandidates.length,
+      returnMultiple,
+      roi,
+      costPerPlacement: placedCandidates.length
+        ? Math.round(estimatedInvestment / placedCandidates.length)
+        : 0,
+    };
+  }, [project, snapshot]);
+
+  const coverage = Math.min(100, Math.max(0, Math.round(metrics.returnMultiple * 100)));
+  const positiveReturn = metrics.netEconomicReturn >= 0;
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-emerald-300/15 bg-[#0b1516]/90 shadow-xl shadow-black/20">
+      <div className="flex flex-col gap-4 border-b border-white/10 p-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">Return on Investment</p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">Economic impact generated</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-white/45">
+            Estimated annual income generated by placed learners compared with the program investment baseline.
+          </p>
+        </div>
+        <div className={`w-fit rounded-2xl border px-4 py-3 ${positiveReturn ? "border-emerald-300/20 bg-emerald-500/10" : "border-amber-300/20 bg-amber-500/10"}`}>
+          <p className="text-xs font-medium text-white/45">Estimated ROI</p>
+          <p className={`mt-1 text-3xl font-semibold ${positiveReturn ? "text-emerald-300" : "text-amber-300"}`}>
+            {metrics.roi > 0 ? "+" : ""}{metrics.roi}%
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-px bg-white/10 sm:grid-cols-2 xl:grid-cols-4">
+        <RoiMetric label="Estimated investment" value={`₹${formatNumber(metrics.estimatedInvestment)}`} caption="₹26,000 baseline per learner" />
+        <RoiMetric label="Annual income generated" value={`₹${formatNumber(metrics.annualIncomeGenerated)}`} caption={`Annualized salary of ${formatNumber(metrics.placed)} placed learners`} />
+        <RoiMetric label="Net economic return" value={`${positiveReturn ? "" : "−"}₹${formatNumber(Math.abs(metrics.netEconomicReturn))}`} caption="Annual income less estimated investment" tone={positiveReturn ? "positive" : "warning"} />
+        <RoiMetric label="Cost per placement" value={metrics.placed ? `₹${formatNumber(metrics.costPerPlacement)}` : "—"} caption="Estimated investment per placed learner" />
+      </div>
+
+      <div className="p-5">
+        <div className="flex items-center justify-between gap-4 text-sm">
+          <span className="font-medium text-white/60">Investment recovered through annual income</span>
+          <span className="font-semibold text-white">{metrics.returnMultiple.toFixed(2)}×</span>
+        </div>
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 transition-all duration-500"
+            style={{ width: `${coverage}%` }}
+          />
+        </div>
+        <p className="mt-3 text-xs leading-5 text-white/35">
+          Indicative economic-impact estimate based on a ₹26,000 investment baseline per learner and current recorded monthly salaries annualized for 12 months.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function RoiMetric({ caption, label, tone = "default", value }) {
+  const valueColor = tone === "positive" ? "text-emerald-300" : tone === "warning" ? "text-amber-300" : "text-white";
+
+  return (
+    <div className="bg-[#0b1516] p-5">
+      <p className="text-sm font-medium text-white/45">{label}</p>
+      <p className={`mt-2 text-2xl font-semibold ${valueColor}`}>{value}</p>
+      <p className="mt-2 text-xs leading-5 text-white/35">{caption}</p>
+    </div>
   );
 }
 
@@ -359,6 +478,8 @@ function normalizeClientCandidate(candidate, index, batch) {
 
   return {
     ...candidate,
+    id: candidate.sourceBatchId ? `${candidate.sourceBatchId}-${candidate.id}` : candidate.id,
+    batchLabel: candidate.sourceBatchLabel || batch.label,
     aadharNumber: `XXXX-XXXX-${String(3400 + seed).slice(-4)}`,
     address: `${candidate.batch}, ${candidate.jobRole} learner address`,
     candidateCode: candidate.code,
@@ -639,7 +760,7 @@ function ClientTrainingRoster({ candidates, project, batchLabel }) {
       { key: "name", header: "Name" },
       { key: "candidateCode", header: "Candidate Code" },
       { key: "projectName", header: "Project", exportValue: () => project.name },
-      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "batchLabel", header: "Batch", exportValue: (candidate) => candidate.batchLabel || batchLabel },
       { key: "jobRole", header: "Job Role" },
       { key: "trainingStatus", header: "Training Status" },
       { key: "completedTrainingDays", header: "Completed Days", type: "number" },
@@ -697,7 +818,7 @@ function ClientTrainingRoster({ candidates, project, batchLabel }) {
                 <td className="px-4 py-4 text-slate-300">{project.name}</td>
                 <td className="px-4 py-4">
                   <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
-                    {batchLabel}
+                    {candidate.batchLabel || batchLabel}
                   </span>
                 </td>
                 <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
@@ -763,7 +884,7 @@ function ClientEnrollmentRoster({ candidates, center, project, batchLabel }) {
       { key: "mobilizer", header: "Mobilizer" },
       { key: "projectName", header: "Project", exportValue: () => project.name },
       { key: "centerName", header: "Center", exportValue: () => center.name },
-      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "batchLabel", header: "Batch", exportValue: (candidate) => candidate.batchLabel || batchLabel },
       { key: "jobRole", header: "Job Role" },
       { key: "aadharNumber", header: "Aadhaar" },
       { key: "dateOfBirth", header: "DOB", type: "date" },
@@ -830,7 +951,7 @@ function ClientEnrollmentRoster({ candidates, center, project, batchLabel }) {
                 </td>
                 <td className="px-4 py-4">
                   <p className="text-slate-300">{project.name}</p>
-                  <p className="mt-1 text-xs text-slate-500">{center.name} • {batchLabel}</p>
+                  <p className="mt-1 text-xs text-slate-500">{center.name} • {candidate.batchLabel || batchLabel}</p>
                 </td>
                 <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
                 <td className="px-4 py-4 text-slate-300">{candidate.aadharNumber}</td>
@@ -899,7 +1020,7 @@ function ClientCertifiedRoster({ candidates, project, batchLabel }) {
       { key: "name", header: "Student" },
       { key: "candidateCode", header: "Candidate Code" },
       { key: "projectName", header: "Project", exportValue: () => project.name },
-      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "batchLabel", header: "Batch", exportValue: (candidate) => candidate.batchLabel || batchLabel },
       { key: "jobRole", header: "Job Role" },
       { key: "attendance", header: "Attendance %", type: "number" },
       { key: "trainingStatus", header: "Certification Status" },
@@ -954,7 +1075,7 @@ function ClientCertifiedRoster({ candidates, project, batchLabel }) {
                   <p className="mt-1 text-xs text-slate-500">{candidate.candidateCode}</p>
                 </td>
                 <td className="px-4 py-4 text-slate-300">{project.name}</td>
-                <td className="px-4 py-4"><BatchPill label={batchLabel} /></td>
+                <td className="px-4 py-4"><BatchPill label={candidate.batchLabel || batchLabel} /></td>
                 <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
                 <td className="px-4 py-4"><Progress label="Attendance" value={candidate.attendance} /></td>
                 <td className="px-4 py-4 font-mono text-xs text-slate-300">{candidate.certificateId}</td>
@@ -1025,7 +1146,7 @@ function ClientKitDistributionRoster({ candidates, center, project, batchLabel }
       { key: "candidateCode", header: "Candidate Code" },
       { key: "projectName", header: "Project", exportValue: () => project.name },
       { key: "centerName", header: "Center", exportValue: () => center.name },
-      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "batchLabel", header: "Batch", exportValue: (candidate) => candidate.batchLabel || batchLabel },
       { key: "jobRole", header: "Job Role" },
       ...KIT_ITEM_CONFIG.map((item) => ({
         key: item.key,
@@ -1086,7 +1207,7 @@ function ClientKitDistributionRoster({ candidates, center, project, batchLabel }
                 </td>
                 <td className="px-4 py-4 text-slate-300">{project.name}</td>
                 <td className="px-4 py-4 text-slate-300">{center.name}</td>
-                <td className="px-4 py-4"><BatchPill label={batchLabel} /></td>
+                <td className="px-4 py-4"><BatchPill label={candidate.batchLabel || batchLabel} /></td>
                 <td className="px-4 py-4 text-slate-300">{candidate.jobRole}</td>
                 {KIT_ITEM_CONFIG.map((item) => (
                   <td key={item.key} className="px-4 py-4">
@@ -1163,7 +1284,7 @@ function ClientPlacementRoster({ candidates, project, batchLabel }) {
       { key: "name", header: "Student Name" },
       { key: "candidateCode", header: "Candidate Code" },
       { key: "projectName", header: "Project", exportValue: () => project.name },
-      { key: "batchLabel", header: "Batch", exportValue: () => batchLabel },
+      { key: "batchLabel", header: "Batch", exportValue: (candidate) => candidate.batchLabel || batchLabel },
       { key: "company", header: "Company" },
       { key: "designation", header: "Designation" },
       { key: "salary", header: "Salary", type: "currency" },
@@ -1250,7 +1371,7 @@ function ClientPlacementRoster({ candidates, project, batchLabel }) {
                 <td className="px-4 py-4 text-slate-300">{project.name}</td>
                 <td className="px-4 py-4">
                   <span className="rounded-full border border-violet-400/20 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-200">
-                    {batchLabel}
+                    {candidate.batchLabel || batchLabel}
                   </span>
                 </td>
                 <td className="px-4 py-4">

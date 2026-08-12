@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
   Award,
+  CalendarDays,
+  Clock3,
+  IndianRupee,
   MapPinned,
   Medal,
   ShieldCheck,
@@ -22,6 +25,7 @@ import {
   YAxis,
 } from "recharts";
 import {
+  buildClientProjectSnapshot,
   getClientDeliveryMetrics,
   getClientPlacementGeography,
   getClientProjects,
@@ -59,10 +63,6 @@ export default function ClientDashboard() {
   const projects = getClientProjects(client.name);
   const deliveryMetrics = getClientDeliveryMetrics(projects);
   const placementGeography = getClientPlacementGeography(projects);
-  const dashboardCards = deliveryMetrics.metrics.map((metric) => ({
-    ...metric,
-    icon: DELIVERY_ICON[metric.id] || TrendingUp,
-  }));
 
   return (
     <section className="space-y-6">
@@ -72,17 +72,9 @@ export default function ClientDashboard() {
         description="A focused view of project delivery, center performance, enrollment, attendance, placement, and open delivery risks."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {dashboardCards.map((metric) => (
-          <Stat
-            key={metric.id}
-            icon={metric.icon}
-            label={metric.label}
-            value={formatNumber(metric.actual)}
-            caption={`${metric.percentage}% of target`}
-          />
-        ))}
-      </div>
+      <AgendaSection projects={projects} />
+
+      <DashboardRoiSection projects={projects} />
 
       <section className="overflow-hidden rounded-3xl border border-violet-200/10 bg-[#12071f]/80 shadow-xl shadow-black/20">
         <div className="border-b border-white/10 p-5 md:flex md:items-end md:justify-between">
@@ -135,6 +127,233 @@ export default function ClientDashboard() {
         </div>
       </section>
     </section>
+  );
+}
+
+function DashboardRoiSection({ projects }) {
+  const metrics = projects.reduce(
+    (totals, project) => {
+      const snapshot = buildClientProjectSnapshot(project);
+      const placedCandidates = snapshot.centers.flatMap((center) =>
+        center.batches.flatMap((batch) =>
+          (batch.candidateRecords || []).filter((candidate) => candidate.placementStatus === "Placed")
+        )
+      );
+
+      totals.learners += snapshot.summary.candidates;
+      totals.placed += placedCandidates.length;
+      totals.annualIncome += placedCandidates.reduce(
+        (sum, candidate) => sum + (candidate.salary || 0) * 12,
+        0
+      );
+      return totals;
+    },
+    { annualIncome: 0, learners: 0, placed: 0 }
+  );
+  const investment = metrics.learners * 26000;
+  const netReturn = metrics.annualIncome - investment;
+  const roi = investment ? Math.round((netReturn / investment) * 100) : 0;
+  const returnMultiple = investment ? metrics.annualIncome / investment : 0;
+  const costPerPlacement = metrics.placed ? Math.round(investment / metrics.placed) : 0;
+  const positiveReturn = netReturn >= 0;
+  const recovery = Math.min(100, Math.max(0, Math.round(returnMultiple * 100)));
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-emerald-300/15 bg-[#0b1516]/90 shadow-xl shadow-black/20">
+      <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="p-5 md:p-6">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-500/10 text-emerald-300">
+              <IndianRupee size={20} />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Return on Investment</p>
+              <h2 className="mt-2 text-2xl font-semibold text-white">Portfolio economic impact</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-white/45">
+                Annualized income generated through placements compared with the estimated investment across all client projects.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <DashboardRoiMetric label="Estimated investment" value={`₹${formatNumber(investment)}`} />
+            <DashboardRoiMetric label="Annual income generated" value={`₹${formatNumber(metrics.annualIncome)}`} tone="positive" />
+            <DashboardRoiMetric
+              label="Net economic return"
+              value={`${positiveReturn ? "" : "−"}₹${formatNumber(Math.abs(netReturn))}`}
+              tone={positiveReturn ? "positive" : "warning"}
+            />
+            <DashboardRoiMetric label="Cost per placement" value={metrics.placed ? `₹${formatNumber(costPerPlacement)}` : "—"} />
+          </div>
+
+          <div className="mt-5">
+            <div className="flex items-center justify-between gap-4 text-sm">
+              <span className="text-white/45">Investment recovery through annual income</span>
+              <span className="font-semibold text-white">{returnMultiple.toFixed(2)}×</span>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-teal-400 to-emerald-400 transition-all duration-500"
+                style={{ width: `${recovery}%` }}
+              />
+            </div>
+            <p className="mt-3 text-xs leading-5 text-white/35">
+              Indicative estimate using a ₹26,000 investment baseline per learner and recorded placement salaries annualized for 12 months.
+            </p>
+          </div>
+        </div>
+
+        <aside className="flex flex-col justify-center border-t border-white/10 bg-black/15 p-6 lg:border-l lg:border-t-0">
+          <p className="text-sm font-medium text-white/45">Estimated portfolio ROI</p>
+          <p className={`mt-2 text-5xl font-semibold tracking-tight ${positiveReturn ? "text-emerald-300" : "text-amber-300"}`}>
+            {roi > 0 ? "+" : ""}{roi}%
+          </p>
+          <div className="mt-5 space-y-3 border-t border-white/10 pt-5 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-white/40">Learners</span>
+              <span className="font-semibold text-white">{formatNumber(metrics.learners)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-white/40">Placed learners</span>
+              <span className="font-semibold text-white">{formatNumber(metrics.placed)}</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function DashboardRoiMetric({ label, tone = "default", value }) {
+  const valueColor = tone === "positive" ? "text-emerald-300" : tone === "warning" ? "text-amber-300" : "text-white";
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+      <p className="text-xs font-medium text-white/40">{label}</p>
+      <p className={`mt-2 text-xl font-semibold ${valueColor}`}>{value}</p>
+    </div>
+  );
+}
+
+function AgendaSection({ projects }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const addDays = (days) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() + days);
+    return date;
+  };
+  const agendaItems = projects
+    .flatMap((project, projectIndex) => {
+      const summary = getProjectSummary(project);
+      const projectEndDate = project.endDate ? new Date(`${project.endDate}T00:00:00`) : null;
+      const endDate = projectEndDate && projectEndDate >= today ? projectEndDate : addDays(14 + projectIndex);
+
+      return [
+        {
+          id: `${project.id}-delivery-review`,
+          date: addDays(projectIndex + 1),
+          eyebrow: "Delivery review",
+          title: `${project.name} performance check-in`,
+          detail: `${formatNumber(summary.candidates)} learners · ${summary.attendanceRate}% attendance`,
+          icon: TrendingUp,
+          tone: "violet",
+          projectId: project.id,
+        },
+        {
+          id: `${project.id}-placement-review`,
+          date: addDays(projectIndex + 3),
+          eyebrow: "Outcome review",
+          title: "Placement and retention checkpoint",
+          detail: `${summary.placementRate}% placement · ${formatNumber(summary.grievances)} open issues`,
+          icon: UserCheck,
+          tone: "teal",
+          projectId: project.id,
+        },
+        {
+          id: `${project.id}-milestone`,
+          date: endDate,
+          eyebrow: "Project milestone",
+          title: `${project.name} delivery window closes`,
+          detail: `${formatNumber(summary.centers)} centers · ${project.status}`,
+          icon: CalendarDays,
+          tone: "amber",
+          projectId: project.id,
+        },
+      ];
+    })
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 6);
+
+  const dateLabel = (date) => {
+    const dayDifference = Math.round((date - today) / 86400000);
+    if (dayDifference === 0) return "Today";
+    if (dayDifference === 1) return "Tomorrow";
+    return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(date);
+  };
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-violet-200/10 bg-[#12071f]/80 shadow-xl shadow-black/20">
+      <div className="flex flex-col gap-4 border-b border-white/10 p-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Agenda</p>
+          <h2 className="mt-2 text-2xl font-semibold text-white">Upcoming reviews and milestones</h2>
+          <p className="mt-2 text-sm leading-6 text-white/45">
+            The next delivery, outcome, and project timeline checkpoints across your portfolio.
+          </p>
+        </div>
+        <Link
+          to="/client/projects"
+          className="inline-flex w-fit items-center gap-2 rounded-2xl border border-violet-300/20 px-4 py-2 text-sm font-medium text-violet-200 transition hover:bg-violet-500/10"
+        >
+          Open projects
+          <ArrowUpRight size={16} />
+        </Link>
+      </div>
+
+      {agendaItems.length ? (
+        <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+          {agendaItems.map((item) => (
+            <AgendaCard key={item.id} item={item} dateLabel={dateLabel(item.date)} />
+          ))}
+        </div>
+      ) : (
+        <div className="p-8 text-center">
+          <CalendarDays className="mx-auto text-white/20" size={30} />
+          <p className="mt-3 font-medium text-white/60">No agenda items yet</p>
+          <p className="mt-1 text-sm text-white/35">Project reviews and milestones will appear here.</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AgendaCard({ dateLabel, item }) {
+  const Icon = item.icon;
+  const tones = {
+    amber: "border-amber-300/15 bg-amber-500/[0.06] text-amber-300",
+    teal: "border-teal-300/15 bg-teal-500/[0.06] text-teal-300",
+    violet: "border-violet-300/15 bg-violet-500/[0.08] text-violet-300",
+  };
+
+  return (
+    <Link
+      to={`/client/projects/${item.projectId}`}
+      className="group rounded-2xl border border-white/10 bg-black/20 p-4 transition hover:-translate-y-0.5 hover:border-violet-300/30 hover:bg-violet-500/[0.08]"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${tones[item.tone]}`}>
+          <Icon size={19} />
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs font-medium text-white/55">
+          <Clock3 size={12} />
+          {dateLabel}
+        </span>
+      </div>
+      <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-white/35">{item.eyebrow}</p>
+      <h3 className="mt-2 line-clamp-2 font-semibold leading-6 text-white transition group-hover:text-violet-100">{item.title}</h3>
+      <p className="mt-2 text-sm text-white/40">{item.detail}</p>
+    </Link>
   );
 }
 
@@ -348,9 +567,11 @@ function TargetMetricCard({ metric }) {
         <MiniDonut percentage={metric.percentage} color={color} />
       </div>
       <p className="text-sm font-medium text-white/50">{metric.label}</p>
-      <div className="mt-2 flex items-end justify-between gap-3">
-        <p className="text-3xl font-semibold text-white">{formatNumber(metric.actual)}</p>
-        <p className="pb-1 text-xs text-white/40">Target {formatNumber(metric.target)}</p>
+      <div className="mt-2">
+        <p className="text-3xl font-semibold text-white">
+          {formatNumber(metric.actual)} <span className="text-white/30">/</span> {formatNumber(metric.target)}
+        </p>
+        <p className="mt-1 text-xs font-medium text-white/40">Achieved / Target</p>
       </div>
       <p className="mt-3 text-xs leading-5 text-white/40">{metric.helper}</p>
     </article>
