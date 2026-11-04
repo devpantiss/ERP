@@ -17,6 +17,8 @@ import Loader from "./components/common/Loader";
 
 // ─── All pages — lazy loaded (Vite auto-chunks each) ────────────────────────
 
+const RoleWorkspace = lazy(() => import("./pages/shared/RoleWorkspace"));
+
 // Public
 const Home2 = lazy(() => import("./pages/Home2"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
@@ -57,7 +59,6 @@ const TrainerExposureVisits = lazy(() => import("./pages/Trainer/TrainerExposure
 const TrainerStudyModules = lazy(() => import("./pages/Trainer/TrainerStudyModules"));
 const TrainerProfile = lazy(() => import("./pages/Trainer/TrainerProfile"));
 const TrainerLab = lazy(() => import("./pages/Trainer/TrainerLab"));
-const TrainerLiveFeedHost = lazy(() => import("./pages/Trainer/TrainerLiveFeedHost"));
 const TrainerLiveFeedViewer = lazy(() => import("./pages/Trainer/TrainerLiveFeedViewer"));
 const TrainerRevenue = lazy(() => import("./pages/Trainer/TrainerRevenue"));
 const TeachingManagementSystem = lazy(() => import("./pages/Trainer/TeachingManagementSystem"));
@@ -82,6 +83,9 @@ const AdminAddProjectStepper = lazy(() => import("./pages/Admin/AdminAddProjectS
 const AdminCenterManagement = lazy(() => import("./pages/Admin/AdminCenterManagement"));
 const AdminReports = lazy(() => import("./pages/Admin/AdminReports"));
 const AdminSettings = lazy(() => import("./pages/Admin/AdminSettings"));
+const ProjectLeadOperations = lazy(() => import("./pages/ProjectLead/ProjectLeadOperations"));
+const CenterTeamSetup = lazy(() => import("./pages/ProjectLead/CenterTeamSetup"));
+const CenterInchargeProfile = lazy(() => import("./pages/shared/CenterInchargeProfile"));
 const AdminProfile = lazy(() => import("./pages/Admin/AdminProfile"));
 const AdminMobilizerList = lazy(() => import("./pages/Admin/AdminMobilizerList"));
 const AdminMobilizerDashboard = lazy(() => import("./pages/Admin/AdminMobilizerDashboard"));
@@ -97,6 +101,10 @@ const AdminTourApprovals = lazy(() => import("./pages/Admin/AdminTourApprovals")
 const AdminTrainerDashboard = lazy(() => import("./pages/Admin/AdminTrainerDashboard"));
 const AdminExposureVisitApprovals = lazy(() => import("./pages/Admin/AdminExposureVisitApprovals"));
 const AdminModuleProgress = lazy(() => import("./pages/Admin/AdminModuleProgress"));
+const EmployeeMonthlyReport = lazy(() => import("./features/employee-performance/EmployeeMonthlyReport"));
+const TrancheInvoiceWorkspace = lazy(() => import("./features/project-finance/TrancheInvoiceWorkspace"));
+const OperationalAlerts = lazy(() => import("./components/monitoring/OperationalAlerts"));
+const BatchLiveSessions = lazy(() => import("./components/monitoring/BatchLiveSessions"));
 const AdminTrainerLiveFeed = lazy(() => import("./pages/Admin/AdminTrainerLiveFeed"));
 const AdminPlacementDriveApprovals = lazy(() => import("./pages/Admin/AdminPlacementDriveApprovals"));
 const AdminPlacementTracker = lazy(() => import("./pages/Admin/AdminPlacementTracker"));
@@ -213,7 +221,7 @@ function App() {
               <Route path="study-modules" element={<TrainerStudyModules />} />
               <Route path="profile" element={<TrainerProfile />} />
               <Route path="labs" element={<TrainerLab />} />
-              <Route path="live-feed-host" element={<TrainerLiveFeedHost />} />
+              <Route path="live-feed-host" element={<BatchLiveSessions title="Live Sessions" host />} />
               <Route path="revenue" element={<TrainerRevenue />} />
               <Route path="testimonials" element={<AdminTestimonials />} />
 
@@ -253,6 +261,33 @@ function App() {
               <Route path="grievance" element={<GrievancePortal />} />
             </Route>
 
+            <Route path="/project-head" element={<AdminLayout />}>
+              <Route path="employees/:employeeId/performance" element={<EmployeeMonthlyReport />} />
+              <Route path="alerts" element={<OperationalAlerts level="project" />} />
+              <Route path="tranche-invoices" element={<TrancheInvoiceWorkspace />} />
+              <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="centers" element={<CenterTeamSetup />} />
+              <Route path="team-setup" element={<CenterTeamSetup />} />
+              <Route path="client-visits" element={<ProjectLeadOperations key="visits" kind="visits" />} />
+              <Route path="report-submissions" element={<ProjectLeadOperations key="reports" kind="reports" />} />
+              <Route path="qc-audits" element={<ProjectLeadOperations key="audits" kind="audits" />} />
+            </Route>
+            <Route path="/center-incharge" element={<AdminLayout role="center" />}>
+              <Route path="alerts" element={<OperationalAlerts level="center" />} />
+              <Route index element={<AdminDashboard level="center" />} />
+              <Route path="dashboard" element={<AdminDashboard level="center" />} />
+              <Route path="team" element={<RoleWorkspace level="center" embedded />} />
+              <Route path="project-details" element={<AdminProjectManagement readOnly centerScoped />} />
+              <Route path="profile" element={<CenterInchargeProfile />} />
+              <Route path="ppe-upload" element={<AdminStudentsKitDistribution title="PPE Upload" centerScoped />} />
+              <Route path="invoices" element={<AdminInvoiceManagement role="center" />} />
+              <Route path="testimonials" element={<AdminTestimonials />} />
+              <Route path="hr/attendance" element={<SharedAttendancePage employeeId="EMP-0011" eyebrow="Center Incharge Attendance" />} />
+              <Route path="hr/leave" element={<LeaveManagement />} />
+              <Route path="hr/salary" element={<SalaryDashboard />} />
+              <Route path="hr/reimbursement" element={<ReimbursementPortal />} />
+            </Route>
             {/* Admin Layout Routes */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
@@ -316,6 +351,10 @@ function App() {
 
             {/* Super Admin Layout Routes */}
             <Route path="/super-admin" element={<SuperAdminLayout />}>
+              <Route path="employees/:employeeId/performance" element={<EmployeeMonthlyReport />} />
+              <Route path="tranche-invoices" element={<TrancheInvoiceWorkspace />} />
+              <Route path="finance-handoff" element={<TrancheInvoiceWorkspace financeQueue />} />
+              <Route path="alerts" element={<OperationalAlerts level="vertical" />} />
               <Route index element={<SuperAdminDashboard />} />
               <Route path="dashboard" element={<SuperAdminDashboard />} />
 

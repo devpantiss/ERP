@@ -1,3 +1,4 @@
+import { useCenterIncharge } from "./useCenterIncharge";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -19,18 +20,21 @@ import {
 import { useHrStore } from "../../stores/hrStore.js";
 
 const ROLE_LABEL = {
+  "center-incharge": "Center Incharge",
   mobilizer: "Mobilizer",
   trainer: "Trainer",
   "placement-officer": "Placement Officer",
 }
 
 const ROLE_EMPLOYEE = {
+  "center-incharge": "EMP-0011",
   mobilizer: "EMP-0003",
   trainer: "EMP-0001",
   "placement-officer": "EMP-0002",
 }
 
 function getRoleFromPath(pathname) {
+  if (pathname.startsWith("/center-incharge")) return "center-incharge"
   if (pathname.includes("trainer")) return "trainer"
   if (pathname.includes("placement")) return "placement-officer"
   return "mobilizer"
@@ -77,6 +81,8 @@ const formatDate = (date) => {
 export default function LeaveManagement() {
   const location = useLocation();
   const roleKey = getRoleFromPath(location.pathname);
+  const centerIncharge = useCenterIncharge();
+  const employeeId = roleKey === "center-incharge" ? centerIncharge.id : ROLE_EMPLOYEE[roleKey];
   const a = ACCENT_MAP[roleKey] || ACCENT_MAP.mobilizer;
   const { leaves: leaveRecords, fetchLeaves, createLeave } = useHrStore();
 
@@ -90,19 +96,19 @@ export default function LeaveManagement() {
   });
 
   useEffect(() => {
-    fetchLeaves({ filters: { employeeId: ROLE_EMPLOYEE[roleKey] } });
-  }, [fetchLeaves, roleKey]);
+    fetchLeaves({ filters: { employeeId: employeeId } });
+  }, [fetchLeaves, employeeId]);
 
   const leaves = useMemo(() => selectLeaveRows(leaveRecords), [leaveRecords]);
   const requestedDays = diffDays(form.from, form.to);
   const roleLeaves = useMemo(
-    () => leaves.filter((leave) => leave.employeeId === ROLE_EMPLOYEE[roleKey]),
-    [leaves, roleKey]
+    () => leaves.filter((leave) => leave.employeeId === employeeId),
+    [leaves, employeeId]
   );
 
   const leaveBalances = useMemo(
-    () => getLeaveBalances(leaveRecords, ROLE_EMPLOYEE[roleKey]),
-    [leaveRecords, roleKey]
+    () => getLeaveBalances(leaveRecords, employeeId),
+    [leaveRecords, employeeId]
   );
 
   const stats = useMemo(
@@ -127,7 +133,7 @@ export default function LeaveManagement() {
     if (!requestedDays || exceedsBalance) return;
 
     createLeave({
-      employeeId: ROLE_EMPLOYEE[roleKey],
+      employeeId: employeeId,
       type: form.type,
       fromDate: form.from,
       toDate: form.to,

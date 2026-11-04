@@ -3,6 +3,7 @@ import SuperAdminSidebar from "../Sidebars/SuperAdminSidebar";
 import MobileBottomDock from "../common/MobileBottomDock";
 import {
   LayoutDashboard,
+  Bell,
   FolderKanban,
   CalendarDays,
   Camera,
@@ -29,6 +30,7 @@ const DOCK_ITEMS = [
 ];
 
 const DRAWER_ITEMS = [
+  { label: "Alerts", path: "/super-admin/alerts", icon: Bell },
   {
     label: "Projects",
     icon: FolderKanban,
@@ -38,6 +40,8 @@ const DRAWER_ITEMS = [
     ],
   },
   { label: "Live Feed", path: "/super-admin/live-feed", icon: Camera },
+  { label: "Tranche Invoices", path: "/super-admin/tranche-invoices", icon: ReceiptText },
+  { label: "Finance Handoff", path: "/super-admin/finance-handoff", icon: Wallet },
   {
     label: "Approvals",
     icon: FileCheck,

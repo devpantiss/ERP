@@ -27,7 +27,7 @@ export default function SuperAdminProjectAssignment() {
     fetchProjects();
   }, [fetchProjects, fetchWithAssignments]);
 
-  const admins = useMemo(() => selectEmployeeDirectory(employees).filter((employee) => employee.role === "Admin"), [employees]);
+  const admins = useMemo(() => selectEmployeeDirectory(employees).filter((employee) => employee.role === "Project Head"), [employees]);
   const catalog = useMemo(() => selectEnrollmentCatalog(projects), [projects]);
   const projectOptions = useMemo(() => catalog.map((project) => project.name), [catalog]);
   const centerOptions = useMemo(
@@ -95,7 +95,7 @@ export default function SuperAdminProjectAssignment() {
       <div className="bg-[#111827]/80 border border-slate-700/50 rounded-2xl p-8 backdrop-blur-sm">
         {step === 0 && (
           <div className="space-y-6">
-            <h3 className="text-lg font-bold text-red-400">Select Project Lead / Admin</h3>
+            <h3 className="text-lg font-bold text-red-400">Select Project Head</h3>
             <p className="text-xs text-slate-500">Choose the admin to assign projects and centers to.</p>
             <div className="grid md:grid-cols-3 gap-4">
               {admins.map((admin) => (

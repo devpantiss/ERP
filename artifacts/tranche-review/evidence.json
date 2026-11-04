@@ -1,0 +1,66 @@
+{
+  "contract": "Shared persisted project financial plan configured by Vertical Head during creation or from Project Details. Allotted/used/remaining budget separate from tranche revenue. Project Lead raises tranche invoice to Vertical Head; Vertical Head submits to Finance queue. Pending stage warns within configurable 7-day default window, becomes red after deadline. Delivery milestone shortfalls warn after scheduled target date. Weekly attendance below 70 percent for last completed Monday-Sunday week warns to Project Lead and Vertical Head. Right-side form overlays, reusable fields, assigned-role actions, responsive numeric layout and light/dark tokens.",
+  "targetViewports": [
+    "1440x900",
+    "390x844"
+  ],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Native labels and fieldset legends expose financial inputs by name. Expense overlay exposes named dialog, focuses first input with visible solid outline; Shift+Tab wraps to Save within form. Escape closes overlay and restores focus to Record expense. Table has caption/column headers; budget progress has accessible name."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Inspected 1440x900 desktop budget/tranche table, 390x844 dark mobile two-column metrics and light mobile single-column metrics. Fixed integer currency wrapping by removing redundant decimal zeros and using responsive minimum column sizes. Page has no horizontal overflow; tranche table scrolls within container."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "pass",
+      "evidence": "Mobile viewport reload captured existing App loading indicator before lazy financial screen rendered, then awaited the financial section and recaptured final content. Submit actions also disable while invoice attachments are read and records saved."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Initial existing project has Not configured valuation/budget and action to Set financial plan. No fabricated financial amounts are seeded. Restored initial empty financial state after testing."
+    },
+    "error": {
+      "status": "pass",
+      "evidence": "Validation tests reject unbalanced tranche totals, reversed handoff dates and dates outside project timeline. Simulated browser storage quota failure during expense recording raised an error and left expense state unchanged, preventing phantom spending."
+    },
+    "partial": {
+      "status": "pass",
+      "evidence": "Existing projects without financial schedules show Not configured and explain configuration is needed; absent milestone or weekly attendance data does not generate false failures. Paid expenditure can still be displayed without an allotted budget."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Saved existing plan through right-side form, recorded expense and checked used/remaining values. Raised invoice as Project Lead, switched to Vertical Head, submitted to Finance and confirmed Finance Handoff queue. Created QA project with financial plan and assigned lead through creation form; after reload Project Lead sees new project and stored valuation/budget. Injected 60 percent weekly attendance produced warnings in both role alert pages. Delivery filter showed all three shortfall warnings. Test data and generated test client account restored/removed afterward."
+    },
+    "permission": {
+      "status": "pass",
+      "evidence": "Project Lead screen omits financial plan editing and expense actions. Attempting Vertical Head Finance submission with Project Lead account is rejected by store scope/role guard. Duplicate Finance forwarding is blocked; stage cannot skip Project Lead. Project/vertical scoping retained."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "1440x900",
+      "artifact": "desktop.png",
+      "observation": "Final desktop financial layout with budget utilization, first test tranche submitted to Finance and next tranche Warning. Values are QA fixtures removed after review."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile.png",
+      "observation": "Dark mobile budget summary with compact currency values and contained horizontal tranche table."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile-light.png",
+      "observation": "Light mobile summary uses one column in narrow nested panel to keep full budget numbers legible and unsplit."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "loading.png",
+      "observation": "Existing App loading indicator during mobile reload, before lazy route finishes."
+    }
+  ],
+  "limitations": [
+    "Financial plans, invoice handoffs and expense records use the existing local mock data environment with browser persistence. Finance Handoff is an internal queue; no external finance API or external invoice delivery is configured. Seven-day warnings and last-completed-week attendance interpretation are explicit defaults. Existing legacy Project Details reporting includes demo-derived metrics; new milestone alerts use normalized candidate/enrollment status counts."
+  ]
+}

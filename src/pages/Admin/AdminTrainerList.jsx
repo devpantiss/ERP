@@ -1,3 +1,8 @@
+import EmployeeReportLink from "../../features/employee-performance/EmployeeReportLink";
+import { scopedEmployeeRecords } from "../../features/employee-performance/scopedEmployeeRecords";
+import { useAuthStore } from "../../stores/authStore";
+import { mockDb } from "../../mock-db";
+import { applyRoleScope } from "../../services/mockApiClient";
 import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, Mail, Phone, Users } from "lucide-react";
 import {
@@ -19,6 +24,9 @@ const ROLE_STYLES = {
 
 export default function AdminTrainerList() {
   const { records, fetchWithAssignments, loading } = useEmployeeStore();
+  const session = useAuthStore((state) => state.currentUser);
+  const user = session || mockDb.users.byId["USR-0002"];
+  const scopedRecords = useMemo(() => scopedEmployeeRecords(records, user), [records, user]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [filters, setFilters] = useState({
     search: "",
@@ -31,12 +39,12 @@ export default function AdminTrainerList() {
     fetchWithAssignments();
   }, [fetchWithAssignments]);
 
-  const employees = useMemo(() => selectEmployeeDirectory(records), [records]);
-  const projects = useMemo(() => selectProjectCardsFromEmployees(records), [records]);
+  const employees = useMemo(() => selectEmployeeDirectory(scopedRecords), [scopedRecords]);
+  const projects = useMemo(() => applyRoleScope("projects", selectProjectCardsFromEmployees(scopedRecords), user), [scopedRecords, user]);
   const projectEmployees = useMemo(
     () =>
       selectedProject
-        ? employees.filter((employee) => employee.projectId === selectedProject.id)
+        ? employees.filter((employee) => employee.projectIds.includes(selectedProject.id))
         : [],
     [employees, selectedProject]
   );
@@ -59,7 +67,7 @@ export default function AdminTrainerList() {
       cellClassName: "p-4",
       render: (employee) => (
         <div>
-          <p className="font-medium text-white/90">{employee.name}</p>
+          <EmployeeReportLink employeeId={employee.id} projectId={selectedProject?.id} className="font-medium text-white/90">{employee.name}</EmployeeReportLink>
           <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-slate-500">
             <Mail size={12} />
             {employee.email}

@@ -24,9 +24,9 @@ export const schemas = {
   Role: {
     id: "ROL-0001",
     code: ROLE_CODES.ADMIN,
-    name: "Admin",
+    name: "Project Head",
     permissionIds: ["PER-0001"],
-    scopeType: "GLOBAL | PROJECT | CENTER | BATCH | CLIENT",
+    scopeType: "VERTICAL | GLOBAL | PROJECT | CENTER | BATCH | CLIENT",
   },
   Permission: {
     id: "PER-0001",

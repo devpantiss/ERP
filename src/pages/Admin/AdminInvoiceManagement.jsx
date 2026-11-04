@@ -1,3 +1,6 @@
+import { mockDb } from "../../mock-db";
+import { useAuthStore } from "../../stores/authStore";
+import { applyRoleScope } from "../../services/mockApiClient";
 import { createElement, useMemo, useState } from "react";
 import {
   AlertCircle,
@@ -31,7 +34,9 @@ const CATEGORY_TABS = [
   { key: "Others", label: "Others", icon: ReceiptText },
 ];
 
-export default function AdminInvoiceManagement() {
+export default function AdminInvoiceManagement({ role = "project" }) {
+  const session = useAuthStore((state) => state.currentUser);
+  const scopeUser = session || mockDb.users.byId["USR-0007"];
   const [selectedProject, setSelectedProject] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState("2026-03");
   const [activeTab, setActiveTab] = useState("Food");
@@ -40,7 +45,9 @@ export default function AdminInvoiceManagement() {
   const [electricityFile, setElectricityFile] = useState("");
   const [otherBill, setOtherBill] = useState({ billName: "", amount: "", description: "", fileName: "" });
 
-  const projects = useMemo(() => buildProjectSummaries(EMPLOYEES), []);
+  const projects = useMemo(() => role === "center"
+    ? applyRoleScope("projects", Object.values(mockDb.projects.byId), scopeUser)
+    : buildProjectSummaries(EMPLOYEES), [role, scopeUser]);
   const monthLabel = getMonthLabel(selectedMonth);
   const monthData = FOOD_MONTHLY_DATA[selectedMonth] || {
     activeStudents: 0,
@@ -151,7 +158,7 @@ export default function AdminInvoiceManagement() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
               <div className="mb-3 inline-flex rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-sky-200">
-                Admin Billing Workspace
+                {role === "center" ? "Center Billing Workspace" : "Admin Billing Workspace"}
               </div>
               <h1 className="text-3xl font-semibold tracking-tight text-white md:text-4xl">Raise Invoices</h1>
               <p className="mt-3 text-sm leading-6 text-white/58 md:text-base">

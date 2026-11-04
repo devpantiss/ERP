@@ -337,6 +337,11 @@ div[class]:has(> table) table :where(th, td) {
   color: transparent;
 }
 
+.admin-future-sidebar__nav {
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+}
+
 .admin-future-sidebar nav a,
 .admin-future-sidebar nav button {
   position: relative;

@@ -1,3 +1,10 @@
+import { mockDb, getRoleScopes } from "../../mock-db";
+import { useAuthStore } from "../../stores/authStore";
+import { useProjectExecutionStore } from "../../features/project-finance/projectExecutionStore";
+import { emptyFinancialPlan, validateFinancialPlan } from "../../features/project-finance/projectFinanceModel";
+import FinancialPlanFields from "../../features/project-finance/FinancialPlanFields";
+import "../../pages/ProjectLead/ProjectLead.css";
+import "../../features/project-finance/projectFinance.css";
 import { useEffect, useMemo, useState } from "react";
 import {
   AtSign,
@@ -28,6 +35,7 @@ const emptyProject = {
   totalBatchTarget: "",
   plannedBatches: "",
   lead: [],
+  executionPlan: emptyFinancialPlan(),
 };
 
 const emptyBatch = {
@@ -125,6 +133,9 @@ function seedProjects(projectHierarchy, adminUsers) {
 }
 
 export default function SuperAdminCreateProjects() {
+  const session = useAuthStore((state) => state.currentUser);
+  const currentUser = session || mockDb.users.byId["USR-0001"];
+  const [saveError, setSaveError] = useState("");
   const { records: projectRecords, fetchAll } = useProjectStore();
   const { records: employees, fetchWithAssignments } = useEmployeeStore();
   useEffect(() => {
@@ -134,11 +145,11 @@ export default function SuperAdminCreateProjects() {
   const projectHierarchy = useMemo(() => selectSuperAdminProjectHierarchy(projectRecords), [projectRecords]);
   const adminUsers = useMemo(
     () => employees
-      .filter((employee) => employee.designation === "Project Admin")
+      .filter((employee) => employee.designation === "Project Head")
       .map((employee) => ({
         ...employee,
         name: [employee.firstName, employee.lastName].filter(Boolean).join(" "),
-        role: "Admin",
+        role: "Project Head",
       })),
     [employees]
   );
@@ -182,7 +193,10 @@ export default function SuperAdminCreateProjects() {
     projectDraft.endDate &&
     projectDraft.centerName &&
     projectDraft.jobRoles &&
-    Number(projectDraft.totalBatchTarget) > 0;
+    Number(projectDraft.totalBatchTarget) > 0 &&
+    projectDraft.startDate <= projectDraft.endDate &&
+    !!projectDraft.lead[0]?.id &&
+    !validateFinancialPlan(projectDraft.executionPlan, projectDraft);
   const canAddBatch =
     batchDraft.label && batchDraft.jobRole && batchDraft.trainer && Number(batchDraft.learners) > 0;
 
@@ -201,7 +215,8 @@ export default function SuperAdminCreateProjects() {
   };
 
   const openNewProject = () => {
-    setProjectDraft(emptyProject);
+    setProjectDraft({ ...emptyProject, executionPlan: emptyFinancialPlan() });
+    setSaveError("");
     setShowProjectModal(true);
   };
 
@@ -211,9 +226,25 @@ export default function SuperAdminCreateProjects() {
       ...projectDraft,
       totalBatchTarget: Number(projectDraft.totalBatchTarget),
       plannedBatches: Number(projectDraft.plannedBatches || 0),
-      id: `SA-P-${String(Date.now()).slice(-5)}`,
+      id: `PRJ-${crypto.randomUUID()}`,
       batches: [],
     };
+    try {
+      const scopes = getRoleScopes(currentUser, mockDb);
+      const suffix = crypto.randomUUID();
+      const knownAgency = Object.values(mockDb.fundingAgencies.byId).find((agency) => [agency.name, agency.shortName].includes(projectDraft.fundingAgency));
+      const agency = knownAgency || { id: `FAG-${suffix}`, name: projectDraft.fundingAgency, shortName: projectDraft.fundingAgency };
+      const project = {
+        id: baseProject.id, name: baseProject.name, code: baseProject.id,
+        schoolId: scopes.schoolIds[0], fundingAgencyId: agency.id,
+        startDate: baseProject.startDate, endDate: baseProject.endDate,
+        status: baseProject.status.toUpperCase(), projectHeadEmployeeId: baseProject.lead[0].id,
+        totalBatchTarget: baseProject.totalBatchTarget,
+      };
+      const center = { id: `CTR-${suffix}`, projectId: project.id, name: baseProject.centerName, district: "Not specified", state: "Not specified", managerEmployeeId: null, status: "ACTIVE" };
+      useProjectExecutionStore.getState().registerProject({ project, center, agency }, projectDraft.executionPlan, currentUser);
+      fetchAll();
+    } catch (error) { setSaveError(error.message); return; }
     const clientCredentials = buildClientCredentials(baseProject);
     const nextProject = { ...baseProject, clientCredentials };
     saveGeneratedClientAccount(clientCredentials);
@@ -355,7 +386,7 @@ export default function SuperAdminCreateProjects() {
                 <th className="px-5 py-4">Funding Agency</th>
                 <th className="px-5 py-4">Center</th>
                 <th className="px-5 py-4">Training Plan</th>
-                <th className="px-5 py-4">Project Lead/Admin</th>
+                <th className="px-5 py-4">Project Head</th>
                 <th className="px-5 py-4">Client Portal</th>
                 <th className="px-5 py-4">Timeline</th>
                 <th className="px-5 py-4">Batches</th>
@@ -448,6 +479,7 @@ export default function SuperAdminCreateProjects() {
           canSave={canSaveProject}
           onClose={() => setShowProjectModal(false)}
           onSave={saveProject}
+          saveError={saveError}
           onUpdate={updateProjectDraft}
         />
       )}
@@ -547,7 +579,7 @@ function InlineAdminAssign({ values, people, onChange }) {
           ))}
           {!filteredPeople.length && (
             <div className="px-3 py-5 text-center text-xs font-bold text-slate-500">
-              No Admin users found.
+              No Project Head users found.
             </div>
           )}
         </div>
@@ -595,9 +627,9 @@ function ClientCredentialsCell({ credentials }) {
   );
 }
 
-function ProjectModal({ adminUsers, project, canSave, onClose, onSave, onUpdate }) {
+function ProjectModal({ adminUsers, project, canSave, onClose, onSave, onUpdate, saveError }) {
   return (
-    <SlideOver title="New Project" subtitle="Create a project shell and assign an Admin lead." onClose={onClose}>
+    <SlideOver title="New Project" subtitle="Create a project shell and assign an Project Head." onClose={onClose}>
       <div className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Project Name" value={project.name} onChange={(value) => onUpdate("name", value)} placeholder="PMKVY 5.0" />
@@ -634,10 +666,17 @@ function ProjectModal({ adminUsers, project, canSave, onClose, onSave, onUpdate 
           values={project.lead}
           onChange={(people) => onUpdate("lead", people.slice(-1))}
           people={adminUsers}
-          placeholder="Type @ to assign an Admin..."
+          placeholder="Type @ to assign a Project Head..."
           accentColor="red"
-          label="Project Lead / Admin"
+          label="Project Head"
         />
+
+        <section className="lead-workspace financial-creation" aria-label="Project valuation and tranche schedule">
+          <h3 className="mb-4 text-lg font-semibold">Valuation, budget & tranche schedule</h3>
+          <FinancialPlanFields plan={project.executionPlan} onChange={(value) => onUpdate("executionPlan", value)} />
+          {validateFinancialPlan(project.executionPlan, project) && <p className="lead-notice">{validateFinancialPlan(project.executionPlan, project)}</p>}
+          {saveError && <p className="lead-error" role="alert">{saveError}</p>}
+        </section>
 
         <div className="rounded-xl border border-slate-700/50 bg-[#0b1220] p-4 text-xs font-bold leading-5 text-slate-400">
           Add all job roles in a comma-separated list. Batch setup can later split the total target into individual batches.

@@ -1,3 +1,4 @@
+import { useCenterIncharge } from "./useCenterIncharge";
 import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import {
@@ -47,7 +48,7 @@ const MONTHS = [
   "July","August","September","October","November","December",
 ];
 
-const ROLE_EMPLOYEE = { mobilizer: "EMP-0003", trainer: "EMP-0001", "placement-officer": "EMP-0002" };
+const ROLE_EMPLOYEE = { "center-incharge": "EMP-0011", mobilizer: "EMP-0003", trainer: "EMP-0001", "placement-officer": "EMP-0002" };
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
@@ -158,6 +159,8 @@ const generateSalarySlip = (monthKey, data, calc, roleConfig) => {
 export default function SalaryDashboard() {
   const location = useLocation();
   const roleKey = location.pathname.split("/")[1]; // mobilizer | trainer | placement-officer
+  const centerIncharge = useCenterIncharge();
+  const employeeId = roleKey === "center-incharge" ? centerIncharge.id : ROLE_EMPLOYEE[roleKey];
   const roleConfig = ROLE_CONFIG[roleKey] || ROLE_CONFIG.mobilizer;
   const a = ACCENT[roleConfig.accent];
   const { salaries, fetchSalaries } = useSalaryStore();
@@ -167,12 +170,12 @@ export default function SalaryDashboard() {
   const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
-    fetchSalaries({ filters: { employeeId: ROLE_EMPLOYEE[roleKey] } });
-  }, [fetchSalaries, roleKey]);
+    fetchSalaries({ filters: { employeeId: employeeId } });
+  }, [fetchSalaries, employeeId]);
 
   const salaryData = useMemo(
-    () => selectSalaryHistoryForEmployee(salaries, ROLE_EMPLOYEE[roleKey]),
-    [salaries, roleKey]
+    () => selectSalaryHistoryForEmployee(salaries, employeeId),
+    [salaries, employeeId]
   );
   const monthOptions = useMemo(() => Object.keys(salaryData), [salaryData]);
   const data = useMemo(

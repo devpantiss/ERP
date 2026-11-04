@@ -38,6 +38,7 @@ export const referenceChecks = [
   { entity: "employees", field: "assignedBatchIds", target: "batches", many: true },
   { entity: "projects", field: "fundingAgencyId", target: "fundingAgencies" },
   { entity: "projects", field: "schoolId", target: "schools" },
+  { entity: "projects", field: "projectHeadEmployeeId", target: "employees", optional: true },
   { entity: "centers", field: "projectId", target: "projects" },
   { entity: "centers", field: "managerEmployeeId", target: "employees" },
   { entity: "batches", field: "projectId", target: "projects" },

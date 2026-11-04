@@ -51,15 +51,16 @@ const SCENES = [
 const TOTAL = SCENES.reduce((n, s) => n + s.frames, 0);
 
 // ─── Auth data ───────────────────────────────────────────────────────────────
-const ROLES = ["Super Admin", "Admin", "Mobilizer", "Trainer", "Placement Officer"];
+const ROLES = ["Super Admin", "Project Head", "Center Incharge", "Mobilizer", "Trainer", "Placement Officer"];
 const ROLE_ROUTE = {
-  "Super Admin": "/super-admin", Admin: "/admin",
+  "Super Admin": "/super-admin", "Project Head": "/project-head", "Center Incharge": "/center-incharge",
   Mobilizer: "/mobilizer/dashboard", Trainer: "/trainer",
   "Placement Officer": "/placement-officer",
 };
 const ROLE_HEX = {
   "Super Admin":       "#FF2D2D",
-  Admin:               "#7C3AFF",
+  "Center Incharge": "#7C3AFF",
+  "Project Head":               "#7C3AFF",
   Mobilizer:           "#F59E00",
   Trainer:             "#00C97A",
   "Placement Officer": "#00BBFF",

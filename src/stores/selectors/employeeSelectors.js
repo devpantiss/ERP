@@ -3,7 +3,9 @@ import { denormalize } from "../../mock-db/shared/normalize.js"
 
 const ROLE_LABELS = {
   SUPER_ADMIN: "Super Admin",
-  ADMIN: "Admin",
+  ADMIN: "Project Head",
+    PROJECT_HEAD: "Project Head",
+    CENTER_INCHARGE: "Center Incharge",
   TRAINER: "Trainer",
   MOBILIZER: "Mobilizer",
   PLACEMENT_OFFICER: "Placement Officer",

@@ -1,3 +1,5 @@
+import { mockDb } from "../../mock-db";
+import { registerLiveSession, removeLiveSession } from "../../components/monitoring/monitoringData";
 import { useRef, useState, useEffect, useCallback } from "react";
 import Peer from "peerjs";
 import {
@@ -14,14 +16,20 @@ const ICE_CONFIG = {
   ],
 };
 
-const SESSION_INFO = {
+const DEFAULT_SESSION_INFO = {
   trainer: "Aditya Sahu",
   center: "Angul Training Center",
   batch: "BATCH-101",
   trade: "Electrical",
 };
 
-export default function TrainerLiveFeedHost({ embedded = false }) {
+export default function TrainerLiveFeedHost({ embedded = false, batch }) {
+  const trainer = batch && mockDb.employees.byId[batch.trainerEmployeeId];
+  const SESSION_INFO = batch ? {
+    trainer: trainer ? `${trainer.firstName} ${trainer.lastName}` : "Unassigned",
+    center: mockDb.centers.byId[batch.centerId]?.name || "Unassigned",
+    batch: batch.code, trade: batch.trade,
+  } : DEFAULT_SESSION_INFO;
   const videoRef = useRef(null);
   const peerRef = useRef(null);
   const streamRef = useRef(null);
@@ -39,6 +47,22 @@ export default function TrainerLiveFeedHost({ embedded = false }) {
   const [bitrate, setBitrate] = useState("2.4");
   const [logs, setLogs] = useState([]);
   const startTimeRef = useRef(null);
+
+  useEffect(() => {
+    if (status !== "live" || !sessionId || !batch?.id) return;
+    const publish = () => { try { registerLiveSession(batch.id, sessionId); } catch { console.warn("Live status could not be registered in browser storage."); } };
+    const end = () => { try { removeLiveSession(batch.id, sessionId); } catch { /* Storage may be unavailable. */ } };
+    publish();
+    const heartbeat = setInterval(publish, 10000);
+    window.addEventListener("pagehide", end);
+    return () => { clearInterval(heartbeat); window.removeEventListener("pagehide", end); end(); };
+  }, [status, sessionId, batch?.id]);
+
+  useEffect(() => () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    callsRef.current.forEach((call) => { try { call.close(); } catch { /* Already closed. */ } });
+    peerRef.current?.destroy();
+  }, []);
 
   const addLog = (msg, type = "info") => {
     const now = new Date();
@@ -105,6 +129,11 @@ export default function TrainerLiveFeedHost({ embedded = false }) {
           callsRef.current = callsRef.current.filter((c) => c !== call);
           setViewerCount((c) => Math.max(0, c - 1));
         });
+      });
+
+      peer.on("disconnected", () => {
+        setStatus("error");
+        setError("Broadcast connection lost. Start a new session to reconnect.");
       });
 
       peer.on("error", (err) => {

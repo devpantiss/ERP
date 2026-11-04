@@ -29,7 +29,32 @@ function matchesFilters(record, filters = {}) {
 export function applyRoleScope(entityName, records, currentUser) {
   if (!currentUser) return records
   const scopes = getRoleScopes(currentUser, mockDb)
-  if (scopes.roleCodes.includes("SUPER_ADMIN") || scopes.roleCodes.includes("EXECUTIVE")) return records
+  if (scopes.roleCodes.includes("EXECUTIVE")) return records
+  const isVertical = scopes.roleCodes.includes("SUPER_ADMIN")
+  const isCenter = scopes.roleCodes.includes("CENTER_INCHARGE")
+  const isProject = scopes.roleCodes.includes("PROJECT_HEAD")
+  if (isVertical || isCenter || isProject) {
+    const projectIds = isVertical
+      ? Object.values(mockDb.projects.byId).filter((p) => scopes.schoolIds.includes(p.schoolId)).map((p) => p.id)
+      : scopes.projectIds
+    const centerIds = isCenter ? scopes.centerIds : Object.values(mockDb.centers.byId).filter((c) => projectIds.includes(c.projectId)).map((c) => c.id)
+    const inCenter = (id) => centerIds.includes(id)
+    const employeeInScope = (id) => mockDb.employees.byId[id]?.centerIds?.some(inCenter)
+    return records.filter((record) => {
+      if (entityName === "projects") return projectIds.includes(record.id)
+      if (entityName === "centers") return isCenter ? inCenter(record.id) : projectIds.includes(record.projectId)
+      if (entityName === "employees") return isCenter ? record.centerIds?.some(inCenter) : record.projectIds?.some((id) => projectIds.includes(id))
+      if (record.centerId) return inCenter(record.centerId)
+      if (record.batchId) return inCenter(mockDb.batches.byId[record.batchId]?.centerId)
+      if (entityName === "candidates") {
+        const enrollments = Object.values(mockDb.enrollments.byId).filter((e) => e.candidateId === record.id)
+        return enrollments.length ? enrollments.some((e) => inCenter(e.centerId)) : employeeInScope(record.mobilizerEmployeeId)
+      }
+      if (record.employeeId) return isCenter ? employeeInScope(record.employeeId) : mockDb.employees.byId[record.employeeId]?.projectIds?.some((id) => projectIds.includes(id))
+      if (record.projectId) return !isCenter && projectIds.includes(record.projectId)
+      return false
+    })
+  }
 
   return records.filter((record) => {
     if (record.projectId) return scopes.projectIds.includes(record.projectId)

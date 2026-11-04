@@ -1,3 +1,11 @@
+import EmployeeReportLink from "../../features/employee-performance/EmployeeReportLink";
+import { scopedEmployeeRecords } from "../../features/employee-performance/scopedEmployeeRecords";
+import { useEmployeeTargetStore } from "../../features/employee-performance/employeeTargetStore";
+import { recentMonths } from "../../features/employee-performance/employeeReportModel";
+import { indiaToday } from "../../features/project-finance/projectFinanceModel";
+import { useAuthStore } from "../../stores/authStore";
+import { mockDb } from "../../mock-db";
+import { applyRoleScope } from "../../services/mockApiClient";
 import { useEffect, useState, useMemo } from "react";
 import { UserCog, Search, Plus, X, Save, Calendar, Target } from "lucide-react";
 import { toast } from "react-toastify";
@@ -16,9 +24,11 @@ const STATUS_BADGE = {
   Inactive: "bg-red-500/10 text-red-400",
 };
 
-const ROLES = ["Trainer", "Mobilizer", "Placement Officer", "Center Manager"];
-const MONTHS = ["2026-04", "2026-03", "2026-02", "2026-01"];
+const ROLES = ["Trainer", "Mobilizer", "Placement Officer", "Center Incharge"];
+const CURRENT_MONTH = indiaToday().slice(0, 7);
+const MONTHS = recentMonths(CURRENT_MONTH, 24);
 const TARGET_FIELDS_BY_ROLE = {
+  "Center Incharge": ["Center Attendance (%)", "Completed Batches"],
   Trainer: ["Training Hours", "Exposure Visits"],
   Mobilizer: ["Enrolled", "Community Drives"],
   "Placement Officer": ["Placed Candidates", "Placement Drives Conducted"],
@@ -34,23 +44,26 @@ export default function SuperAdminEmployeeManagement() {
   const { records: projectRecords, fetchAll: fetchProjects } = useProjectStore();
   const [projectId, setProjectId] = useState(null);
   const [search, setSearch] = useState("");
-  const [targets, setTargets] = useState([]);
+  const targets = useEmployeeTargetStore((state) => state.targets);
+  const setTargets = useEmployeeTargetStore((state) => state.setTargets);
+  const session = useAuthStore((state) => state.currentUser);
+  const user = session || mockDb.users.byId["USR-0001"];
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTargetModal, setShowTargetModal] = useState(null); // empId
-  const [selectedMonth, setSelectedMonth] = useState("2026-04");
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
 
   useEffect(() => {
     fetchWithAssignments();
     fetchProjects();
   }, [fetchProjects, fetchWithAssignments]);
 
-  const employees = useMemo(() => selectEmployeeDirectory(employeeRecords), [employeeRecords]);
-  const projects = useMemo(() => selectProjectDirectory(projectRecords), [projectRecords]);
+  const employees = useMemo(() => selectEmployeeDirectory(scopedEmployeeRecords(employeeRecords, user)), [employeeRecords, user]);
+  const projects = useMemo(() => selectProjectDirectory(applyRoleScope("projects", projectRecords, user)), [projectRecords, user]);
   const project = projects.find((p) => p.id === projectId);
 
   const projectEmployees = useMemo(() => {
     if (!project) return [];
-    let list = employees.filter((e) => e.projectId === project.id);
+    let list = employees.filter((e) => e.projectIds.includes(project.id));
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((e) => e.name.toLowerCase().includes(q) || e.role.toLowerCase().includes(q) || e.center.toLowerCase().includes(q));
@@ -104,28 +117,31 @@ export default function SuperAdminEmployeeManagement() {
 
   const empTargets = useMemo(() => {
     if (!showTargetModal) return [];
-    return targets.filter((t) => t.empId === showTargetModal);
-  }, [showTargetModal, targets]);
+    return targets.filter((t) => t.empId === showTargetModal && (!t.projectId || t.projectId === project?.id));
+  }, [showTargetModal, targets, project?.id]);
 
   const [editT1, setEditT1] = useState("");
   const [editT2, setEditT2] = useState("");
 
   const openTargetModal = (empId) => {
     setShowTargetModal(empId);
-    const existing = targets.find((t) => t.empId === empId && t.month === selectedMonth);
+    const existing = targets.find((t) => t.empId === empId && t.month === selectedMonth && (!t.projectId || t.projectId === project?.id));
     setEditT1(existing?.t1 ?? "");
     setEditT2(existing?.t2 ?? "");
   };
 
   const handleSaveTarget = () => {
     if (!selectedTargetEmployee) return;
+    if (![editT1, editT2].every((value) => Number.isFinite(Number(value)) && Number(value) >= 0) || (targetLabels[0].includes("(%)") && Number(editT1) > 100)) { toast.error("Enter valid non-negative targets; attendance percentages cannot exceed 100."); return; }
 
-    setTargets((prev) => {
-      const without = prev.filter((t) => !(t.empId === showTargetModal && t.month === selectedMonth));
+    try { setTargets((prev) => {
+      const without = prev.filter((t) => !(t.empId === showTargetModal && t.month === selectedMonth && (!t.projectId || t.projectId === project?.id)));
       return [
         ...without,
         {
           empId: showTargetModal,
+          projectId: project.id,
+          centerId: selectedTargetEmployee.centerIds?.length === 1 ? selectedTargetEmployee.centerIds[0] : undefined,
           month: selectedMonth,
           role: selectedTargetEmployee.role,
           t1Label: targetLabels[0],
@@ -135,10 +151,11 @@ export default function SuperAdminEmployeeManagement() {
         },
       ];
     });
+    } catch { toast.error("Could not save targets. Browser storage may be full."); return; }
     toast.success(`${selectedTargetEmployee.name}'s target saved`);
   };
 
-  const getEmployeeTarget = (empId) => targets.find((t) => t.empId === empId && t.month === selectedMonth);
+  const getEmployeeTarget = (empId) => targets.find((t) => t.empId === empId && t.month === selectedMonth && (!t.projectId || t.projectId === project?.id));
 
   return (
     <div className="space-y-6">
@@ -149,8 +166,8 @@ export default function SuperAdminEmployeeManagement() {
       {!project && (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {projects.map((p) => {
-            const empCount = employees.filter((e) => e.projectId === p.id).length;
-            const activeCount = employees.filter((e) => e.projectId === p.id && e.status === "Active").length;
+            const empCount = employees.filter((e) => e.projectIds.includes(p.id)).length;
+            const activeCount = employees.filter((e) => e.projectIds.includes(p.id) && e.status === "Active").length;
             return (
               <ProjectCard
                 key={p.id}
@@ -214,7 +231,7 @@ export default function SuperAdminEmployeeManagement() {
                         <div className="flex items-center gap-2.5">
                           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-black text-white">{e.name.split(" ").map((n) => n[0]).join("")}</div>
                           <div className="min-w-0">
-                            <p className="truncate text-[13px] font-bold text-white/90">{e.name}</p>
+                            <EmployeeReportLink employeeId={e.id} projectId={project.id} className="block truncate text-[13px] font-bold text-white/90">{e.name}</EmployeeReportLink>
                             <p className="text-[10px] font-mono text-red-500/60">{e.id}</p>
                           </div>
                         </div>
@@ -335,7 +352,7 @@ export default function SuperAdminEmployeeManagement() {
                       value={selectedMonth}
                       onChange={(e) => {
                         setSelectedMonth(e.target.value);
-                        const existing = targets.find((t) => t.empId === showTargetModal && t.month === e.target.value);
+                        const existing = targets.find((t) => t.empId === showTargetModal && t.month === e.target.value && (!t.projectId || t.projectId === project?.id));
                         setEditT1(existing?.t1 ?? "");
                         setEditT2(existing?.t2 ?? "");
                       }}

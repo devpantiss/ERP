@@ -5,9 +5,9 @@ import Lenis from "lenis";
 
 /* ===================== CONFIG ===================== */
 
-const ROLES = ["Super Admin", "Admin", "Mobilizer", "Trainer", "Placement Officer"];
+const ROLES = ["Super Admin", "Project Head", "Center Incharge", "Mobilizer", "Trainer", "Placement Officer"];
 const ROLE_ROUTES = {
-  "Super Admin": "/super-admin", Admin: "/admin", Mobilizer: "/mobilizer/dashboard",
+  "Super Admin": "/super-admin", "Project Head": "/project-head", "Center Incharge": "/center-incharge", Mobilizer: "/mobilizer/dashboard",
   Trainer: "/trainer", "Placement Officer": "/placement-officer",
 };
 const DUMMY_ID = "kovon";
@@ -16,7 +16,8 @@ const ROLE_COLORS = {
   "Super Admin": { primary: "#ef4444", orb: "bg-red-500/20" },
   Mobilizer: { primary: "#facc15", orb: "bg-yellow-400/20" },
   Trainer: { primary: "#34d399", orb: "bg-emerald-400/20" },
-  Admin: { primary: "#7f0fffff", orb: "bg-violet-600/20" },
+  "Center Incharge": { primary: "#7f0fffff", orb: "bg-violet-600/20" },
+  "Project Head": { primary: "#7f0fffff", orb: "bg-violet-600/20" },
   "Placement Officer": { primary: "#22d3ee", orb: "bg-cyan-400/20" },
   default: { primary: "#ef4444", orb: "bg-red-500/20" },
 };

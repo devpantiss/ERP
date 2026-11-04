@@ -1,3 +1,4 @@
+import { useCenterIncharge } from "./useCenterIncharge";
 import { useEffect, useMemo, useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import { useLocation } from "react-router-dom";
@@ -43,8 +44,8 @@ const ACCENT_MAP = {
   },
 };
 
-const ROLE_EMPLOYEE = { mobilizer: "EMP-0003", trainer: "EMP-0001", "placement-officer": "EMP-0002" };
-const ROLE_PROJECT = { mobilizer: "PRJ-0001", trainer: "PRJ-0001", "placement-officer": "PRJ-0001" };
+const ROLE_EMPLOYEE = { "center-incharge": "EMP-0011", mobilizer: "EMP-0003", trainer: "EMP-0001", "placement-officer": "EMP-0002" };
+const ROLE_PROJECT = { "center-incharge": "PRJ-0001", mobilizer: "PRJ-0001", trainer: "PRJ-0001", "placement-officer": "PRJ-0001" };
 
 /* ═══════════════════════════════════════════════════════════════
    COMPONENT
@@ -53,12 +54,14 @@ const ROLE_PROJECT = { mobilizer: "PRJ-0001", trainer: "PRJ-0001", "placement-of
 export default function ReimbursementPortal() {
   const location = useLocation();
   const roleKey = location.pathname.split("/")[1];
+  const centerIncharge = useCenterIncharge();
+  const employeeId = roleKey === "center-incharge" ? centerIncharge.id : ROLE_EMPLOYEE[roleKey];
   const a = ACCENT_MAP[roleKey] || ACCENT_MAP.mobilizer;
   const { reimbursements, fetchReimbursements, createReimbursement } = useHrStore();
 
   useEffect(() => {
-    fetchReimbursements({ filters: { employeeId: ROLE_EMPLOYEE[roleKey] } });
-  }, [fetchReimbursements, roleKey]);
+    fetchReimbursements({ filters: { employeeId: employeeId } });
+  }, [fetchReimbursements, employeeId]);
 
   const claims = useMemo(() => selectReimbursementRows(reimbursements), [reimbursements]);
   const [showForm, setShowForm] = useState(false);
@@ -90,8 +93,8 @@ export default function ReimbursementPortal() {
       ? `${billDates[0]} → ${billDates[billDates.length - 1]}`
       : billDates[0] || "—";
     createReimbursement({
-      employeeId: ROLE_EMPLOYEE[roleKey],
-      projectId: ROLE_PROJECT[roleKey],
+      employeeId: employeeId,
+      projectId: (roleKey === "center-incharge" ? centerIncharge.projectIds[0] : ROLE_PROJECT[roleKey]),
       claimTitle,
       dateRange,
       amount: totalAmount,

@@ -1,4 +1,5 @@
 import { mockDb } from "../../mock-db/index.js"
+import { applyRoleScope } from "../../services/mockApiClient.js"
 import { denormalize } from "../../mock-db/shared/normalize.js"
 
 export function selectProjectDirectory(records = denormalize(mockDb.projects)) {
@@ -198,12 +199,19 @@ export function selectProjectFormOptions(records = denormalize(mockDb.projects))
   }
 }
 
-export function selectAdminDashboardData(projectRecords = denormalize(mockDb.projects), employeeRecords = denormalize(mockDb.employees)) {
-  const projects = selectProjectDirectory(projectRecords)
-  const centers = denormalize(mockDb.centers)
-  const enrollments = denormalize(mockDb.enrollments)
-  const candidates = denormalize(mockDb.candidates)
-  const attendance = denormalize(mockDb.attendance)
+export function selectAdminDashboardData(projectRecords = denormalize(mockDb.projects), employeeRecords = denormalize(mockDb.employees), currentUser) {
+  projectRecords = applyRoleScope("projects", projectRecords, currentUser)
+  employeeRecords = applyRoleScope("employees", employeeRecords, currentUser)
+  const centers = applyRoleScope("centers", denormalize(mockDb.centers), currentUser)
+  const centerIds = new Set(centers.map((center) => center.id))
+  const projects = selectProjectDirectory(projectRecords).map((project) => ({
+    ...project,
+    centers: project.centers.filter((center) => centerIds.has(center.id)),
+    batches: project.batches.filter((batch) => centerIds.has(batch.centerId)),
+  }))
+  const enrollments = applyRoleScope("enrollments", denormalize(mockDb.enrollments), currentUser)
+  const candidates = applyRoleScope("candidates", denormalize(mockDb.candidates), currentUser)
+  const attendance = applyRoleScope("attendance", denormalize(mockDb.attendance), currentUser)
   const present = attendance.filter((record) => record.status === "PRESENT").length
   const roleCounts = employeeRecords.reduce((acc, employee) => {
     const role = mockDb.roles.byId[employee.roleIds?.[0]]
@@ -215,7 +223,8 @@ export function selectAdminDashboardData(projectRecords = denormalize(mockDb.pro
     Trainer: "#10b981",
     Mobilizer: "#facc15",
     "Placement Officer": "#22d3ee",
-    Admin: "#8b5cf6",
+    "Project Head": "#8b5cf6",
+    "Center Incharge": "#38bdf8",
     "Super Admin": "#a78bfa",
   }
   const projectRows = projects.map((project) => {
@@ -230,10 +239,12 @@ export function selectAdminDashboardData(projectRecords = denormalize(mockDb.pro
       denormalize(mockDb.placementDrives)
         .filter((drive) => drive.projectId === project.id)
         .flatMap((drive) => drive.candidateIds || [])
+        .filter((candidateId) => projectEnrollments.some((enrollment) => enrollment.candidateId === candidateId))
     )
     const capacity = project.batches.reduce((sum, batch) => sum + (batch.capacity || 0), 0)
 
     return {
+      id: project.id,
       name: project.name,
       center: project.centers[0]?.name || "Unassigned",
       status: project.status,
@@ -286,13 +297,13 @@ export function selectAdminDashboardData(projectRecords = denormalize(mockDb.pro
         time: "Today",
         color: "text-violet-400",
       })),
-      ...denormalize(mockDb.placementDrives).slice(-2).map((drive) => ({
+      ...applyRoleScope("placementDrives", denormalize(mockDb.placementDrives), currentUser).slice(-2).map((drive) => ({
         type: "placement",
         text: `${mockDb.companies.byId[drive.companyId]?.name || "Company"} placement drive is ${drive.status?.toLowerCase()}`,
         time: drive.scheduledOn || "Scheduled",
         color: "text-cyan-400",
       })),
-      ...denormalize(mockDb.grievances).slice(-2).map((grievance) => ({
+      ...applyRoleScope("grievances", denormalize(mockDb.grievances), currentUser).slice(-2).map((grievance) => ({
         type: "alert",
         text: `${grievance.category} grievance is ${grievance.status?.toLowerCase()}`,
         time: "Open workflow",

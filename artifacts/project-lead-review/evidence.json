@@ -1,0 +1,58 @@
+{
+  "contract": "Project Lead operations: visits, report uploads, QC findings, and center team planning. Reuse existing violet console shell, quiet hierarchy, native accessible dialog, assigned-project scope, browser-local persistence. Primary actions visible above searchable records. Target desktop 1440x900 and mobile 390x844; theme tokens support OS light and dark preferences.",
+  "targetViewports": [
+    "1440x900",
+    "390x844"
+  ],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Browser checks: labeled controls appear by name in accessibility snapshots; Enter opens native modal, Tab moves to labeled training center select with visible solid focus outline, Escape closes and returns focus to Schedule visit. Mobile touch controls remain usable; required fields use native validation."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Inspected desktop visits and mobile team setup screenshots, including long center names. documentElement.scrollWidth does not exceed innerWidth at 1440 and 390 pixels. Dialog fits mobile. Light heading contrast defect was corrected and recaptured; mobile light heading computes to rgb(15,23,42)."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "not-applicable",
+      "reason": "Records and project scope initialize synchronously from local browser storage and mock data; no remote loading state. Attachment saves disable the form actions and show Saving while FileReader runs."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Fresh visit, report and audit routes display meaningful empty states with primary create actions."
+    },
+    "error": {
+      "status": "pass",
+      "evidence": "Report submit without attachment keeps dialog open and shows Attach the report before submitting. QC close with a Needs action check is blocked with Resolve checks marked Needs action before closing this audit."
+    },
+    "partial": {
+      "status": "pass",
+      "evidence": "Switched mock Project Lead scope to EMP-0009. Jharsuguda team shows assigned incharge and trainer on leave, with explicit missing-role messages for mobilizers and placement officers. Restored original scope afterward."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Created visit and confirmed saved local record; uploaded synthetic CSV and verified downloadable data URL; saved audit with Action Required and 4/5 checks passed; saved changed team selection and verified reload persistence. Test records and team override removed after checks."
+    },
+    "permission": {
+      "status": "pass",
+      "evidence": "Temporarily provided Project Lead with no assigned projects. Team page showed No centers assigned and no staff selection inputs. Assigned-center filters restrict form choices; restored original session afterward."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "1440x900",
+      "artifact": "desktop.png",
+      "observation": "Desktop visit register with saved test visit, primary action, counts, filters and update control; follows existing console layout."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile.png",
+      "observation": "Dark mobile center team setup after removing unnecessary header icon. Long center name wraps, single-column role selection stays within viewport."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile-light.png",
+      "observation": "Light mobile setup after fixing heading contrast; dark text on white surface, consistent form borders and wrapped center name."
+    }
+  ]
+}

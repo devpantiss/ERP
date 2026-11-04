@@ -1,3 +1,5 @@
+import { mockDb } from "../../mock-db";
+import { useCenterIncharge } from "../shared/useCenterIncharge";
 import { useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -63,8 +65,18 @@ function StatusPill({ status }) {
   );
 }
 
-export default function AdminStudentsKitDistribution() {
-  const [students, setStudents] = useState(STUDENTS);
+export default function AdminStudentsKitDistribution({ title = "Students Kit Distribution", centerScoped = false }) {
+  const centerIncharge = useCenterIncharge();
+  const [students, setStudents] = useState(() => centerScoped
+    ? Object.values(mockDb.enrollments.byId).filter((enrollment) => centerIncharge.centerIds.includes(enrollment.centerId)).map((enrollment) => {
+      const candidate = mockDb.candidates.byId[enrollment.candidateId];
+      return {
+        id: enrollment.id, name: `${candidate?.firstName || ""} ${candidate?.lastName || ""}`.trim(),
+        enrollmentId: enrollment.id, project: mockDb.projects.byId[enrollment.projectId]?.name,
+        center: mockDb.centers.byId[enrollment.centerId]?.name, batch: mockDb.batches.byId[enrollment.batchId]?.code || "Unassigned",
+        issueDate: "-", size: "M", issued: { safetyKit: false, shoes: false, uniform: false, trainingKit: false }, proofImage: "", proofImageName: "",
+      };
+    }) : STUDENTS);
   const [search, setSearch] = useState("");
   const [projectFilter, setProjectFilter] = useState("All");
   const [centerFilter, setCenterFilter] = useState("All");
@@ -187,7 +199,7 @@ export default function AdminStudentsKitDistribution() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-100">Students Kit Distribution</h1>
+          <h1 className="text-2xl font-semibold text-slate-100">{title}</h1>
           <p className="mt-1 text-sm text-white/60">
             Enter kit issue status and upload handover proof images project-wise.
           </p>
@@ -195,7 +207,7 @@ export default function AdminStudentsKitDistribution() {
         <TableExportActions
           columns={exportColumns}
           rows={filteredStudents}
-          moduleName="Students Kit Distribution"
+          moduleName={title}
           fileName="students_kit_distribution"
           canExport
           company={{

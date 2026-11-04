@@ -1,0 +1,61 @@
+{
+  "contract": "Head dashboards receive employee leaderboards over their assigned scope. Vertical Head has cumulative and Center Incharge/Mobilizer/Trainer/Placement Officer filters; Project Head has cumulative and center-wise rankings for selected assigned project. Period filter supports all recorded months and monthly views. Rank uses complete measured positive target outcomes, capped at 100 percent per target; attendance only breaks fully measured ties. Missing target measurements are unranked. Employee links drill into existing monthly reports. Initial financial plans may only be entered during project creation and are read-only thereafter.",
+  "targetViewports": [
+    "1440x900",
+    "390x844"
+  ],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Segment filters are native buttons with aria-pressed. Ranking period and search inputs are labeled. Focus outline computed solid; Enter activated Center-wise and rendered center group. Tables have captions and scoped headers; employee links use existing report labels and preserve month/project context."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Inspected desktop cumulative leaderboard and 390px mobile dark/light views. Mobile controls wrap in two columns and full-width inputs. Corrected grid minimum sizing so wide tables scroll within cards, confirmed table right edge stays inside section and scrollWidth exceeds clientWidth. Document has no horizontal overflow; light heading computes rgb(15,23,42)."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "not-applicable",
+      "reason": "Rankings calculate synchronously from the existing mock employee records and persisted targets, with raw-record fallback while parent employee fetch completes. No additional asynchronous leaderboard request or mutation occurs."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Searching no-such-employee-qa rendered No employees match this search. Clearing search restored rows. Employees without monthly targets remain visible and unranked."
+    },
+    "error": {
+      "status": "not-applicable",
+      "reason": "Leaderboard has no new network or write action. Filter choices are curated; malformed target month values are excluded from period options. Missing/unknown measurements are represented as unranked data rather than a request failure."
+    },
+    "partial": {
+      "status": "pass",
+      "evidence": "QA trainer target with missing hour measurements stayed Unranked despite a marked attendance day. Coverage column distinguishes incomplete target measurements from missing targets. Multi-center targets without allocation remain unranked for individual center views."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Temporary target fixtures produced tied rank 1 for Center Incharge and Mobilizer, rank 3 for Placement Officer and unranked Trainer. Center Incharge segment showed only its two scoped employees. Project Head cumulative showed four delivery staff from PMKVY only; Center-wise showed Angul only. May filter excluded January target ranking and report links included month=2026-05. Test targets restored afterward. Financial page has no Set/Edit financial plan button; post-creation setter removed and existing-project registration rejected, while project creation still exposes budget and tranche fields."
+    },
+    "permission": {
+      "status": "pass",
+      "evidence": "Project Head leaderboard excludes Jharsuguda and other-project staff. Vertical Head role filters operate over school/vertical-scoped projects and employees. Unit tests verify role/project/center filters and refuse to attribute multi-center project targets to a center by assumption."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "1440x900",
+      "artifact": "desktop.png",
+      "observation": "Cumulative Vertical Head leaderboard with QA target-backed tied ranks, role/center metadata, target completion, attendance and coverage. QA fixtures removed afterward."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile.png",
+      "observation": "Project Head leaderboard with responsive cumulative/center-wise controls in dark theme."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile-light.png",
+      "observation": "Light mobile leaderboard after fixing contained table scrolling and responsive grid sizing."
+    }
+  ],
+  "limitations": [
+    "Scores require assigned monthly targets and measured outcomes; no scores or ranks are invented for incomplete data. Current underlying mock data has limited target history. Financial plan creation and leaderboard target storage use the existing browser-local data layer."
+  ]
+}

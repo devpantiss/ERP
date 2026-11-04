@@ -1,3 +1,5 @@
+import { PROJECT_LEAD_MENU } from "../../pages/ProjectLead/projectLeadConfig";
+import { CENTER_MENU_ITEMS } from "./centerInchargeMenu";
 import { memo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
@@ -24,9 +26,10 @@ import {
 const MENU_ITEMS = [
   {
     label: "Dashboard",
-    path: "/admin/dashboard",
+    path: "/project-head/dashboard",
     icon: LayoutDashboard,
   },
+  ...PROJECT_LEAD_MENU,
   {
     label: "Project Details",
     path: "/admin/project-details-reports",
@@ -123,7 +126,10 @@ const MENU_ITEMS = [
   },
 ];
 
-function AdminSidebar() {
+function AdminSidebar({ role = "project" }) {
+  const isCenter = role === "center";
+  const roleLabel = isCenter ? "Center Incharge" : "Project Head";
+  const menuItems = isCenter ? CENTER_MENU_ITEMS : MENU_ITEMS;
   const [collapsed, setCollapsed] = useState(true);
   const [openGroups, setOpenGroups] = useState([]);
   const location = useLocation();
@@ -138,30 +144,30 @@ function AdminSidebar() {
 
   return (
     <aside
-      className="sticky top-0 z-50 hidden h-screen w-20 shrink-0 md:block"
+      className="sticky top-0 z-50 hidden h-dvh max-h-dvh w-20 shrink-0 self-start md:block"
     >
       <div
         data-collapsed={collapsed}
         onMouseLeave={() => setCollapsed(true)}
-        className="perf-sidebar admin-future-sidebar flex h-screen flex-col border-r border-slate-700 bg-[#111827] text-white/80 shadow-2xl shadow-black/20 [--sidebar-expanded-width:18rem]"
+        className="perf-sidebar admin-future-sidebar flex h-full min-h-0 max-h-dvh flex-col overflow-hidden border-r border-slate-700 bg-[#111827] text-white/80 shadow-2xl shadow-black/20 [--sidebar-expanded-width:18rem]"
       >
-      <div className="admin-future-sidebar__brand flex h-16 items-center justify-between border-b border-slate-700 px-4">
+      <div className="admin-future-sidebar__brand flex h-16 shrink-0 items-center justify-between border-b border-slate-700 px-4">
           <span className="perf-sidebar-label text-lg font-semibold tracking-tight text-violet-400">
-            Admin Hub
+            {roleLabel}
           </span>
         <button
           onClick={() => {
             setCollapsed((current) => !current);
           }}
           className="admin-future-icon-button rounded-md p-2 text-white/60 transition hover:bg-slate-700 hover:text-white"
-          aria-label={collapsed ? "Expand admin sidebar" : "Collapse admin sidebar"}
+          aria-label={`${collapsed ? "Expand" : "Collapse"} ${roleLabel} sidebar`}
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        {MENU_ITEMS.map((item) => {
+      <nav aria-label={`${roleLabel} navigation`} tabIndex={0} className="admin-future-sidebar__nav min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain px-3 py-4">
+        {menuItems.map((item) => {
           const Icon = item.icon;
 
           if (!item.children) {
@@ -236,7 +242,7 @@ function AdminSidebar() {
         })}
       </nav>
 
-      <div className="admin-future-sidebar__footer space-y-2 border-t border-slate-700 px-3 py-4">
+      <div className="admin-future-sidebar__footer shrink-0 space-y-2 border-t border-slate-700 px-3 py-4">
         <Link
           to="/"
           className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-400 transition hover:bg-red-500/10 hover:text-red-300"
@@ -247,7 +253,7 @@ function AdminSidebar() {
 
           <div className="perf-sidebar-label px-3 text-xs text-slate-500">
             <p className="font-medium text-white/60">Kovon Platform</p>
-            <p>Admin Console</p>
+            <p>{isCenter ? "Center Console" : "Project Console"}</p>
           </div>
       </div>
       </div>

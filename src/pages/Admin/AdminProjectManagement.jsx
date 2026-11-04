@@ -1,7 +1,15 @@
+import EmployeeReportLink from "../../features/employee-performance/EmployeeReportLink";
+import { useLocation } from "react-router-dom";
+import ProjectFinancialPanel from "../../features/project-finance/ProjectFinancialPanel";
+import { selectCommunityEngagementReports } from "../../stores/selectors/superAdminSelectors";
+import { mockDb } from "../../mock-db";
+import { useAuthStore } from "../../stores/authStore";
+import { applyRoleScope } from "../../services/mockApiClient";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Activity,
+  Megaphone,
   ArrowLeft,
   Award,
   BriefcaseBusiness,
@@ -1051,7 +1059,10 @@ const buildProjectSnapshot = (project) => {
   };
 };
 
-export default function AdminProjectManagement({ readOnly = false, theme = "violet" }) {
+export default function AdminProjectManagement({ readOnly = false, theme = "violet", centerScoped = false }) {
+  const session = useAuthStore((state) => state.currentUser);
+  const pathname = useLocation().pathname;
+  const scopeUser = session || mockDb.users.byId[centerScoped ? "USR-0007" : pathname.startsWith("/super-admin") ? "USR-0001" : "USR-0002"];
   const projectRecords = useProjectStore((state) => state.records);
   const fetchProjects = useProjectStore((state) => state.fetchAll);
 
@@ -1060,8 +1071,11 @@ export default function AdminProjectManagement({ readOnly = false, theme = "viol
   }, [fetchProjects]);
 
   const projectSnapshots = useMemo(
-    () => selectAdminProjectReports(projectRecords).map(buildProjectSnapshot),
-    [projectRecords]
+    () => selectAdminProjectReports(applyRoleScope("projects", projectRecords, scopeUser)).map(buildProjectSnapshot).map((project) => centerScoped ? {
+      ...project,
+      centers: project.centers.filter((center) => applyRoleScope("centers", [center], scopeUser).length > 0),
+    } : project),
+    [projectRecords, centerScoped, scopeUser]
   );
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -1362,6 +1376,7 @@ function EnterpriseProjectView({ project, centers, readOnly, onBack, onCenterSel
         </div>
       </section>
 
+      <ProjectFinancialPanel projectId={project.id} />
       {readOnly ? <SuperAdminProjectStaffSection project={project} /> : null}
 
       <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
@@ -1435,7 +1450,7 @@ function SuperAdminProjectStaffSection({ project }) {
                 <div className="flex min-w-0 items-center gap-3">
                   <EmployeeAvatar name={employee.name} />
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-white">{employee.name}</p>
+                    <EmployeeReportLink employeeId={employee.id} projectId={project.id} className="block truncate font-semibold text-white">{employee.name}</EmployeeReportLink>
                     <p className="mt-0.5 truncate text-xs text-slate-500">{employee.employeeCode}</p>
                   </div>
                 </div>
@@ -1522,6 +1537,11 @@ function EnterpriseCenterView({
     [project, center, selectedBatch]
   );
 
+  const communityDrives = useMemo(
+    () => selectCommunityEngagementReports([project]).drives.filter((drive) => drive.centerId === center.id),
+    [project, center.id]
+  );
+
   return (
     <div className="space-y-6">
       <section className="enterprise-project-shell rounded-[26px] border border-white/10 p-5">
@@ -1567,6 +1587,7 @@ function EnterpriseCenterView({
       <CenterOperationsEvidenceSections
         placementDrives={placementDrives}
         exposureVisits={exposureVisits}
+        communityDrives={communityDrives}
       />
 
       <ProjectGallerySection
@@ -1705,7 +1726,7 @@ function buildCenterExposureVisitRows(project, center, selectedBatch) {
   });
 }
 
-function CenterOperationsEvidenceSections({ placementDrives, exposureVisits }) {
+function CenterOperationsEvidenceSections({ placementDrives, exposureVisits, communityDrives }) {
   const [documentContext, setDocumentContext] = useState(null);
 
   return (
@@ -1802,6 +1823,59 @@ function CenterOperationsEvidenceSections({ placementDrives, exposureVisits }) {
             ))}
           </div>
         </ProjectDetailMiniSection>
+        <div className="xl:col-span-2">
+          <ProjectDetailMiniSection
+            eyebrow="Community Outreach"
+            title="Community Engagement Drives"
+            subtitle="Center-wide mobilization, community participation, enrollment outcomes, and uploaded evidence."
+            icon={Megaphone}
+          >
+            {communityDrives.length ? (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {communityDrives.map((drive) => (
+                  <article key={drive.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold text-white">{drive.driveName}</h3>
+                        <p className="mt-1 text-xs text-slate-500">{drive.type} • {drive.location}</p>
+                      </div>
+                      <StatusChip status={drive.status} />
+                    </div>
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      <MiniDetail label="Mobilizer" value={drive.mobilizer} />
+                      <MiniDetail label="Drive Date" value={formatDate(drive.date)} />
+                      <MiniDetail label="Participants" value={formatNumber(drive.participants)} />
+                      <MiniDetail label="Leads" value={formatNumber(drive.leads)} />
+                      <MiniDetail label="Enrolled" value={formatNumber(drive.enrolled)} />
+                      <MiniDetail label="Proof Images" value={drive.proofImages.length} />
+                    </div>
+                    <p className="mt-4 text-xs leading-5 text-slate-400">{drive.notes}</p>
+                    <button
+                      type="button"
+                      onClick={() => setDocumentContext({
+                        type: "Community Engagement Drive", title: drive.driveName,
+                        subtitle: `${drive.mobilizer} • ${drive.location}`, record: drive,
+                        documents: drive.proofImages.map((url, index) => ({
+                          key: `${drive.id}-proof-${index}`, label: `Proof Image ${index + 1}`,
+                          name: `${drive.id}-proof-${index + 1}`, type: "image/jpeg", url,
+                          uploadedOn: formatDate(drive.date),
+                        })),
+                      })}
+                      className="mt-4 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                      aria-label={`View details for ${drive.driveName}`}
+                    >
+                      <FileText size={13} /> View details
+                    </button>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-white/10 p-6 text-sm text-slate-400">
+                No community engagement drives recorded for this center yet.
+              </p>
+            )}
+          </ProjectDetailMiniSection>
+        </div>
       </div>
 
       <OperationsDocumentPanel

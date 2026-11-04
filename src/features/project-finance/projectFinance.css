@@ -1,0 +1,29 @@
+.financial-project { background:var(--lead-bg); border:1px solid var(--lead-line); border-radius:20px; padding:24px; margin:24px 0; }
+.financial-section-title, .financial-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.financial-section-title { margin-bottom:20px; }
+.financial-section-title h3 { font-size:16px; font-weight:600; }
+.financial-section-title p { color:var(--lead-muted); font-size:13px; line-height:1.6; margin-top:6px; }
+.financial-budget-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr)); gap:20px; margin:24px 0; }
+.financial-budget-grid p { color:var(--lead-muted); font-size:12px; margin-bottom:8px; }
+.financial-budget-grid strong { font-size:clamp(18px,2vw,25px); font-weight:500; overflow-wrap:anywhere; }
+.financial-budget-progress { width:100%; height:8px; accent-color:var(--lead-primary); }
+.financial-milestones { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; border-top:1px solid var(--lead-line); padding-top:24px; margin-top:24px; }
+.financial-milestones p, .financial-milestones small { display:block; color:var(--lead-muted); font-size:12px; margin:6px 0; }
+.financial-milestones strong { font-size:20px; font-weight:500; }
+.financial-capitalize { text-transform:capitalize; }
+.financial-fields, .financial-form { display:grid; gap:20px; }
+.financial-fields label, .financial-form label { display:grid; gap:8px; font-size:13px; }
+.financial-input-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+.financial-fields input, .financial-form input { width:100%; }
+.financial-tranche-form { border:1px solid var(--lead-line); border-radius:12px; padding:16px; }
+.financial-tranche-form legend { padding:0 8px; font-size:14px; }
+.financial-tranche-form > button { margin-top:16px; }
+.financial-form { color:var(--lead-text); background:var(--lead-bg); padding:20px; border-radius:12px; }
+.financial-project td a { font-size:12px; color:var(--lead-accent); display:block; margin-top:8px; }
+.financial-project td button { margin-top:10px; }
+@media(max-width:640px) { .financial-project { padding:18px; } .financial-budget-grid { grid-template-columns:repeat(auto-fit,minmax(min(100%,145px),1fr)); } .financial-input-grid, .financial-milestones { grid-template-columns:1fr; } }
+
+.financial-budget-progress { appearance:none; border:0; border-radius:999px; overflow:hidden; background:var(--lead-line); }
+.financial-budget-progress::-webkit-progress-bar { background:var(--lead-line); border-radius:999px; }
+.financial-budget-progress::-webkit-progress-value { background:var(--lead-primary); border-radius:999px; }
+.financial-budget-progress::-moz-progress-bar { background:var(--lead-primary); border-radius:999px; }

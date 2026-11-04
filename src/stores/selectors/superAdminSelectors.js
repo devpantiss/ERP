@@ -205,7 +205,9 @@ function roleLabel(employee) {
     TRAINER: "Trainer",
     MOBILIZER: "Mobilizer",
     PLACEMENT_OFFICER: "Placement Officer",
-    ADMIN: "Admin",
+    ADMIN: "Project Head",
+    PROJECT_HEAD: "Project Head",
+    CENTER_INCHARGE: "Center Incharge",
     SUPER_ADMIN: "Super Admin",
   }
   return labels[role?.code] || role?.name || "Employee"
@@ -492,6 +494,7 @@ export function selectCommunityEngagementReports(projects = denormalize(mockDb.p
       return {
         id: request.id,
         projectId: request.projectId,
+        centerId: request.centerId,
         driveName: request.purpose,
         mobilizer: mobilizer ? employeeName(mobilizer) : "-",
         mobilizerPhone: mobilizer?.phone || "+91 98765 21000",
@@ -640,7 +643,7 @@ export function selectGlobalTrackingData(projects = denormalize(mockDb.projects)
     sessions: {
       mobilizers: employees.filter((employee) => roleLabel(employee) === "Mobilizer").length,
       trainers: trainerCount,
-      admins: employees.filter((employee) => roleLabel(employee) === "Admin").length,
+      admins: employees.filter((employee) => roleLabel(employee) === "Project Head").length,
     },
   }
 }
@@ -776,7 +779,7 @@ export function selectPlacementMonitorData(employees = denormalize(mockDb.employ
 }
 
 export function selectAttendanceMonitorData(employees = denormalize(mockDb.employees)) {
-  const staff = employees.filter((employee) => !["Super Admin", "Admin"].includes(roleLabel(employee)))
+  const staff = employees.filter((employee) => !["Super Admin", "Project Head"].includes(roleLabel(employee)))
   const rows = staff.map((employee) => {
     const role = roleLabel(employee)
     const center = employeeCenter(employee)

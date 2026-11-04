@@ -1,3 +1,5 @@
+import { useLocation } from "react-router-dom";
+import { useCenterIncharge } from "./useCenterIncharge";
 import { useEffect, useRef, useState } from "react";
 import Webcam from "react-webcam";
 import SlidePanel from "../../components/common/SlidePanel";
@@ -63,6 +65,9 @@ const getEmployeeAttendanceScope = (employeeId) => {
 };
 
 const AttendancePage = ({ employeeId = "EMP-0001", eyebrow = "HR Entitlement" }) => {
+  const location = useLocation();
+  const centerIncharge = useCenterIncharge();
+  if (location.pathname.startsWith("/center-incharge")) employeeId = centerIncharge.id;
   const webcamRef = useRef(null);
   const { records, fetchAll, create, update } = useAttendanceStore();
   const attendanceScope = getEmployeeAttendanceScope(employeeId);

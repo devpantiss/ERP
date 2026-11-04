@@ -1,3 +1,4 @@
+import { mockDb } from "../../mock-db";
 import { useState } from "react";
 import SlidePanel from "../../components/common/SlidePanel";
 import {
@@ -215,7 +216,7 @@ export default function TrainerStudyModules() {
                 </div>
               ) : (
                 <div className="h-[calc(100vh-180px)] min-h-[600px] -mx-4">
-                  <TrainerLiveFeedHost embedded={true} />
+                  <TrainerLiveFeedHost embedded batch={Object.values(mockDb.batches.byId).find((item) => item.code === batch && item.trainerEmployeeId === trainerEmployeeId)} />
                 </div>
               )}
             </div>

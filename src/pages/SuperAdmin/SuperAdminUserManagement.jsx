@@ -1,3 +1,8 @@
+import EmployeeReportLink from "../../features/employee-performance/EmployeeReportLink";
+import { scopedEmployeeRecords } from "../../features/employee-performance/scopedEmployeeRecords";
+import { useAuthStore } from "../../stores/authStore";
+import { mockDb } from "../../mock-db";
+import { applyRoleScope } from "../../services/mockApiClient";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import {
@@ -12,14 +17,16 @@ import { selectEmployeeDirectory } from "../../stores/selectors/employeeSelector
 import { selectSuperAdminProjectHierarchy } from "../../stores/selectors/superAdminSelectors";
 
 const ROLE_PREFIX = {
-  Admin: "ADM",
+  "Project Head": "PRH",
+  "Center Incharge": "CIN",
   Trainer: "TRN",
   Mobilizer: "MOB",
   "Placement Officer": "PLC",
 };
 
 const ROLE_BADGE = {
-  Admin: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+  "Center Incharge": "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+  "Project Head": "bg-violet-500/15 text-violet-400 border-violet-500/30",
   Trainer: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
   Mobilizer: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   "Placement Officer": "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
@@ -33,7 +40,7 @@ const STATUS_BADGE = {
 
 const EMPTY_EMPLOYEE_FORM = {
   name: "",
-  role: "Admin",
+  role: "Project Head",
   email: "",
   phone: "",
 };
@@ -90,7 +97,7 @@ function getCentersForProjects(projects, projectCenterMap, centerOptions) {
 
 function seedUsers(employeeRows, projectRecords) {
   return employeeRows
-    .filter((employee) => ["Admin", "Trainer", "Mobilizer", "Placement Officer"].includes(employee.role))
+    .filter((employee) => ["Project Head", "Center Incharge", "Trainer", "Mobilizer", "Placement Officer"].includes(employee.role))
     .map((employee) => ({
       ...employee,
       projectAssignments: (employee.projectIds || [])
@@ -118,14 +125,17 @@ function ModalField({ label, children }) {
 /* ===================== COMPONENT ===================== */
 
 export default function SuperAdminUserManagement() {
+  const session = useAuthStore((state) => state.currentUser);
+  const userScope = session || mockDb.users.byId["USR-0001"];
   const { records: employees, fetchWithAssignments } = useEmployeeStore();
   const { records: projectRecords, fetchAll } = useProjectStore();
   useEffect(() => {
     fetchWithAssignments();
     fetchAll();
   }, [fetchAll, fetchWithAssignments]);
-  const employeeRows = useMemo(() => selectEmployeeDirectory(employees), [employees]);
-  const projectHierarchy = useMemo(() => selectSuperAdminProjectHierarchy(projectRecords), [projectRecords]);
+  const employeeRows = useMemo(() => selectEmployeeDirectory(scopedEmployeeRecords(employees, userScope)), [employees, userScope]);
+  const employeeIds = useMemo(() => new Set(employeeRows.map((employee) => employee.id)), [employeeRows]);
+  const projectHierarchy = useMemo(() => selectSuperAdminProjectHierarchy(applyRoleScope("projects", projectRecords, userScope)), [projectRecords, userScope]);
   const seedUserRows = useMemo(() => seedUsers(employeeRows, projectRecords), [employeeRows, projectRecords]);
   const projectOptions = useMemo(() => projectHierarchy.map((project) => project.name), [projectHierarchy]);
   const centerOptions = useMemo(
@@ -172,7 +182,7 @@ export default function SuperAdminUserManagement() {
   const pg = usePagination(filtered);
 
   const roleStats = useMemo(() => ([
-    { label: "Admins", role: "Admin", icon: Shield, color: "text-violet-500", bg: "bg-violet-500/10" },
+    { label: "Project Heads", role: "Project Head", icon: Shield, color: "text-violet-500", bg: "bg-violet-500/10" },
     { label: "Trainers", role: "Trainer", icon: GraduationCap, color: "text-emerald-500", bg: "bg-emerald-500/10" },
     { label: "Mobilizers", role: "Mobilizer", icon: UserCog, color: "text-amber-500", bg: "bg-amber-500/10" },
     { label: "Placement Officers", role: "Placement Officer", icon: Briefcase, color: "text-cyan-500", bg: "bg-cyan-500/10" },
@@ -195,7 +205,7 @@ export default function SuperAdminUserManagement() {
   const handleCreateEmployee = () => {
     const trimmed = {
       name: employeeForm.name.trim(),
-      role: employeeForm.role || employeeRoles[0] || "Admin",
+      role: employeeForm.role || employeeRoles[0] || "Project Head",
       email: employeeForm.email.trim(),
       phone: employeeForm.phone.trim(),
     };
@@ -421,7 +431,7 @@ export default function SuperAdminUserManagement() {
                       <div className="w-7 h-7 shrink-0 rounded-full bg-slate-700 flex items-center justify-center text-[10px] font-black text-white/80">
                         {initials(user.name)}
                       </div>
-                      <span className="truncate text-[13px] font-bold text-white/90 group-hover:text-white transition">{user.name}</span>
+                      {employeeIds.has(user.id) ? <EmployeeReportLink employeeId={user.id} className="truncate text-[13px] font-bold text-white/90 group-hover:text-white transition">{user.name}</EmployeeReportLink> : <span className="truncate text-[13px] font-bold text-white/90">{user.name}</span>}
                     </div>
                   </td>
                   <td className="px-4 py-4 align-middle">
@@ -643,7 +653,7 @@ export default function SuperAdminUserManagement() {
 
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
-              {selectedAssignmentUser.role === "Admin" ? (
+              {selectedAssignmentUser.role === "Project Head" ? (
                 <>
                   <div>
                     <div className="mb-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">

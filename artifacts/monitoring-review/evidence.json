@@ -1,0 +1,61 @@
+{
+  "contract": "Center Incharge and Vertical Lead dashboards link to scoped alert pages. Deadline monitoring includes active project/batch completion and local client visits/QC corrective actions; employee alerts require measured recent attendance/review evidence. Batch sessions are tabular with text and dot status, scoped role data, keyboard-openable viewer/host. Reuse existing console and monitoring tokens with light/dark support.",
+  "targetViewports": [
+    "1440x900",
+    "390x844"
+  ],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Accessibility snapshots expose labeled project/status and alert category selects, table headers and session buttons named by batch. Keyboard Enter on focused View session opens offline interface; visible focus outline computed solid. Status includes Live/Not live text as well as dots."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Inspected 1440x900 desktop table and 390x844 alert screenshots in dark/light themes. At 390px document width does not overflow; wide session table scrolls within its container. Mobile light alert heading computes rgb(15,23,42), and long deadline context wraps."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "not-applicable",
+      "reason": "The new alert and table data initialize synchronously from mock records/local storage, so no remote data loading stage exists. Existing lazy WebRTC host/viewer has Loading session interface fallback; real media connection states remain outside this rendered verification."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Selecting Performance without measured recent underperformance yields an empty alert state; no metrics are synthesized. An offline selected batch displays This batch is not live."
+    },
+    "error": {
+      "status": "pass",
+      "evidence": "Temporarily malformed session registry JSON; table stayed rendered with Not live status, then original registry restored. Audit/live session unit tests cover expired registration and outdated session removal."
+    },
+    "partial": {
+      "status": "pass",
+      "evidence": "Current mock data contains stale employee attendance and no recorded reviews. Dashboard shows deadline alerts and zero employee follow-ups rather than inferring poor performance. Temporary actual review injection produced employee-specific score alert, then was removed."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Temporary QA registration changed Angul batch to Live while Jharsuguda stayed Not live, with count 1. Removed after verification. Selecting trainer assigned batch opens Start Broadcasting interface with ANG-ELEC-101 metadata; offline viewer and keyboard handoff verified."
+    },
+    "permission": {
+      "status": "pass",
+      "evidence": "Center alert page displays Angul center only. Vertical page includes assigned Angul/Jharsuguda plus their project deadlines; excludes Kalahandi. Project Lead session table shows Angul only; trainer sees their assigned batch. Existing role-scope tests pass."
+    }
+  },
+  "limitations": [
+    "Camera broadcast and cross-device WebRTC playback were not exercised. Registry discovery currently uses same-origin browser storage, not a shared backend. Client wrapper retains existing funding-agency project scope; authenticated client UI was not manually exercised."
+  ],
+  "renderedEvidence": [
+    {
+      "viewport": "1440x900",
+      "artifact": "desktop.png",
+      "observation": "Vertical Lead batch table with two scoped batches and temporary QA Live/Not live markers. QA registry entry removed after capture."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile-alerts.png",
+      "observation": "Center Incharge alert page: compact threshold disclosure, scoped overdue batch deadline, readable summary and mobile navigation."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile-light.png",
+      "observation": "Light theme mobile alert page: dark heading, sufficient semantic overdue contrast and wrapped text."
+    }
+  ]
+}

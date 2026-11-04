@@ -2,6 +2,7 @@ import { useState, memo } from "react";
 import { NavLink, Link, useLocation } from "react-router-dom";
 import {
   ShieldAlert,
+  Bell,
   UserPlus,
   FolderKanban,
   Settings,
@@ -30,6 +31,7 @@ import {
 /* ================= MENU CONFIG ================= */
 
 const SECTIONS = [
+  { key: "alerts", title: "Alerts", icon: Bell, items: [{ label: "Alerts", path: "/super-admin/alerts", icon: Bell }] },
   {
     key: "project-details",
     title: "Projects",
@@ -73,6 +75,8 @@ const SECTIONS = [
     title: "Finances",
     icon: Wallet,
     items: [
+      { label: "Tranche Invoices", path: "/super-admin/tranche-invoices", icon: ReceiptText },
+      { label: "Finance Handoff", path: "/super-admin/finance-handoff", icon: Wallet },
       { label: "Insurance", path: "/super-admin/student-insurance-details", icon: ShieldCheck },
       { label: "Fee Collection", path: "/super-admin/fee-collection", icon: IndianRupee },
     ],
@@ -162,6 +166,7 @@ const SuperAdminSidebar = () => {
             </>
           )}
         </NavLink>
+
 
         {SECTIONS.map((section) => {
           const hasActiveItem = section.items.some((item) => item.path && location.pathname === item.path);

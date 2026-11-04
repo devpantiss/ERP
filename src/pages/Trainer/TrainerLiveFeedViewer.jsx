@@ -15,8 +15,9 @@ const ICE_CONFIG = {
   ],
 };
 
-export default function TrainerLiveFeedViewer() {
-  const { sessionId } = useParams();
+export default function TrainerLiveFeedViewer({ sessionId: providedSessionId } = {}) {
+  const { sessionId: routeSessionId } = useParams();
+  const sessionId = providedSessionId || routeSessionId;
   const videoRef = useRef(null);
   const peerRef = useRef(null);
   const wrapperRef = useRef(null);

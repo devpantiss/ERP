@@ -1,0 +1,61 @@
+{
+  "contract": "Employee names in Project Lead employee directory and Vertical Head employee/access and user tables open a shared scoped monthly report. Include employee identity, month/project filters, recorded attendance, target versus achieved work, review notes, monthly history, owned work log, leave/salary/reimbursement records. Reuse console tokens, show missing measurements explicitly, allow keyboard tab navigation, support mobile and desktop with light/dark theme.",
+  "targetViewports": [
+    "1440x900",
+    "390x844"
+  ],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Employee names are native links with explicit monthly-report labels. Report month input is labeled, tabs expose selected state and associated panel. ArrowRight changes selected tab and focus to Attendance; visible focus computes solid. Table captions and column headers identify every report table."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Inspected desktop and 390px mobile dark/light screenshots. No document horizontal overflow at either size. Identity uses responsive two-column layout; report tables and tabs have contained horizontal scrolling. Mobile light heading computes rgb(15,23,42), and warning text rgb(146,64,14)."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "not-applicable",
+      "reason": "Report calculations read existing mock/local data synchronously. Route code is lazy loaded using the existing app fallback; the feature has no separate remote data fetch/loading lifecycle."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Switched Aditya report from May to April 2026 using Previous month. Status became No records and attendance Not recorded; missing marks were not treated as absence."
+    },
+    "error": {
+      "status": "pass",
+      "evidence": "Inserted malformed QA local operations JSON and clicked Refresh. Report kept employee and central records visible, showing Some locally saved work records could not be read. Removed QA key and refreshed to clear error."
+    },
+    "partial": {
+      "status": "pass",
+      "evidence": "Trainer report shows Training Hours Not recorded when there is no session-hour source. Approved exposure visit appears in work log and does not count as a completed visit. No generated performance score is substituted."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Project Lead directory Aditya link opened employee report at latest recorded month May 2026. Attendance daily/weekly tables and HR salary/leave/reimbursement records verified. Vertical Head Access & Target name link opened same scoped report. Saved temporary May targets via existing target panel, verified assigned/achieved table and persisted shared state, then restored original targets. History and previous-month control update report URL."
+    },
+    "permission": {
+      "status": "pass",
+      "evidence": "Project Lead directory contains only assigned-project employees. Direct report URL for unassigned EMP-0004 shows Employee report unavailable and no identity details. Report data and target comparisons filter project membership; unit tests exclude other employees, projects and months."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "1440x900",
+      "artifact": "desktop.png",
+      "observation": "Clean final Project Lead report: employee identity, month navigation, actual-record summary and performance tabs."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile.png",
+      "observation": "Dark mobile Vertical Head report with readable identity, month controls and a temporary QA target-shortfall warning. QA target later removed."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile-light.png",
+      "observation": "Light mobile report with dark heading and semantic warning colors. Temporary QA target assignment removed after inspection."
+    }
+  ],
+  "limitations": [
+    "The report reflects recorded data in the existing mock/local environment. Training hours and reviews require actual records and stay Not recorded when absent. Existing undated or unattributed work is not assigned to an employee by assumption. New operational records now capture employee ownership and creation timestamp for future reporting."
+  ]
+}

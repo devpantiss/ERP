@@ -1,3 +1,5 @@
+import EmployeeLeaderboard from "../../features/leaderboard/EmployeeLeaderboard";
+import OperationalAlerts from "../../components/monitoring/OperationalAlerts";
 import { createElement, useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -168,6 +170,7 @@ function getDashboardTargets(totals) {
     enrolled: Math.max(totals.mobilized, totals.enrolled),
     trained: Math.max(totals.enrolled, totals.trainedCandidates),
     certified: Math.max(totals.trainedCandidates, totals.certifiedCandidates),
+    placement: Math.max(totals.participated, totals.selected),
     retention: Math.max(totals.selected, totals.retained3Months),
   };
 }
@@ -268,71 +271,28 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <TargetMetricCard
-          icon={GraduationCap}
-          label="Enrolled"
-          value={totals.enrolled}
-          target={targets.enrolled}
-          sub="Against mobilized target"
-          tone="emerald"
-        />
-        <TargetMetricCard
-          icon={Target}
-          label="Trained"
-          value={totals.trainedCandidates}
-          target={targets.trained}
-          sub="Against enrolled learners"
-          tone="violet"
-        />
-        <TargetMetricCard
-          icon={BadgeCheck}
-          label="Certified"
-          value={totals.certifiedCandidates}
-          target={targets.certified}
-          sub="Against trained learners"
-          tone="amber"
-        />
-        <TargetMetricCard
-          icon={CalendarDays}
-          label="3 Month Retention"
-          value={totals.retained3Months}
-          target={targets.retention}
-          sub="Worked at least 3 months"
-          tone="sky"
-        />
-      </div>
+      <section aria-labelledby="vertical-overview-heading" className="space-y-4">
+        <h2 id="vertical-overview-heading" className="text-lg font-semibold tracking-tight text-slate-100">Portfolio Overview</h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <SimpleMetricCard icon={FolderKanban} label="Projects" value={visibleProjects.length} sub={selectedProject ? selectedProject.status : `${totals.activeProjects} active`} tone="red" />
+          <SimpleMetricCard icon={Building2} label="Centers" value={totals.centers} sub={selectedProject ? selectedProject.fundingAgency : "Across all projects"} tone="sky" />
+          <SimpleMetricCard icon={Users} label="Employees" value={totals.employees} sub="Mapped staff" tone="violet" />
+        </div>
+      </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SimpleMetricCard
-          icon={FolderKanban}
-          label="Projects"
-          value={visibleProjects.length}
-          sub={selectedProject ? selectedProject.status : `${totals.activeProjects} active`}
-          tone="red"
-        />
-        <SimpleMetricCard
-          icon={Building2}
-          label="Centers"
-          value={totals.centers}
-          sub={selectedProject ? selectedProject.fundingAgency : "Across all projects"}
-          tone="sky"
-        />
-        <SimpleMetricCard
-          icon={Users}
-          label="Employees"
-          value={totals.employees}
-          sub="Mapped staff"
-          tone="violet"
-        />
-        <SimpleMetricCard
-          icon={Briefcase}
-          label="Placements"
-          value={totals.selected}
-          sub={`${totals.placementDrives} drives`}
-          tone="amber"
-        />
-      </div>
+      <section aria-labelledby="vertical-outcomes-heading" className="space-y-4">
+        <h2 id="vertical-outcomes-heading" className="text-lg font-semibold tracking-tight text-slate-100">Training & Placement Outcomes</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+          <TargetMetricCard icon={GraduationCap} label="Enrolled" value={totals.enrolled} target={targets.enrolled} sub="Against mobilized candidates" tone="emerald" />
+          <TargetMetricCard icon={Target} label="Trained" value={totals.trainedCandidates} target={targets.trained} sub="Against enrolled learners" tone="violet" />
+          <TargetMetricCard icon={BadgeCheck} label="Certified" value={totals.certifiedCandidates} target={targets.certified} sub="Against trained learners" tone="amber" />
+          <TargetMetricCard icon={Briefcase} label="Placement" value={totals.selected} target={targets.placement} sub={`${totals.placementDrives} drives conducted`} tone="red" />
+          <TargetMetricCard icon={CalendarDays} label="3 Months Retention" value={totals.retained3Months} target={targets.retention} sub="Against placed candidates" tone="sky" />
+        </div>
+      </section>
+
+      <OperationalAlerts level="vertical" dashboard />
+      <EmployeeLeaderboard level="vertical" />
 
       {!selectedProject ? (
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -560,7 +520,7 @@ function TargetMetricCard({ icon: Icon, label, value, target, sub, tone }) {
         </div>
       </div>
 
-      <div className="mt-4 flex items-center gap-4">
+      <div className="mt-4 flex items-center gap-4 2xl:flex-col 2xl:items-start min-[1800px]:flex-row min-[1800px]:items-center">
         <div className="h-20 w-20 shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

@@ -2,7 +2,7 @@ import { ROLE_CODES } from "./enums.js"
 
 export const roleAccessMatrix = {
   [ROLE_CODES.SUPER_ADMIN]: {
-    scope: "GLOBAL",
+    scope: "VERTICAL",
     resources: ["*"],
     actions: ["create", "read", "update", "delete", "approve", "export"],
   },
@@ -23,6 +23,11 @@ export const roleAccessMatrix = {
       "dashboardMetrics",
     ],
     actions: ["create", "read", "update", "approve", "export"],
+  },
+  [ROLE_CODES.CENTER_INCHARGE]: {
+    scope: "CENTER",
+    resources: ["projects", "invoices", "procurements", "testimonials", "salaries", "reimbursements", "centers", "employees", "batches", "candidates", "attendance", "enrollments", "leaveRequests", "grievances", "dashboardMetrics"],
+    actions: ["create", "read", "update", "export"],
   },
   [ROLE_CODES.TRAINER]: {
     scope: "BATCH",
@@ -66,6 +71,7 @@ export function getRoleScopes(currentUser, db) {
     projectIds: employee?.projectIds || currentUser?.projectIds || [],
     centerIds: employee?.centerIds || currentUser?.centerIds || [],
     batchIds: employee?.assignedBatchIds || currentUser?.batchIds || [],
+    schoolIds: employee?.schoolIds || currentUser?.schoolIds || [],
     companyIds: currentUser?.companyIds || [],
   }
 }

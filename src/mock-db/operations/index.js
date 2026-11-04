@@ -10,15 +10,15 @@ export const schools = [
 ]
 
 export const projects = [
-  { id: "PRJ-0001", code: "PMKVY-4-OD", name: "PMKVY 4.0 Odisha Skills", fundingAgencyId: "FAG-0001", schoolId: "SCH-0001", startDate: "2025-04-01", endDate: "2026-12-31", status: "ACTIVE" },
-  { id: "PRJ-0002", code: "TSF-JSG-26", name: "Tata Steel Foundation Livelihood Program", fundingAgencyId: "FAG-0002", schoolId: "SCH-0001", startDate: "2025-06-15", endDate: "2026-09-30", status: "ACTIVE" },
-  { id: "PRJ-0003", code: "DDUGKY-KLD-26", name: "DDUGKY Rural Youth Employment Program", fundingAgencyId: "FAG-0003", schoolId: "SCH-0002", startDate: "2025-01-10", endDate: "2026-11-20", status: "MONITORING" },
+  { id: "PRJ-0001", projectHeadEmployeeId: "EMP-0007", code: "PMKVY-4-OD", name: "PMKVY 4.0 Odisha Skills", fundingAgencyId: "FAG-0001", schoolId: "SCH-0001", startDate: "2025-04-01", endDate: "2026-12-31", status: "ACTIVE" },
+  { id: "PRJ-0002", projectHeadEmployeeId: "EMP-0009", code: "TSF-JSG-26", name: "Tata Steel Foundation Livelihood Program", fundingAgencyId: "FAG-0002", schoolId: "SCH-0001", startDate: "2025-06-15", endDate: "2026-09-30", status: "ACTIVE" },
+  { id: "PRJ-0003", projectHeadEmployeeId: "EMP-0010", code: "DDUGKY-KLD-26", name: "DDUGKY Rural Youth Employment Program", fundingAgencyId: "FAG-0003", schoolId: "SCH-0002", startDate: "2025-01-10", endDate: "2026-11-20", status: "MONITORING" },
 ]
 
 export const centers = [
-  { id: "CTR-0001", projectId: "PRJ-0001", name: "Angul Skill Development Center", district: "Angul", state: "Odisha", managerEmployeeId: "EMP-0007", status: "ACTIVE" },
-  { id: "CTR-0002", projectId: "PRJ-0002", name: "Jharsuguda Industrial Training Center", district: "Jharsuguda", state: "Odisha", managerEmployeeId: "EMP-0009", status: "ACTIVE" },
-  { id: "CTR-0003", projectId: "PRJ-0003", name: "Kalahandi Livelihood Center", district: "Kalahandi", state: "Odisha", managerEmployeeId: "EMP-0010", status: "ACTIVE" },
+  { id: "CTR-0001", projectId: "PRJ-0001", name: "Angul Skill Development Center", district: "Angul", state: "Odisha", managerEmployeeId: "EMP-0011", status: "ACTIVE" },
+  { id: "CTR-0002", projectId: "PRJ-0002", name: "Jharsuguda Industrial Training Center", district: "Jharsuguda", state: "Odisha", managerEmployeeId: "EMP-0012", status: "ACTIVE" },
+  { id: "CTR-0003", projectId: "PRJ-0003", name: "Kalahandi Livelihood Center", district: "Kalahandi", state: "Odisha", managerEmployeeId: "EMP-0013", status: "ACTIVE" },
 ]
 
 export const procurements = [

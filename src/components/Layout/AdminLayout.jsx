@@ -1,3 +1,5 @@
+import { PROJECT_LEAD_MENU } from "../../pages/ProjectLead/projectLeadConfig";
+import { CENTER_MENU_ITEMS } from "../Sidebars/centerInchargeMenu";
 import { Outlet } from "react-router-dom";
 import AdminSidebar from "../Sidebars/AdminSidebar";
 import MobileBottomDock from "../common/MobileBottomDock";
@@ -19,12 +21,13 @@ import {
 
 /* ─── Dock config ─── */
 const DOCK_ITEMS = [
-  { label: "Dashboard", shortLabel: "Home", path: "/admin/dashboard", icon: LayoutDashboard },
+  { label: "Dashboard", shortLabel: "Home", path: "/project-head/dashboard", icon: LayoutDashboard },
   { label: "Projects", path: "/admin/project-details-reports", icon: Briefcase },
   { label: "Live Feed", shortLabel: "Live", path: "/admin/live-feed", icon: Radio },
 ];
 
 const DRAWER_ITEMS = [
+  ...PROJECT_LEAD_MENU,
   { label: "Invoices", path: "/admin/invoices", icon: ReceiptText },
   {
     label: "Approvals",
@@ -59,12 +62,14 @@ const ACCENT = {
   headerText: "text-violet-400",
 };
 
-const AdminLayout = () => {
+const AdminLayout = ({ role = "project" }) => {
+  const isCenter = role === "center";
+  const roleLabel = isCenter ? "Center Incharge" : "Project Head";
   return (
     <div className="admin-future flex min-h-screen bg-[#030712] text-white relative">
 
       {/* ================= SIDEBAR ================= */}
-      <AdminSidebar />
+      <AdminSidebar role={role} />
 
       {/* ================= MAIN WRAPPER ================= */}
       <div className="relative flex-1 min-w-0 flex flex-col overflow-hidden">
@@ -85,10 +90,10 @@ const AdminLayout = () => {
 
       {/* ================= MOBILE DOCK ================= */}
       <MobileBottomDock
-        dockItems={DOCK_ITEMS}
-        drawerItems={DRAWER_ITEMS}
+        dockItems={isCenter ? CENTER_MENU_ITEMS.filter((item) => item.label !== "Alerts").slice(0, 3) : DOCK_ITEMS}
+        drawerItems={isCenter ? CENTER_MENU_ITEMS.filter((item) => !["Dashboard", "Center Team", "Project Details"].includes(item.label)) : DRAWER_ITEMS}
         accentClass={ACCENT}
-        roleLabel="Admin Hub"
+        roleLabel={roleLabel}
       />
     </div>
   );

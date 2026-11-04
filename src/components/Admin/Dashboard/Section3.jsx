@@ -1,6 +1,6 @@
 /* ===================== MAIN COMPONENT ===================== */
 
-export default function AdminDashboardSection3({ projects = [] }) {
+export default function AdminDashboardSection3({ projects = [], heading = "Project Status Overview" }) {
   return (
     <section className="relative mt-6 overflow-hidden rounded-[28px] border border-cyan-400/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(8,13,25,0.98))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.13),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(139,92,246,0.14),transparent_26%)]" />
@@ -8,7 +8,7 @@ export default function AdminDashboardSection3({ projects = [] }) {
 
       <div className="relative z-10 mb-6 flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">
-          Project Status Overview
+          {heading}
         </h3>
         <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-400">
           {projects.length} active projects

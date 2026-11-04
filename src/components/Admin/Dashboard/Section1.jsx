@@ -74,6 +74,7 @@ function useCountUp(value, duration = 1200) {
 /* ===================== MAIN COMPONENT ===================== */
 
 export default function AdminDashboardSection1({
+  heading = "Project Overview",
   totalData = {
     totalUsers: 186,
     totalUsersTarget: 250,
@@ -146,7 +147,7 @@ export default function AdminDashboardSection1({
         {/* HEADER */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-slate-100 text-xl font-semibold tracking-tight">
-            Platform Overview
+            {heading}
           </h2>
 
           <div className="flex rounded-md border border-slate-600 overflow-hidden text-sm">
