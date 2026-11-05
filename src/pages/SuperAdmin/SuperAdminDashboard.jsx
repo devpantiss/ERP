@@ -291,8 +291,10 @@ export default function SuperAdminDashboard() {
         </div>
       </section>
 
-      <OperationalAlerts level="vertical" dashboard />
-      <EmployeeLeaderboard level="vertical" />
+      <div className="dashboard-monitoring-row">
+        <OperationalAlerts level="vertical" dashboard />
+        <EmployeeLeaderboard level="vertical" />
+      </div>
 
       {!selectedProject ? (
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">

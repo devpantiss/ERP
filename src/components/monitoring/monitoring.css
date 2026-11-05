@@ -33,3 +33,33 @@
 @media(max-width:640px) { .monitoring-overall { padding:18px; } .monitoring-overall-header, .monitoring-overall-list li { flex-direction:column; align-items:flex-start; } }
 
 .lead-status.monitoring-warning { color:var(--monitor-warning); }
+
+.demo-session { margin-top:20px; }
+.demo-session-grid { display:grid; grid-template-columns:minmax(0, 2.3fr) minmax(240px, 1fr); gap:20px; margin-top:16px; }
+.demo-session-stage { display:flex; flex-direction:column; min-height:430px; background:var(--lead-bg); border:1px solid var(--lead-line); border-radius:20px; overflow:hidden; }
+.demo-session-stage:fullscreen { border-radius:0; padding:24px; }
+.demo-stage-top, .demo-stage-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:16px 20px; color:var(--lead-muted); font-size:12px; }
+.demo-stage-footer { border-top:1px solid var(--lead-line); }
+.demo-stage-footer > span { display:flex; gap:8px; align-items:center; }
+.demo-classroom { flex:1; display:grid; grid-template-columns:minmax(0,1fr) 140px; align-items:center; gap:20px; padding:24px; background:var(--lead-soft); }
+.demo-board { border:1px solid var(--lead-line); border-radius:16px; padding:28px; background:var(--lead-bg); }
+.demo-board > svg { color:var(--lead-accent); margin:20px 0 12px; }
+.demo-board h3 { font-size:24px; font-weight:600; line-height:1.3; }
+.demo-board p:not(.lead-eyebrow), .demo-board ol { color:var(--lead-muted); font-size:13px; line-height:1.8; margin-top:12px; }
+.demo-board ol { list-style:decimal; padding-left:20px; }
+.demo-trainer { display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; font-size:13px; }
+.demo-trainer > span { display:grid; place-items:center; width:76px; height:76px; border-radius:50%; background:var(--lead-bg); border:1px solid var(--lead-line); color:var(--lead-accent); font-size:24px; }
+.demo-trainer small, .demo-participants small { display:block; color:var(--lead-muted); }
+.demo-session-info, .demo-session-notes { background:var(--lead-bg); border:1px solid var(--lead-line); border-radius:20px; padding:24px; }
+.demo-session h3 { font-weight:600; }
+.demo-session-info dl > div { margin-top:20px; }
+.demo-session-info dt { color:var(--lead-muted); font-size:12px; margin-bottom:5px; }
+.demo-session-info dd { font-size:14px; overflow-wrap:anywhere; }
+.demo-participants { display:flex; align-items:center; gap:12px; margin-top:24px; padding-top:20px; border-top:1px solid var(--lead-line); font-size:13px; }
+.demo-offline { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:32px; gap:16px; }
+.demo-offline > svg { color:var(--lead-muted); }
+.demo-offline p, .demo-session-notes p, .demo-session-notes ul { color:var(--lead-muted); font-size:14px; line-height:1.8; }
+.demo-session-tabs { display:flex; gap:10px; margin:24px 0 16px; }
+.demo-session-tabs button[aria-pressed=true] { color:var(--lead-accent); background:var(--lead-soft); border-color:var(--lead-accent); }
+@media(max-width:900px) { .demo-session-grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { .demo-classroom { grid-template-columns:minmax(0,1fr); padding:16px; } .demo-board { padding:20px; } .demo-trainer { flex-direction:row; text-align:left; flex-wrap:wrap; } .demo-trainer > span { width:44px; height:44px; font-size:18px; } }

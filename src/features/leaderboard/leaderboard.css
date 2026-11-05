@@ -16,3 +16,15 @@
 @media(max-width:640px) { .employee-leaderboard { padding:18px; } .leaderboard-header label, .leaderboard-search, .leaderboard-search input { width:100%; } .leaderboard-segments { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); width:100%; } .leaderboard-segments button { white-space:normal; } }
 .leaderboard-groups { grid-template-columns:minmax(0,1fr); min-width:0; }
 .leaderboard-groups > section { min-width:0; }
+
+.dashboard-monitoring-row { display:grid; grid-template-columns:minmax(0, .9fr) minmax(0, 1.1fr); gap:24px; align-items:stretch; min-width:0; }
+.dashboard-monitoring-row > * { min-width:0; width:100%; margin:0; }
+.dashboard-monitoring-row .monitoring-table { max-width:100%; overflow-x:auto; }
+@media (max-width:1023px) { .dashboard-monitoring-row { grid-template-columns:minmax(0,1fr); } }
+
+/* Keep dashboard cards balanced while each data region scrolls independently. */
+.dashboard-monitoring-row > section { height:640px; display:flex; flex-direction:column; overflow:hidden; }
+.dashboard-monitoring-row > section > header { flex-shrink:0; padding-bottom:16px; border-bottom:1px solid var(--lead-line); }
+.dashboard-monitoring-row .dashboard-panel-scroll { flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-gutter:stable; padding-right:8px; }
+.dashboard-monitoring-row .dashboard-panel-scroll:focus-visible { outline:2px solid var(--lead-accent); outline-offset:-2px; border-radius:8px; }
+@media (max-width:640px) { .dashboard-monitoring-row > section { height:600px; } }

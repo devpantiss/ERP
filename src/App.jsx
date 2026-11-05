@@ -353,6 +353,7 @@ function App() {
             <Route path="/super-admin" element={<SuperAdminLayout />}>
               <Route path="employees/:employeeId/performance" element={<EmployeeMonthlyReport />} />
               <Route path="tranche-invoices" element={<TrancheInvoiceWorkspace />} />
+              <Route path="project-budgets" element={<TrancheInvoiceWorkspace portfolio />} />
               <Route path="finance-handoff" element={<TrancheInvoiceWorkspace financeQueue />} />
               <Route path="alerts" element={<OperationalAlerts level="vertical" />} />
               <Route index element={<SuperAdminDashboard />} />

@@ -1,0 +1,66 @@
+{
+  "contract": "contract.json \u2014 Role-scoped live feed: scan actual broadcast state, filter batches and open labeled live/offline previews using existing tokens; validate 1440x900 and 390x844.",
+  "targetViewports": [
+    "1440x900",
+    "390x844"
+  ],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Keyboard Enter opens offline demo; session heading receives focus; returning restores focus to the originating table button. Table region accepts keyboard horizontal scrolling. Labels and semantic table verified in AX tree. Controls use visible focus and text status, not color alone. Subtle transitions only run without reduced-motion preference."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Rendered directory and session at 1440x900 and 390x844. Mobile page width equals viewport 390; session stage 358px. Filters stack, long project text wraps, horizontal table overflow stays within its focusable region; preview details stack under stage."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "untested",
+      "evidence": "Stable loading placeholder implemented for lazy viewer/host. No active camera session was available to exercise lazy streaming load."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Searching no-such-batch shows No sessions match your filters; Clear filters restores rows. Real offline classroom and offline demo both opened."
+    },
+    "error": {
+      "status": "untested",
+      "evidence": "Session boundary offers return to batches and fullscreen failure offers inline feedback. No browser fault was induced; real streaming errors were not exercised."
+    },
+    "partial": {
+      "status": "pass",
+      "evidence": "Existing real batches have no broadcast but retain trainer/project metadata and View session; demos are labeled separately and do not increase real live count."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Live demo opens presentation stage; resources toggle switches content. Fullscreen opens and explicit Exit fullscreen returns to interface."
+    },
+    "permission": {
+      "status": "pass",
+      "evidence": "Existing role hierarchy tests passed; demos derive only from first role-scoped batch. Demo preview and fullscreen never request camera or microphone access."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "1440x900",
+      "artifact": "desktop-directory.png",
+      "observation": "Scannable directory, actual live counts, filters, distinct demo labels and table actions."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "desktop-session.png",
+      "observation": "Presentation stage and metadata split with demo disclosure and fullscreen control."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile-directory.png",
+      "observation": "Stacked filters, contained keyboard-scrollable table and mobile navigation."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "mobile-session.png",
+      "observation": "Readable single-column presentation, trainer panel and stage controls without page overflow."
+    }
+  ],
+  "limitations": [
+    "Real WebRTC playback, loading failures, camera permission rejection and light-theme rendered view were not exercised. Evidence gate is incomplete for loading/error states."
+  ]
+}

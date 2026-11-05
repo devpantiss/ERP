@@ -17,6 +17,7 @@ export function validateFinancialPlan(plan, project = {}) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(tranche.leadDueOn || "") || !/^\d{4}-\d{2}-\d{2}$/.test(tranche.financeDueOn || "") || !Number.isFinite(dayDifference(tranche.leadDueOn, tranche.financeDueOn))) return "Set both invoice deadlines for every tranche.";
     if (tranche.leadDueOn > tranche.financeDueOn) return "The Project Lead deadline must be on or before the Finance submission deadline.";
     if ((project.startDate && tranche.leadDueOn < project.startDate) || (project.endDate && tranche.financeDueOn > project.endDate)) return "Tranche deadlines must fall within the project timeline.";
+    if (tranche.conditions !== undefined && (!Array.isArray(tranche.conditions) || !tranche.conditions.length || tranche.conditions.some((condition) => !PHASES.includes(condition.phase) || !Number.isInteger(Number(condition.target)) || Number(condition.target) <= 0))) return "Set a positive learner target for every tranche release condition.";
     total += toPaise(tranche.amount);
   }
   if (total !== toPaise(plan.valuation)) return "Tranche amounts must add up to the project valuation.";
@@ -77,4 +78,12 @@ export function usedProjectBudget(db, projectId, expenses = []) {
   const paidReimbursements = Object.values(db.reimbursements.byId).filter((row) => row.projectId === projectId && row.status?.toUpperCase() === "PAID");
   const paidSalaries = Object.values(db.salaries?.byId || {}).filter((row) => row.projectId === projectId && row.status?.toUpperCase() === "PAID");
   return [...paidInvoices, ...paidReimbursements, ...paidSalaries, ...expenses].reduce((sum, row) => sum + toPaise(row.paidAmount ?? row.totalAmount ?? row.amount ?? row.grossAmount ?? 0), 0) / 100;
+}
+
+// Release rules are fixed with the project plan; outcomes come from project records.
+export function trancheReleaseStatus(tranche, actuals) {
+  if (!Array.isArray(tranche.conditions) || !tranche.conditions.length) return { met: false, conditions: [], label: "Release conditions not recorded" };
+  const conditions = tranche.conditions.map((condition) => ({ ...condition, actual: actuals[condition.phase] ?? 0, met: PHASES.includes(condition.phase) && Number(condition.target) > 0 && (actuals[condition.phase] ?? 0) >= Number(condition.target) }));
+  const met = conditions.every((condition) => condition.met);
+  return { met, conditions, label: met ? "Conditions met" : "Conditions not met" };
 }

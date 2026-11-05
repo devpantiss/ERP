@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { emptyFinancialPlan, validateFinancialPlan, invoiceDeadlineFlag, advanceTrancheInvoice, previousAttendanceWeek, usedProjectBudget } from '../src/features/project-finance/projectFinanceModel.js';
+import { trancheReleaseStatus, emptyFinancialPlan, validateFinancialPlan, invoiceDeadlineFlag, advanceTrancheInvoice, previousAttendanceWeek, usedProjectBudget } from '../src/features/project-finance/projectFinanceModel.js';
 import { buildOperationalAlerts } from '../src/components/monitoring/monitoringData.js';
 const project = { id: 'p', name: 'Project', startDate: '2026-01-01', endDate: '2026-12-31', status: 'ACTIVE' };
 const plan = () => ({ ...emptyFinancialPlan(), valuation: 100000, budget: 80000, tranches: [{ id: 't1', label: 'Tranche 1', amount: 40000, leadDueOn: '2026-11-10', financeDueOn: '2026-11-15' }, { id: 't2', label: 'Tranche 2', amount: 60000, leadDueOn: '2026-12-10', financeDueOn: '2026-12-15' }] });
@@ -52,4 +52,31 @@ test('weekly attendance uses the last complete Monday-Sunday week and flags stri
 test('budget used counts paid expenditure and recorded expenses, excluding revenue and unapproved bills', () => {
   const db = { invoices: { byId: { one: { projectId: 'p', amount: 100, status: 'PAID' }, two: { projectId: 'p', amount: 400, status: 'SUBMITTED' }, other: { projectId: 'other', amount: 1000, status: 'PAID' } } }, reimbursements: { byId: { one: { projectId: 'p', totalAmount: 50, status: 'PAID' } } }, salaries: { byId: { salary: { projectId: 'p', grossAmount: 75, status: 'PAID' } } }, revenue: { byId: { grant: { projectId: 'p', amount: 50000 } } } };
   assert.equal(usedProjectBudget(db, 'p', [{ amount: 25.25 }]), 250.25);
+});
+
+test('tranche release requires every recorded outcome and blocks unknown conditions', () => {
+  assert.equal(trancheReleaseStatus({}, { enrollment: 100 }).met, false);
+  const tranche = { conditions: [{ phase: 'enrollment', target: 100 }, { phase: 'placement', target: 20 }] };
+  assert.equal(trancheReleaseStatus(tranche, { enrollment: 100, placement: 19 }).met, false);
+  assert.equal(trancheReleaseStatus(tranche, { enrollment: 100, placement: 20 }).met, true);
+  assert.equal(trancheReleaseStatus({ conditions: [{ phase: 'unknown', target: 1 }] }, {}).met, false);
+  const invalid = plan(); invalid.tranches[0].conditions = [{ phase: 'enrollment', target: 0 }];
+  assert.match(validateFinancialPlan(invalid, project), /release condition/);
+});
+
+test('demo projects have balanced plans and both eligible and pending tranches', async () => {
+  const { demoProjectFinance } = await import('../src/features/project-finance/demoProjectFinance.js');
+  const { mockDb } = await import('../src/mock-db/index.js');
+  const { projectActuals } = await import('../src/features/project-finance/projectFinanceModel.js');
+  const data = demoProjectFinance(mockDb);
+  assert.equal(Object.keys(data.plans).length, 3);
+  for (const [id, plan] of Object.entries(data.plans)) {
+    assert.equal(validateFinancialPlan(plan, mockDb.projects.byId[id]), '');
+    const readiness = plan.tranches.map((tranche) => trancheReleaseStatus(tranche, projectActuals(mockDb, id)).met);
+    assert.ok(readiness.includes(true));
+    assert.ok(readiness.includes(false));
+    assert.ok(data.expenses[id].length > 0);
+  }
+  assert.ok(Object.values(data.invoices).some((invoice) => invoice.financeSubmittedAt));
+  assert.ok(Object.values(data.invoices).some((invoice) => !invoice.financeSubmittedAt));
 });

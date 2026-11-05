@@ -1,0 +1,81 @@
+/* Brand identity follows the active role, including body-mounted portals.
+   Semantic success/warning/error tokens remain independent of role branding. */
+:root[data-role-theme="vertical"] {
+  --role-accent:#fda4af; --role-primary:#be123c; --role-primary-hover:#9f1239;
+  --role-canvas:#0d080d; --role-panel:#19121c; --role-surface:#120d16;
+  --role-line:#49303d; --role-soft:#fb718512; --role-glow:#fb71850c;
+}
+:root[data-role-theme="project"] {
+  --role-accent:#c4b5fd; --role-primary:#6d28d9; --role-primary-hover:#5b21b6;
+  --role-canvas:#0c0913; --role-panel:#191323; --role-surface:#120d1c;
+  --role-line:#3f3156; --role-soft:#a78bfa14; --role-glow:#a78bfa0c;
+}
+:root[data-role-theme="center"] {
+  --role-accent:#5eead4; --role-primary:#0f766e; --role-primary-hover:#115e59;
+  --role-canvas:#070f10; --role-panel:#101e20; --role-surface:#0b1618;
+  --role-line:#294849; --role-soft:#2dd4bf12; --role-glow:#2dd4bf0c;
+}
+:root[data-role-theme] {
+  --role-text:#f1f5f9; --role-muted:#a3afc1; --role-on-primary:#fff;
+  --role-shadow:0 12px 36px #00000020;
+  --color-violet-200:var(--role-accent); --color-violet-300:var(--role-accent); --color-violet-400:var(--role-accent);
+  --color-violet-500:var(--role-primary); --color-violet-600:var(--role-primary); --color-violet-700:var(--role-primary-hover);
+  --color-purple-200:var(--role-accent); --color-purple-300:var(--role-accent); --color-purple-400:var(--role-accent);
+  --color-purple-500:var(--role-primary); --color-purple-600:var(--role-primary);
+  --color-fuchsia-400:var(--role-accent); --color-fuchsia-500:var(--role-primary);
+}
+:root[data-role-theme] body { background:var(--role-canvas); }
+:root[data-role-theme] .role-shell,
+:root[data-role-theme] .admin-future__backdrop { background:radial-gradient(ellipse at 40% 0%, var(--role-glow), transparent 60%),var(--role-canvas); color:var(--role-text); }
+:root[data-role-theme] .role-shell > .fixed.pointer-events-none { display:none; }
+:root[data-role-theme] .lead-workspace {
+  --lead-bg:var(--role-panel); --lead-surface:var(--role-surface); --lead-text:var(--role-text); --lead-muted:var(--role-muted);
+  --lead-line:var(--role-line); --lead-accent:var(--role-accent); --lead-primary:var(--role-primary); --lead-soft:var(--role-soft); --lead-on-primary:var(--role-on-primary);
+}
+/* Compatibility bridge for existing page surfaces and shared right drawers. */
+:root[data-role-theme] :where([class*="bg-[#111827]"], [class*="bg-[#0f172a]"], [class*="bg-[#0b1220]"], [class*="bg-[#020617]"], [class*="bg-[#030712]"], .glass, .glass-strong) {
+  background:var(--role-panel) !important; border-color:var(--role-line); box-shadow:var(--role-shadow);
+}
+:root[data-role-theme] .perf-sidebar { background:var(--role-surface) !important; border-color:var(--role-line); }
+:root[data-role-theme] .admin-future-sidebar__brand,
+:root[data-role-theme] .admin-future-sidebar__footer { border-color:var(--role-line); }
+:root[data-role-theme] .admin-future-sidebar__brand span { background:none; color:var(--role-accent); }
+:root[data-role-theme] .admin-future-sidebar nav :is(a,button)::before { background:var(--role-accent); }
+:root[data-role-theme] .perf-sidebar :is(a[aria-current=page], button[class*="bg-violet"], button[class*="bg-red"]) { color:var(--role-accent); background:var(--role-soft); }
+:root[data-role-theme] .perf-sidebar :is(.text-red-500, .text-violet-400) { color:var(--role-accent); }
+:root[data-role-theme] .admin-future :is(h1,h2) { color:var(--role-text); background-image:none; -webkit-text-fill-color:currentColor; }
+:root[data-role-theme] .admin-future :is([class*="border-slate-700"], [class*="border-slate-800"]) { border-color:var(--role-line); }
+:root[data-role-theme] :is(.admin-future, .super-admin-project-theme) :where([class*="text-violet"], [class*="text-purple"], [class*="text-fuchsia"], [class*="text-cyan"], [class*="text-blue"], [class*="text-sky"]) { color:var(--role-accent); }
+:root[data-role-theme] .admin-future :where([class*="border-cyan"], [class*="border-blue"], [class*="border-sky"]) { border-color:var(--role-line); }
+:root[data-role-theme] .admin-future :where([class*="bg-cyan"], [class*="bg-blue"], [class*="bg-sky"]) { background-color:var(--role-soft); }
+:root[data-role-theme] :is(.admin-future,.super-admin-project-theme) :is(button,a)[class*="bg-violet"] { background:var(--role-primary); border-color:var(--role-primary); box-shadow:none; color:var(--role-on-primary); }
+:root[data-role-theme] .admin-future .perf-sidebar :is(button,a)[class*="bg-violet"] { background:var(--role-soft); color:var(--role-accent); border-color:var(--role-line); }
+:root[data-role-theme] .admin-future :is(input,select,textarea) { background-color:var(--role-surface); border-color:var(--role-line); color:var(--role-text); accent-color:var(--role-primary); }
+:root[data-role-theme] :is(input,select,textarea):focus { border-color:var(--role-accent); box-shadow:0 0 0 2px var(--role-soft); }
+:root[data-role-theme] :focus-visible { outline-color:var(--role-accent); }
+:root[data-role-theme] .admin-future :is(thead,.admin-project-card__icon) { background:var(--role-surface); border-color:var(--role-line); }
+:root[data-role-theme] .admin-future tbody tr:hover { background:var(--role-soft); box-shadow:inset 2px 0 var(--role-accent); }
+:root[data-role-theme] :is(.admin-project-card,.admin-project-hero,.admin-project-section,.admin-project-focus,.admin-project-subsection,.enterprise-project-shell) { background:var(--role-panel); border-color:var(--role-line); box-shadow:var(--role-shadow); --project-border:var(--role-line); }
+:root[data-role-theme] .admin-project-card::before { background:linear-gradient(135deg,var(--role-accent),transparent); }
+:root[data-role-theme] .admin-project-card__halo { background:var(--role-glow); }
+:root[data-role-theme] .admin-project-card__surface { background:radial-gradient(circle at 85% 16%,var(--role-glow),transparent 50%); }
+:root[data-role-theme] .admin-project-card__stat { background:var(--role-surface); }
+:root[data-role-theme] .mobile-dock,
+:root[data-role-theme] .mobile-drawer { background:var(--role-surface); border-color:var(--role-line); }
+:root[data-role-theme] .mobile-dock__item--active { color:var(--role-accent); }
+:root[data-role-theme] .mobile-dock__dot { background:var(--role-accent); }
+@media(prefers-color-scheme:light) {
+  :root[data-role-theme] { --role-text:#182132; --role-muted:#526074; --role-shadow:0 8px 24px #0f172a08; }
+  :root[data-role-theme="vertical"] { --role-accent:#be123c; --role-canvas:#fff8fa; --role-panel:#fff; --role-surface:#fff1f4; --role-line:#e8cbd3; --role-soft:#be123c0c; }
+  :root[data-role-theme="project"] { --role-accent:#6d28d9; --role-canvas:#faf8ff; --role-panel:#fff; --role-surface:#f5f1ff; --role-line:#dcd2ee; --role-soft:#6d28d90c; }
+  :root[data-role-theme="center"] { --role-accent:#0f766e; --role-canvas:#f5fcfa; --role-panel:#fff; --role-surface:#eefaF6; --role-line:#c2ded8; --role-soft:#0f766e0c; }
+  :root[data-role-theme] :where(.text-white,.text-slate-100,.text-slate-200,.text-white\/80,.text-white\/90) { color:var(--role-text); }
+  :root[data-role-theme] :where(.text-slate-400,.text-slate-500,.text-white\/50,.text-white\/60) { color:var(--role-muted); }
+  :root[data-role-theme] :is(button,a)[class*="bg-violet-5"], :root[data-role-theme] .lead-primary { color:var(--role-on-primary); }
+}
+:root[data-role-theme] .role-status-overview { background:var(--role-panel); border-color:var(--role-line); }
+:root[data-role-theme] .role-status-overview > .pointer-events-none { background:radial-gradient(ellipse at top left,var(--role-glow),transparent 60%); }
+:root[data-role-theme] .admin-future :where([class*="from-cyan"],[class*="from-blue"],[class*="from-sky"]) { --tw-gradient-from:var(--role-primary); --tw-gradient-stops:var(--tw-gradient-from),var(--tw-gradient-to); }
+:root[data-role-theme] .admin-future :where([class*="to-cyan"],[class*="to-blue"],[class*="to-sky"]) { --tw-gradient-to:var(--role-accent); }
+:root[data-role-theme] .admin-future :where([class*="via-cyan"],[class*="via-blue"],[class*="via-sky"]) { --tw-gradient-via:var(--role-primary); }
+:root[data-role-theme] .role-shell { background:radial-gradient(ellipse at 40% 0%,var(--role-glow),transparent 60%),var(--role-canvas) !important; }

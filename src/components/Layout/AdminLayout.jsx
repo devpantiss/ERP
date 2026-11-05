@@ -1,3 +1,4 @@
+import useRoleTheme from "../../theme/useRoleTheme";
 import { PROJECT_LEAD_MENU } from "../../pages/ProjectLead/projectLeadConfig";
 import { CENTER_MENU_ITEMS } from "../Sidebars/centerInchargeMenu";
 import { Outlet } from "react-router-dom";
@@ -64,9 +65,10 @@ const ACCENT = {
 
 const AdminLayout = ({ role = "project" }) => {
   const isCenter = role === "center";
+  useRoleTheme(isCenter ? "center" : "project");
   const roleLabel = isCenter ? "Center Incharge" : "Project Head";
   return (
-    <div className="admin-future flex min-h-screen bg-[#030712] text-white relative">
+    <div className="role-shell admin-future flex min-h-screen bg-[#030712] text-white relative">
 
       {/* ================= SIDEBAR ================= */}
       <AdminSidebar role={role} />
@@ -92,7 +94,7 @@ const AdminLayout = ({ role = "project" }) => {
       <MobileBottomDock
         dockItems={isCenter ? CENTER_MENU_ITEMS.filter((item) => item.label !== "Alerts").slice(0, 3) : DOCK_ITEMS}
         drawerItems={isCenter ? CENTER_MENU_ITEMS.filter((item) => !["Dashboard", "Center Team", "Project Details"].includes(item.label)) : DRAWER_ITEMS}
-        accentClass={ACCENT}
+        accentClass={isCenter ? { activeBg: "bg-teal-500/10", activeText: "text-teal-300", dot: "bg-teal-400", headerText: "text-teal-400" } : ACCENT}
         roleLabel={roleLabel}
       />
     </div>

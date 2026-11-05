@@ -1,0 +1,10 @@
+{
+  "surface": "Role-scoped batch live feed and demo session previews",
+  "job": "Find a batch, distinguish real broadcasts from demos, and open the session interface",
+  "primaryAction": "Open a live session or preview a labeled demo",
+  "direction": "Quiet, scannable training operations console using existing semantic tokens",
+  "hierarchy": ["Page identity and actual live count", "Session counts and filters", "Batch table and contextual actions", "Selected session stage and metadata"],
+  "targetViewports": ["1440x900", "390x844"],
+  "references": ["Existing lead-workspace tokens and monitoring table", "Local review: demo count was mixed with real live count; project filters crowded mobile; demo rows lacked a distinct content hierarchy"],
+  "constraints": ["Maintain role scope and existing WebRTC paths", "No camera activation for previews", "Native semantic table and keyboard reachable controls", "No new dependencies", "Responsive and light/dark tokens"]
+}

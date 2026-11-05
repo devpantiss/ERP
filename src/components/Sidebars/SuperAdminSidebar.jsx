@@ -22,8 +22,6 @@ import {
   Wallet,
   HandCoins,
   Award,
-  IndianRupee,
-  ShieldCheck,
   Target,
   BookOpen,
 } from "lucide-react";
@@ -72,13 +70,11 @@ const SECTIONS = [
   },
   {
     key: "finance",
-    title: "Finances",
+    title: "Project Budgets",
     icon: Wallet,
     items: [
-      { label: "Tranche Invoices", path: "/super-admin/tranche-invoices", icon: ReceiptText },
-      { label: "Finance Handoff", path: "/super-admin/finance-handoff", icon: Wallet },
-      { label: "Insurance", path: "/super-admin/student-insurance-details", icon: ShieldCheck },
-      { label: "Fee Collection", path: "/super-admin/fee-collection", icon: IndianRupee },
+      { label: "Budgets & Tranches", path: "/super-admin/project-budgets", icon: Wallet },
+      { label: "Finance Handoff", path: "/super-admin/finance-handoff", icon: ReceiptText },
     ],
   },
   {

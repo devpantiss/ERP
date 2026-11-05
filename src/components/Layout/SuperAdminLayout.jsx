@@ -1,3 +1,4 @@
+import useRoleTheme from "../../theme/useRoleTheme";
 import { Outlet } from "react-router-dom";
 import SuperAdminSidebar from "../Sidebars/SuperAdminSidebar";
 import MobileBottomDock from "../common/MobileBottomDock";
@@ -17,7 +18,6 @@ import {
   Settings,
   UserRoundPen,
   Award,
-  ShieldCheck,
   Target,
 } from "lucide-react";
 
@@ -40,7 +40,7 @@ const DRAWER_ITEMS = [
     ],
   },
   { label: "Live Feed", path: "/super-admin/live-feed", icon: Camera },
-  { label: "Tranche Invoices", path: "/super-admin/tranche-invoices", icon: ReceiptText },
+  { label: "Budgets & Tranches", path: "/super-admin/project-budgets", icon: Wallet },
   { label: "Finance Handoff", path: "/super-admin/finance-handoff", icon: Wallet },
   {
     label: "Approvals",
@@ -55,13 +55,6 @@ const DRAWER_ITEMS = [
     ],
   },
   { label: "Grievance Tracker", path: "/super-admin/grievance-tracker", icon: MessageSquareWarning },
-  {
-    label: "Finances",
-    icon: Wallet,
-    children: [
-      { label: "Insurance", path: "/super-admin/student-insurance-details", icon: ShieldCheck },
-    ],
-  },
   {
     label: "Access Control",
     icon: UserPlus,
@@ -83,8 +76,9 @@ const ACCENT = {
 };
 
 const SuperAdminLayout = () => {
+  useRoleTheme("vertical");
   return (
-    <div className="relative flex h-screen overflow-hidden bg-[#020617]">
+    <div className="role-shell relative flex h-screen overflow-hidden bg-[#020617]">
       {/* Background grid */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
@@ -120,7 +114,7 @@ const SuperAdminLayout = () => {
         dockItems={DOCK_ITEMS}
         drawerItems={DRAWER_ITEMS}
         accentClass={ACCENT}
-        roleLabel="Super Admin"
+        roleLabel="Vertical Head"
       />
     </div>
   );

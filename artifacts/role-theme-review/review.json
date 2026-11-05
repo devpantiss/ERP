@@ -1,0 +1,35 @@
+{
+  "palettes": {
+    "vertical": {
+      "accent": "#fda4af",
+      "primary": "#be123c"
+    },
+    "project": {
+      "accent": "#c4b5fd",
+      "primary": "#6d28d9"
+    },
+    "center": {
+      "accent": "#5eead4",
+      "primary": "#0f766e"
+    }
+  },
+  "implementation": "Layout hook sets active root role; shared tokens inherit into pages and body portals; role attribute removed on layout exit. Legacy primary utility and surface bridge maintains shared pages.",
+  "renderedChecks": [
+    "1440x900: Vertical live-feed and alerts in crimson",
+    "1440x900: Project visit workspace and right drawer in violet",
+    "1440x900: Center dashboard, profile and edit drawer in teal",
+    "390x844: Center mobile menu in teal",
+    "Shared alerts: root role and computed lead accent verified for all three roles; amber warning remains rgb(252,211,77)"
+  ],
+  "artifacts": [
+    "center-dashboard.png",
+    "center-form.png",
+    "center-mobile.png",
+    "center-alerts.png",
+    "project-alerts.png",
+    "vertical-alerts.png"
+  ],
+  "limitations": [
+    "Rendered review sampled representative pages, not every route. Light variants implemented but not rendered in this browser review."
+  ]
+}

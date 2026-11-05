@@ -2,7 +2,7 @@
 
 export default function AdminDashboardSection3({ projects = [], heading = "Project Status Overview" }) {
   return (
-    <section className="relative mt-6 overflow-hidden rounded-[28px] border border-cyan-400/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(8,13,25,0.98))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
+    <section className="role-status-overview relative mt-6 overflow-hidden rounded-[28px] border border-cyan-400/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96),rgba(8,13,25,0.98))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.24)]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.13),transparent_28%),radial-gradient(circle_at_82%_18%,rgba(139,92,246,0.14),transparent_26%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/45 to-transparent" />
 

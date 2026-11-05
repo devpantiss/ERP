@@ -7,12 +7,13 @@ const base = { projects: [], batches: [], employees: [], attendance: [], today: 
 test('only unresolved delays are flagged; future, due-today, completed and normal work are excluded', () => {
   const alerts = buildOperationalAlerts({ ...base,
     projects: [{ id: 'p', name: 'Project', endDate: '2026-11-17', status: 'ACTIVE' }, { id: 'done', endDate: '2026-11-01', status: 'COMPLETED' }],
-    batches: [{ id: 'b', code: 'Batch', centerId: 'c', endDate: '2026-11-01', status: 'ACTIVE' }, { id: 'future', endDate: '2026-12-01' }],
+    batches: [{ id: 'b', code: 'Batch', centerId: 'c', projectId: 'p', endDate: '2026-11-01', status: 'ACTIVE' }, { id: 'future', endDate: '2026-12-01' }],
     records: [{ id: 'today', kind: 'audits', title: 'QC', dueDate: '2026-11-03', status: 'Open' }, { id: 'late', kind: 'audits', title: 'Unresolved QC', dueDate: '2026-11-02', status: 'Action Required' }, { id: 'closed', kind: 'audits', dueDate: '2026-11-01', status: 'Closed' }, { id: 'visit', kind: 'visits', title: 'Client', date: '2026-11-04', status: 'Scheduled' }, { id: 'missed', kind: 'visits', title: 'Missed visit', date: '2026-11-01', status: 'Scheduled' }, { id: 'completed', kind: 'visits', date: '2026-11-01', status: 'Completed' }],
   });
   assert.deepEqual(alerts.map((a) => a.id), ['batch-b', 'visit-missed', 'audit-late']);
   assert.ok(alerts.every((alert) => alert.category === 'Delay' && alert.severity === 'Overdue'));
   assert.match(alerts[0].detail, /2 days behind schedule/);
+  assert.equal(alerts[0].projectId, 'p');
 });
 test('employee alerts require measured recent underperformance, not missing or stale data', () => {
   const employee = { id: 'e', firstName: 'Test', lastName: 'Staff', centerIds: ['c'] };

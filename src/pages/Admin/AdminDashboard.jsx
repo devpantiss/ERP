@@ -47,8 +47,10 @@ const AdminDashboard = ({ level = "project" }) => {
       />
       {!isCenter && alertProject && <div className="my-6 space-y-4">
         {dashboardData.projects.length > 1 && <div className="lead-workspace"><label>Monitoring project <select aria-label="Monitoring project" value={alertProject.id} onChange={(event) => setAlertProjectId(event.target.value)}>{dashboardData.projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select></label></div>}
-        <OperationalAlerts level="project" dashboard projectId={alertProject.id} />
-        <EmployeeLeaderboard level="project" projectId={alertProject.id} />
+        <div className="dashboard-monitoring-row">
+          <OperationalAlerts level="project" dashboard projectId={alertProject.id} />
+          <EmployeeLeaderboard level="project" projectId={alertProject.id} />
+        </div>
       </div>}
       <Section2 roleData={dashboardData.roleData} recentActivity={dashboardData.recentActivity} />
       <Section3 projects={dashboardData.projects} heading={isCenter ? "Center Status Overview" : "Project Status Overview"} />

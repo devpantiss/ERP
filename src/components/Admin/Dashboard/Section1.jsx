@@ -135,8 +135,8 @@ export default function AdminDashboardSection1({
         className="absolute inset-0 pointer-events-none opacity-[0.05]"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(139,92,246,0.4) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(139,92,246,0.4) 1px, transparent 1px)
+            linear-gradient(to right, var(--role-line, rgba(139,92,246,0.4)) 1px, transparent 1px),
+            linear-gradient(to bottom, var(--role-line, rgba(139,92,246,0.4)) 1px, transparent 1px)
           `,
           backgroundSize: "32px 32px",
         }}
@@ -284,8 +284,8 @@ function KpiCard({ title, value, target, icon, pie }) {
                 onMouseEnter={(_, i) => setActiveIndex(i)}
                 onMouseLeave={() => setActiveIndex(null)}
               >
-                <Cell fill="#8b5cf6" />
-                <Cell fill="#1f2937" />
+                <Cell fill="var(--role-primary, #8b5cf6)" />
+                <Cell fill="var(--role-line, #1f2937)" />
               </Pie>
 
               <text

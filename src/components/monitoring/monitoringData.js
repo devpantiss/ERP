@@ -24,17 +24,17 @@ export function activeSession(session, now = Date.now()) {
 const dateKey = (date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
 export function buildOperationalAlerts({ projects, batches, employees, attendance, records = [], plans = {}, invoices = {}, progress = {}, today = dateKey(new Date()) }) {
   const alerts = [];
-  const deadline = (id, title, date, context, centerId) => {
+  const deadline = (id, title, date, context, centerId, projectId) => {
     if (!date) return;
     const days = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
     if (!Number.isFinite(days) || days >= 0) return;
-    alerts.push({ id, category: "Delay", title, centerId, date, severity: "Overdue", detail: `${context} · ${Math.abs(days)} days behind schedule` });
+    alerts.push({ id, category: "Delay", title, centerId, projectId, date, severity: "Overdue", detail: `${context} · ${Math.abs(days)} days behind schedule` });
   };
-  projects.filter((project) => !["COMPLETED", "CANCELLED", "CLOSED"].includes(project.status)).forEach((project) => deadline(`project-${project.id}`, "Project completion delayed", project.endDate, project.name));
-  batches.filter((batch) => !["COMPLETED", "CANCELLED", "CLOSED"].includes(batch.status)).forEach((batch) => deadline(`batch-${batch.id}`, "Batch completion delayed", batch.endDate, batch.code, batch.centerId));
+  projects.filter((project) => !["COMPLETED", "CANCELLED", "CLOSED"].includes(project.status)).forEach((project) => deadline(`project-${project.id}`, "Project completion delayed", project.endDate, project.name, undefined, project.id));
+  batches.filter((batch) => !["COMPLETED", "CANCELLED", "CLOSED"].includes(batch.status)).forEach((batch) => deadline(`batch-${batch.id}`, "Batch completion delayed", batch.endDate, batch.code, batch.centerId, batch.projectId));
   records.forEach((record) => {
-    if (record.kind === "audits" && record.status !== "Closed") deadline(`audit-${record.id}`, record.title, record.dueDate, "QC corrective action", record.centerId);
-    if (record.kind === "visits" && record.status === "Scheduled") deadline(`visit-${record.id}`, record.title, record.date, "Client visit", record.centerId);
+    if (record.kind === "audits" && record.status !== "Closed") deadline(`audit-${record.id}`, record.title, record.dueDate, "QC corrective action", record.centerId, record.projectId);
+    if (record.kind === "visits" && record.status === "Scheduled") deadline(`visit-${record.id}`, record.title, record.date, "Client visit", record.centerId, record.projectId);
   });
   for (const project of projects) {
     if (["COMPLETED", "CANCELLED", "CLOSED"].includes(project.status?.toUpperCase())) continue;

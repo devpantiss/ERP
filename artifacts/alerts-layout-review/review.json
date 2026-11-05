@@ -1,0 +1,23 @@
+{
+  "surface": "Role-scoped Alerts page; dashboard previews unchanged",
+  "direction": "Compact exception inbox with severity-first hierarchy and role theme tokens",
+  "viewports": [
+    "1440x900",
+    "390x844"
+  ],
+  "checks": [
+    "Desktop and mobile rendered review",
+    "Mobile document width equals viewport 390px",
+    "Search no-such-alert shows recovery state; Clear filters restores results",
+    "Missed deadlines filter yields 5 of 10; PMKVY project filter reduces to 1 missed alert",
+    "Invoice type yields 3; latest deadline sort orders 6 Nov, 25 Sep, 31 Aug",
+    "Native labeled filter controls, text severity badges and semantic section/list hierarchy"
+  ],
+  "artifacts": [
+    "desktop.png",
+    "mobile.png"
+  ],
+  "limits": [
+    "Only Vertical Head rendered in this pass; shared component retains Project Head and Center scoped props and role tokens. No local-storage read failure induced."
+  ]
+}
