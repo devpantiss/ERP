@@ -50,7 +50,7 @@ export const useProjectExecutionStore = create(persist((set, get) => ({
     const scopes = getRoleScopes(user, mockDb);
     if (!scopes.roleCodes.includes("SUPER_ADMIN") || !scopes.schoolIds.includes(entry.project.schoolId)) throw new Error("Create projects within your assigned vertical.");
     if (mockDb.projects.byId[entry.project.id] || get().plans[entry.project.id]) throw new Error("Budget and payment tranches can only be entered when creating a new project.");
-    if (!plan.tranches?.length || plan.tranches.some((tranche) => !tranche.conditions?.length)) throw new Error("Set release conditions for every payment tranche during project creation.");
+    if (!plan.tranches?.length || plan.tranches.some((tranche) => !tranche.conditions?.length || tranche.conditions.some((milestone) => !milestone.dueOn))) throw new Error("Set milestones and their deadlines for every payment tranche during project creation.");
     const error = validateFinancialPlan(plan, entry.project); if (error) throw new Error(error);
     commit(set, get, { catalog: { ...get().catalog, [entry.project.id]: entry }, plans: { ...get().plans, [entry.project.id]: plan } });
     restoreProjectCatalog({ [entry.project.id]: entry });

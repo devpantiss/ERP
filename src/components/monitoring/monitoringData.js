@@ -1,4 +1,4 @@
-import { invoiceDeadlineFlag, previousAttendanceWeek, PHASES } from "../../features/project-finance/projectFinanceModel.js";
+import { invoiceDeadlineFlag, previousAttendanceWeek, projectMilestones } from "../../features/project-finance/projectFinanceModel.js";
 export const LIVE_SESSION_KEY = "pantiss:live-sessions";
 export const SESSION_TTL = 35000;
 
@@ -44,12 +44,12 @@ export function buildOperationalAlerts({ projects, batches, employees, attendanc
       const flag = invoiceDeadlineFlag(tranche, invoices[`${project.id}:${tranche.id}`], today, Number(plan.warningDays || 7));
       if (flag) alerts.push({ id: `tranche-${project.id}-${tranche.id}`, projectId: project.id, category: "Invoice", title: `${project.name} · ${tranche.label}`, ...flag, detail: `${flag.detail} Required handoff: ${flag.stage === "Project Lead invoice" ? "Project Lead → Vertical Head" : "Vertical Head → Finance"}.` });
     }
-    for (const phase of PHASES) {
-      const milestone = plan.milestones?.[phase];
+    for (const milestone of projectMilestones(plan)) {
+      const phase = milestone.phase;
       const actual = progress[project.id]?.[phase];
       if (!milestone?.dueOn || Number(milestone.target) <= 0 || !Number.isFinite(actual)) continue;
       const days = Math.round((Date.parse(`${milestone.dueOn}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
-      if (days < 0 && actual < Number(milestone.target)) alerts.push({ id: `delivery-${project.id}-${phase}`, projectId: project.id, category: "Delivery", title: `${project.name}: ${phase} behind schedule`, date: milestone.dueOn, severity: "Warning", detail: `${actual} of ${milestone.target} learners achieved by the ${phase} stage; ${milestone.target - actual} below target, ${Math.abs(days)} days after its scheduled deadline.` });
+      if (days < 0 && actual < Number(milestone.target)) alerts.push({ id: `delivery-${project.id}-${milestone.id}`, projectId: project.id, category: "Delivery", title: `${project.name}${milestone.trancheLabel ? ` · ${milestone.trancheLabel}` : ""}: ${phase} behind schedule`, date: milestone.dueOn, severity: "Warning", detail: `${actual} of ${milestone.target} learners achieved by the ${phase} stage; ${milestone.target - actual} below target, ${Math.abs(days)} days after its scheduled deadline.` });
     }
   }
   const week = previousAttendanceWeek(today);

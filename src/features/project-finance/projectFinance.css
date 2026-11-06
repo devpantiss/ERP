@@ -27,3 +27,6 @@
 .financial-budget-progress::-webkit-progress-bar { background:var(--lead-line); border-radius:999px; }
 .financial-budget-progress::-webkit-progress-value { background:var(--lead-primary); border-radius:999px; }
 .financial-budget-progress::-moz-progress-bar { background:var(--lead-primary); border-radius:999px; }
+.financial-tranche-milestone { border-top:1px solid var(--lead-line); margin:16px 0; padding:16px 0; }
+.financial-tranche-milestone > legend { color:var(--lead-muted); padding-right:12px; font-size:12px; }
+.financial-tranche-milestone > button { margin-top:12px; }

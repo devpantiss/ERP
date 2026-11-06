@@ -3,7 +3,7 @@ export const money = (value) => new Intl.NumberFormat("en-IN", { style: "currenc
 export const toPaise = (value) => Math.round(Number(value) * 100);
 export const dayDifference = (date, today) => Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
 export const indiaToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-export const emptyFinancialPlan = () => ({ valuation: "", budget: "", warningDays: 7, tranches: [], milestones: Object.fromEntries(PHASES.map((phase) => [phase, { target: "", dueOn: "" }])) });
+export const emptyFinancialPlan = () => ({ valuation: "", budget: "", warningDays: 7, tranches: [] });
 
 export function validateFinancialPlan(plan, project = {}) {
   if (!Number.isSafeInteger(toPaise(plan.valuation)) || toPaise(plan.valuation) <= 0) return "Enter a positive project valuation.";
@@ -18,6 +18,12 @@ export function validateFinancialPlan(plan, project = {}) {
     if (tranche.leadDueOn > tranche.financeDueOn) return "The Project Lead deadline must be on or before the Finance submission deadline.";
     if ((project.startDate && tranche.leadDueOn < project.startDate) || (project.endDate && tranche.financeDueOn > project.endDate)) return "Tranche deadlines must fall within the project timeline.";
     if (tranche.conditions !== undefined && (!Array.isArray(tranche.conditions) || !tranche.conditions.length || tranche.conditions.some((condition) => !PHASES.includes(condition.phase) || !Number.isInteger(Number(condition.target)) || Number(condition.target) <= 0))) return "Set a positive learner target for every tranche release condition.";
+    for (const milestone of tranche.conditions || []) {
+      if (milestone.dueOn === undefined) continue; // Read compatibility for plans saved before dated tranche milestones.
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(milestone.dueOn) || !Number.isFinite(dayDifference(milestone.dueOn, tranche.leadDueOn))) return "Set a deadline for every tranche milestone.";
+      if (milestone.dueOn > tranche.leadDueOn) return "Milestone deadlines must be on or before the Project Lead invoice deadline.";
+      if ((project.startDate && milestone.dueOn < project.startDate) || (project.endDate && milestone.dueOn > project.endDate)) return "Milestone deadlines must fall within the project timeline.";
+    }
     total += toPaise(tranche.amount);
   }
   if (total !== toPaise(plan.valuation)) return "Tranche amounts must add up to the project valuation.";
@@ -86,4 +92,11 @@ export function trancheReleaseStatus(tranche, actuals) {
   const conditions = tranche.conditions.map((condition) => ({ ...condition, actual: actuals[condition.phase] ?? 0, met: PHASES.includes(condition.phase) && Number(condition.target) > 0 && (actuals[condition.phase] ?? 0) >= Number(condition.target) }));
   const met = conditions.every((condition) => condition.met);
   return { met, conditions, label: met ? "Conditions met" : "Conditions not met" };
+}
+
+export function projectMilestones(plan) {
+  const milestones = (plan?.tranches || []).flatMap((tranche) => (tranche.conditions || []).filter((condition) => condition.dueOn).map((condition, index) => ({ ...condition, id: `${tranche.id}-${index}`, trancheId: tranche.id, trancheLabel: tranche.label })));
+  if (milestones.length) return milestones;
+  // Existing plans retain their original project-level targets without rewriting saved data.
+  return PHASES.filter((phase) => plan?.milestones?.[phase]?.dueOn).map((phase) => ({ ...plan.milestones[phase], phase, id: phase }));
 }

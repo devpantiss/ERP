@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { trancheReleaseStatus, emptyFinancialPlan, validateFinancialPlan, invoiceDeadlineFlag, advanceTrancheInvoice, previousAttendanceWeek, usedProjectBudget } from '../src/features/project-finance/projectFinanceModel.js';
+import { projectMilestones, trancheReleaseStatus, emptyFinancialPlan, validateFinancialPlan, invoiceDeadlineFlag, advanceTrancheInvoice, previousAttendanceWeek, usedProjectBudget } from '../src/features/project-finance/projectFinanceModel.js';
 import { buildOperationalAlerts } from '../src/components/monitoring/monitoringData.js';
 const project = { id: 'p', name: 'Project', startDate: '2026-01-01', endDate: '2026-12-31', status: 'ACTIVE' };
 const plan = () => ({ ...emptyFinancialPlan(), valuation: 100000, budget: 80000, tranches: [{ id: 't1', label: 'Tranche 1', amount: 40000, leadDueOn: '2026-11-10', financeDueOn: '2026-11-15' }, { id: 't2', label: 'Tranche 2', amount: 60000, leadDueOn: '2026-12-10', financeDueOn: '2026-12-15' }] });
@@ -79,4 +79,23 @@ test('demo projects have balanced plans and both eligible and pending tranches',
   }
   assert.ok(Object.values(data.invoices).some((invoice) => invoice.financeSubmittedAt));
   assert.ok(Object.values(data.invoices).some((invoice) => !invoice.financeSubmittedAt));
+});
+
+test('tranche milestones validate deadlines and generate distinct delivery alerts for each payment', () => {
+  const value = plan();
+  value.tranches[0].conditions = [{ phase: 'enrollment', target: 10, dueOn: '2026-11-01' }];
+  value.tranches[1].conditions = [{ phase: 'enrollment', target: 20, dueOn: '2026-11-02' }, { phase: 'training', target: 15, dueOn: '2026-12-01' }];
+  assert.equal(validateFinancialPlan(value, project), '');
+  assert.equal(projectMilestones(value).length, 3);
+  const alerts = buildOperationalAlerts({ ...base, plans: { p: value }, progress: { p: { enrollment: 9, training: 0, placement: 0 } } }).filter((alert) => alert.category === 'Delivery');
+  assert.equal(alerts.length, 2);
+  assert.equal(new Set(alerts.map((alert) => alert.id)).size, 2);
+  assert.ok(alerts[0].title.includes('Tranche 1'));
+  assert.ok(alerts[1].title.includes('Tranche 2'));
+  value.tranches[0].conditions[0].dueOn = '';
+  assert.match(validateFinancialPlan(value, project), /deadline for every/);
+  value.tranches[0].conditions[0].dueOn = '2026-11-11';
+  assert.match(validateFinancialPlan(value, project), /on or before/);
+  value.tranches[0].conditions[0].dueOn = '2025-12-31';
+  assert.match(validateFinancialPlan(value, project), /project timeline/);
 });

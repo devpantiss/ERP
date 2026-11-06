@@ -24,7 +24,7 @@ export default function CenterTeamSetup() {
 function CenterSetup({ center, employees, project, user }) {
   const storageKey = `pantiss:team-setup:${user.id}:${center.id}`;
   const [setup, setSetup] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(storageKey)) || initialSetup(center, employees); } catch { return initialSetup(center, employees); }
+    try { const saved = JSON.parse(localStorage.getItem(storageKey)); return saved?.team || saved || initialSetup(center, employees); } catch { return initialSetup(center, employees); }
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -37,7 +37,7 @@ function CenterSetup({ center, employees, project, user }) {
     if (!setup.incharge?.length) return setError("Assign a Center Incharge before saving the team.");
     const valid = Object.fromEntries(LANES.map((lane) => [lane.key, (setup[lane.key] || []).filter((id) => employees.some((person) => person.id === id && person.roleIds.includes(lane.role) && ["ACTIVE", "ON_LEAVE"].includes(person.status)))]));
     if (!valid.incharge.length) return setError("Select an active Center Incharge for this project.");
-    try { localStorage.setItem(storageKey, JSON.stringify(valid)); setSetup(valid); setError(""); setMessage("Center team setup saved in this browser."); } catch { setError("Unable to save team setup. Free browser storage and try again."); }
+    try { localStorage.setItem(storageKey, JSON.stringify({ team: valid, updatedAt: new Date().toISOString(), employeeId: user.employeeId, projectId: center.projectId, centerId: center.id })); window.dispatchEvent(new Event("pantiss-project-lead-update")); setSetup(valid); setError(""); setMessage("Center team setup saved in this browser."); } catch { setError("Unable to save team setup. Free browser storage and try again."); }
   };
   return <form onSubmit={save}><div className="lead-team-intro"><div><p className="lead-eyebrow">{project?.name}</p><h2>{center.name}</h2><p>{center.district}, {center.state}</p></div><span className="lead-status">{Object.values(setup).flat().length} assigned</span></div><div className="lead-team-grid">{LANES.map((lane) => {
     const candidates = employees.filter((person) => person.roleIds.includes(lane.role));

@@ -29,6 +29,7 @@ import {
 /* ================= MENU CONFIG ================= */
 
 const SECTIONS = [
+  { key: "project-lead-monitoring", title: "Project Lead Monitoring", icon: FileCheck, items: [{ label: "Project Lead Work", path: "/super-admin/project-lead-monitoring", icon: FileCheck }] },
   { key: "alerts", title: "Alerts", icon: Bell, items: [{ label: "Alerts", path: "/super-admin/alerts", icon: Bell }] },
   {
     key: "project-details",

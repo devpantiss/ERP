@@ -1,0 +1,22 @@
+{
+  "surface": "Super Admin Project Lead Monitoring",
+  "source": "Existing pantiss:project-lead records, legacy/current pantiss:team-setup records and project execution invoice store",
+  "scope": "Super Admin guard plus assigned vertical project/center scope and Project Lead ownership",
+  "checks": [
+    "29 automated tests pass",
+    "Saved visit/report document aggregation and legacy team-plan parsing covered by tests",
+    "Corrupt records do not hide healthy records; out-of-scope and inconsistent project/center records excluded",
+    "Desktop 1440x900 and mobile 390x844 rendered",
+    "Existing demo tranche invoices visible; details open right drawer",
+    "Focus moves into details and returns to View details on close",
+    "Mobile document width equals viewport 390px"
+  ],
+  "artifacts": [
+    "desktop.png",
+    "mobile.png"
+  ],
+  "limitations": [
+    "Browser-local data only; no backend/cross-device synchronization",
+    "No user records were created during QA; populated operations tested with isolated storage fixtures, populated invoices tested in browser"
+  ]
+}

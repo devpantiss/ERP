@@ -55,7 +55,7 @@ function OperationsWorkspace({ kind, scope }) {
       });
       const record = { ...draft, ...(draft.id ? {} : { employeeId: user.employeeId, createdAt: new Date().toISOString() }), attachment, id: draft.id || crypto.randomUUID(), projectId: centers.find((center) => center.id === draft.centerId).projectId, updatedAt: new Date().toISOString() };
       const next = [record, ...records.filter((item) => item.id !== record.id)];
-      localStorage.setItem(storageKey, JSON.stringify(next)); setRecords(next); setNotice(kind === "reports" ? "Report submission recorded." : "Record saved."); setFormOpen(false);
+      localStorage.setItem(storageKey, JSON.stringify(next)); window.dispatchEvent(new Event("pantiss-project-lead-update")); setRecords(next); setNotice(kind === "reports" ? "Report submission recorded." : "Record saved."); setFormOpen(false);
     } catch { setError("Unable to save. Browser storage may be full; try a smaller attachment."); }
     finally { setSaving(false); }
   };

@@ -30,6 +30,7 @@ const DOCK_ITEMS = [
 ];
 
 const DRAWER_ITEMS = [
+  { label: "Project Lead Monitoring", path: "/super-admin/project-lead-monitoring", icon: FileCheck },
   { label: "Alerts", path: "/super-admin/alerts", icon: Bell },
   {
     label: "Projects",

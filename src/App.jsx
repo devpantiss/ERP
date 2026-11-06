@@ -102,6 +102,7 @@ const AdminTrainerDashboard = lazy(() => import("./pages/Admin/AdminTrainerDashb
 const AdminExposureVisitApprovals = lazy(() => import("./pages/Admin/AdminExposureVisitApprovals"));
 const AdminModuleProgress = lazy(() => import("./pages/Admin/AdminModuleProgress"));
 const EmployeeMonthlyReport = lazy(() => import("./features/employee-performance/EmployeeMonthlyReport"));
+const ProjectLeadMonitoring = lazy(() => import("./pages/SuperAdmin/ProjectLeadMonitoring"));
 const TrancheInvoiceWorkspace = lazy(() => import("./features/project-finance/TrancheInvoiceWorkspace"));
 const OperationalAlerts = lazy(() => import("./components/monitoring/OperationalAlerts"));
 const BatchLiveSessions = lazy(() => import("./components/monitoring/BatchLiveSessions"));
@@ -351,6 +352,7 @@ function App() {
 
             {/* Super Admin Layout Routes */}
             <Route path="/super-admin" element={<SuperAdminLayout />}>
+              <Route path="project-lead-monitoring" element={<ProjectLeadMonitoring />} />
               <Route path="employees/:employeeId/performance" element={<EmployeeMonthlyReport />} />
               <Route path="tranche-invoices" element={<TrancheInvoiceWorkspace />} />
               <Route path="project-budgets" element={<TrancheInvoiceWorkspace portfolio />} />
